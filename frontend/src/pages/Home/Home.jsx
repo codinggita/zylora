@@ -4,7 +4,7 @@ import {
   ChevronRight, Clock, Star, ShieldCheck, 
   Truck, RotateCcw, Headset, ArrowRight, LogOut
 } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { products } from '../../data/products';
 import { useCart } from '../../context/CartContext';
 
@@ -22,7 +22,7 @@ const Home = () => {
       <div className="bg-[#0A1628] text-white text-[10px] md:text-xs py-2 px-4 flex justify-center items-center gap-4">
         <span>🚚 Free delivery on orders above ₹1299</span>
         <span className="hidden md:inline">|</span>
-        <span className="text-amber-500 font-semibold cursor-pointer">🌾 Agri Auctions Live Now →</span>
+        <Link to="/agri-auctions" className="text-amber-500 font-semibold cursor-pointer">🌾 Agri Auctions Live Now →</Link>
       </div>
 
       {/* Main Header */}
@@ -30,11 +30,15 @@ const Home = () => {
         <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between gap-4 md:gap-8">
           {/* Logo & Categories */}
           <div className="flex items-center gap-6">
-            <h1 className="text-xl md:text-2xl font-bold tracking-tight text-white">ZyLora</h1>
+            <Link to="/" className="text-xl md:text-2xl font-bold tracking-tight text-white">ZyLora</Link>
             <button className="hidden lg:flex items-center gap-2 text-sm font-medium text-gray-300 hover:text-white transition-colors">
               <Menu size={18} />
               Categories
             </button>
+            <div className="hidden lg:flex items-center gap-6 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 ml-4">
+                <a href="#" className="hover:text-white transition-colors">Become a Seller</a>
+                <Link to="/agri-auctions" className="hover:text-white transition-colors">Agri Auctions</Link>
+            </div>
           </div>
 
           {/* Search Bar */}

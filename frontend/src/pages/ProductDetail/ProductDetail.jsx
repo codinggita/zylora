@@ -52,6 +52,10 @@ const ProductDetail = () => {
             <button className="hidden lg:flex items-center gap-2 text-sm font-medium text-gray-300 hover:text-white">
               <Menu size={18} /> Categories
             </button>
+            <div className="hidden lg:flex items-center gap-6 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 ml-4">
+                <a href="#" className="hover:text-white transition-colors">Become a Seller</a>
+                <Link to="/agri-auctions" className="hover:text-white transition-colors">Agri Auctions</Link>
+            </div>
           </div>
           <div className="flex-1 max-w-2xl relative">
             <input 

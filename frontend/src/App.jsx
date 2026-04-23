@@ -9,6 +9,7 @@ import Cart from './pages/Cart/Cart';
 import Checkout from './pages/Checkout/Checkout';
 import OrderSuccess from './pages/OrderSuccess/OrderSuccess';
 import Profile from './pages/Profile/Profile';
+import AgriAuctions from './pages/AgriAuctions/AgriAuctions';
 import ProtectedRoute from './components/ProtectedRoute';
 import './App.css';
 import { CartProvider } from './context/CartContext';
@@ -92,6 +93,14 @@ function App() {
           element={
             <ProtectedRoute>
               <Profile />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/agri-auctions" 
+          element={
+            <ProtectedRoute>
+              <AgriAuctions />
             </ProtectedRoute>
           } 
         />
