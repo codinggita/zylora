@@ -6,9 +6,11 @@ import {
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { products } from '../../data/products';
+import { useCart } from '../../context/CartContext';
 
 const Home = () => {
   const navigate = useNavigate();
+  const { cartCount } = useCart();
 
   const handleLogout = () => {
     localStorage.removeItem('token');
@@ -58,9 +60,12 @@ const Home = () => {
             </button>
             <div className="flex items-center gap-4 text-gray-300">
               <Heart size={20} className="cursor-pointer hover:text-white" />
-              <div className="relative cursor-pointer hover:text-white">
+              <div 
+                className="relative cursor-pointer hover:text-white"
+                onClick={() => navigate('/cart')}
+              >
                 <ShoppingCart size={20} />
-                <span className="absolute -top-2 -right-2 bg-amber-500 text-[10px] text-white font-bold px-1 rounded-full">0</span>
+                <span className="absolute -top-2 -right-2 bg-amber-500 text-[10px] text-white font-bold px-1 rounded-full">{cartCount}</span>
               </div>
               <User size={20} className="lg:hidden cursor-pointer hover:text-white" />
             </div>

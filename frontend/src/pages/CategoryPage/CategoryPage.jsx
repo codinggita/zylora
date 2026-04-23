@@ -5,10 +5,12 @@ import {
   ChevronRight, Star, ArrowLeft, Filter, SlidersHorizontal, LogOut
 } from 'lucide-react';
 import { products } from '../../data/products';
+import { useCart } from '../../context/CartContext';
 
 const CategoryPage = () => {
   const { categoryName } = useParams();
   const navigate = useNavigate();
+  const { cartCount } = useCart();
 
   // Filter products by category (case-insensitive)
   const categoryProducts = products.filter(
@@ -49,9 +51,12 @@ const CategoryPage = () => {
             </button>
             <div className="flex items-center gap-4 text-gray-300">
               <Heart size={20} className="cursor-pointer hover:text-white" />
-              <div className="relative cursor-pointer hover:text-white">
+              <div 
+                className="relative cursor-pointer hover:text-white text-amber-500"
+                onClick={() => navigate('/cart')}
+              >
                 <ShoppingCart size={20} />
-                <span className="absolute -top-2 -right-2 bg-amber-500 text-[10px] text-white font-bold px-1 rounded-full">0</span>
+                <span className="absolute -top-2 -right-2 bg-amber-500 text-[10px] text-white font-bold px-1 rounded-full">{cartCount}</span>
               </div>
             </div>
           </div>

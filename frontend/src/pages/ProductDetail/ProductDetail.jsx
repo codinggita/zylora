@@ -7,10 +7,12 @@ import {
 } from 'lucide-react';
 import { useNavigate, Link, useParams } from 'react-router-dom';
 import { products } from '../../data/products';
+import { useCart } from '../../context/CartContext';
 
 const ProductDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { addToCart, cartCount } = useCart();
   
   // Find product by ID from data file
   const productData = products.find(p => p.id === parseInt(id)) || products[0];
@@ -27,6 +29,18 @@ const ProductDetail = () => {
   };
 
   const product = productData;
+
+  const handleAddToCart = () => {
+    addToCart(product, quantity);
+    // Optional: navigate to cart or show a toast
+    // navigate('/cart');
+  };
+
+  const showNegotiateButton = () => {
+    if (product.price <= 500) return quantity >= 10;
+    if (product.price <= 1000) return quantity >= 8;
+    return quantity >= 7;
+  };
 
   return (
     <div className="min-h-screen bg-[#F8F9FB] text-gray-900 font-sans pb-12">
@@ -51,9 +65,12 @@ const ProductDetail = () => {
             <div className="hidden md:flex items-center gap-4">
               <Heart size={20} className="cursor-pointer hover:text-white" />
               <User size={20} className="cursor-pointer hover:text-white" />
-              <div className="relative cursor-pointer hover:text-white">
+              <div 
+                className="relative cursor-pointer hover:text-white text-amber-500"
+                onClick={() => navigate('/cart')}
+              >
                 <ShoppingCart size={20} />
-                <span className="absolute -top-2 -right-2 bg-amber-500 text-[10px] text-white font-bold px-1 rounded-full">0</span>
+                <span className="absolute -top-2 -right-2 bg-amber-500 text-[10px] text-white font-bold px-1 rounded-full">{cartCount}</span>
               </div>
             </div>
             <button onClick={handleLogout} className="text-gray-400 hover:text-amber-500 transition-colors">
@@ -181,13 +198,22 @@ const ProductDetail = () => {
           </div>
 
           <div className="grid grid-cols-2 gap-4">
-            <button className="bg-[#0A1628] text-white py-4 rounded-xl font-bold hover:bg-black transition-colors flex items-center justify-center gap-2">
+            <button 
+              onClick={handleAddToCart}
+              className="bg-[#0A1628] text-white py-4 rounded-xl font-bold hover:bg-black transition-colors flex items-center justify-center gap-2"
+            >
               <ShoppingCart size={18} /> ADD TO CART
             </button>
             <button className="bg-orange-500 text-white py-4 rounded-xl font-bold hover:bg-orange-600 transition-colors">
               BUY NOW
             </button>
           </div>
+
+          {showNegotiateButton() && (
+            <button className="w-full mt-4 bg-teal-600 text-white py-4 rounded-xl font-bold hover:bg-teal-700 transition-all flex items-center justify-center gap-2 shadow-lg shadow-teal-600/20 border-2 border-teal-500">
+              <MessageSquare size={18} /> NEGOTIATE PRICE
+            </button>
+          )}
 
           {/* Bulk Pricing Card */}
           <div className="mt-8 bg-[#F0FDF4] border border-[#DCFCE7] rounded-2xl p-6 relative overflow-hidden">
