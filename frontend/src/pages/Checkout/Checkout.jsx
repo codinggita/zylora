@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import axios from 'axios';
 import { 
   Check, CreditCard, Landmark, Wallet, 
   ChevronRight, ArrowLeft, MapPin, 
@@ -128,16 +129,58 @@ const Checkout = () => {
     })));
   };
 
-  const handlePlaceOrder = () => {
+  const handlePlaceOrder = async () => {
     const selectedAddr = addresses.find(a => a.selected);
     if (!selectedAddr) {
       alert("Please select or add a delivery address");
       return;
     }
-    
-    alert(`Order Placed Successfully!\n\nDelivering to: ${selectedAddr.name}\nTotal: ₹${stats.total.toLocaleString()}`);
-    clearCart();
-    navigate('/');
+
+    try {
+      const BACKEND_URL = window.location.hostname === 'localhost' 
+        ? 'http://localhost:5000' 
+        : 'https://zylora-3.onrender.com';
+
+      const token = localStorage.getItem('token');
+      
+      const orderData = {
+        orderItems: cartItems.map(item => ({
+          name: item.name,
+          quantity: item.quantity,
+          image: item.image || (item.images && item.images[0]) || 'https://via.placeholder.com/150',
+          price: item.price,
+          product: item.id
+        })),
+        shippingAddress: {
+          name: selectedAddr.name,
+          mobile: selectedAddr.mobile,
+          address: selectedAddr.address
+        },
+        paymentMethod: paymentMethod.toUpperCase(),
+        totalPrice: stats.total
+      };
+
+      const config = {
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        }
+      };
+
+      const response = await axios.post(`${BACKEND_URL}/api/orders`, orderData, config);
+
+      if (response.data.success) {
+        clearCart();
+        navigate('/order-success', { 
+          state: { 
+            order: response.data.data 
+          } 
+        });
+      }
+    } catch (error) {
+      console.error('Error placing order:', error);
+      alert(error.response?.data?.message || "Failed to place order. Please try again.");
+    }
   };
 
   const calculateTotal = () => {

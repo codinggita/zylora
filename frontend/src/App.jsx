@@ -7,6 +7,7 @@ import Negotiation from './pages/Negotiation/Negotiation';
 import CategoryPage from './pages/CategoryPage/CategoryPage';
 import Cart from './pages/Cart/Cart';
 import Checkout from './pages/Checkout/Checkout';
+import OrderSuccess from './pages/OrderSuccess/OrderSuccess';
 import ProtectedRoute from './components/ProtectedRoute';
 import './App.css';
 import { CartProvider } from './context/CartContext';
@@ -66,6 +67,14 @@ function App() {
           element={
             <ProtectedRoute>
               <Checkout />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/order-success" 
+          element={
+            <ProtectedRoute>
+              <OrderSuccess />
             </ProtectedRoute>
           } 
         />
