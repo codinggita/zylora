@@ -1,14 +1,16 @@
 # Zylora — Shop Everything. Negotiate Anything.
 
-> ⚛️ React + 🎨 Tailwind CSS · Frontend UI Prototype · No backend — UI only
+> ⚛️ React + 🎨 Tailwind CSS · Full-Stack E-commerce Platform
 
 ---
 
-## 🔗 Design & Resources
+## 🔗 Live Deployment & Resources
 
 | Resource | Link |
 |---|---|
-| 🎨 Figma Design File | [View on Figma](https://www.figma.com/design/vt3eDlpqhdudT35CdsZjPg/Portfolio?node-id=0-1&t=DzB5ULzEV5Gu0Iph-1) |
+| � Frontend Live | [zylora-tau.vercel.app](https://zylora-tau.vercel.app/) |
+| ⚙️ Backend API | [zylora-3.onrender.com](https://zylora-3.onrender.com/) |
+| �🎨 Figma Design File | [View on Figma](https://www.figma.com/design/vt3eDlpqhdudT35CdsZjPg/Portfolio?node-id=0-1&t=DzB5ULzEV5Gu0Iph-1) |
 | 🖼️ Figma Prototype | [Open Prototype](https://www.figma.com/design/vt3eDlpqhdudT35CdsZjPg/Portfolio?node-id=0-1&t=DzB5ULzEV5Gu0Iph-1) |
 
 
@@ -17,7 +19,7 @@
 
 ## 📌 About
 
-**Zylora** is a React + Tailwind CSS frontend for a modern Indian e-commerce platform — inspired by Flipkart and Myntra in polish and trust. This repository contains the complete UI prototype with all pages, components, and navigation flows fully built out.
+**Zylora** is a full-stack e-commerce platform — inspired by Flipkart and Myntra in polish and trust. This repository contains the complete implementation with a React frontend and an Express/Node.js backend.
 
 Three features make Zylora unique beyond standard shopping:
 
@@ -25,7 +27,7 @@ Three features make Zylora unique beyond standard shopping:
 - **📦 Bulk Discounts** — More units = lower price per unit, shown in a tiered pricing table
 - **🌿 Live Agri Auctions** — A dedicated green-themed section for farm-fresh produce with live countdown bidding
 
-> This is a **frontend-only** project. All data is static/mock. No backend or API is connected.
+> The project is now fully integrated with a backend API for authentication and data management.
 
 ---
 
