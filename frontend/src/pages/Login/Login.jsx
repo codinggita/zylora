@@ -1,16 +1,40 @@
 import React, { useState } from 'react';
 import { CheckCircle2, Mail, Lock, User, ArrowRight } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
+import axios from 'axios';
 
 const Login = () => {
   const [userType, setUserType] = useState('buyer');
+  const [formData, setFormData] = useState({
+    email: '',
+    password: ''
+  });
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-  const handleLogin = (e) => {
+  const onChange = (e) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  const handleLogin = async (e) => {
     e.preventDefault();
-    // Simulate login by saving a mock token
-    localStorage.setItem('token', 'mock-jwt-token');
-    navigate('/');
+    setError('');
+    setLoading(true);
+    
+    try {
+      const apiUrl = import.meta.env.VITE_API_URL || 'https://zylora-3.onrender.com/api';
+      const res = await axios.post(`${apiUrl}/auth/login`, formData);
+      
+      if (res.data.success) {
+        localStorage.setItem('token', res.data.token);
+        navigate('/');
+      }
+    } catch (err) {
+      setError(err.response?.data?.error || 'Login failed. Please check your credentials.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -115,11 +139,20 @@ const Login = () => {
             </div>
 
             <form className="space-y-6" onSubmit={handleLogin}>
+              {error && (
+                <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg text-sm">
+                  {error}
+                </div>
+              )}
               <div>
                 <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Email Address</label>
                 <input 
                   type="email" 
+                  name="email"
+                  value={formData.email}
+                  onChange={onChange}
                   placeholder="name@company.com" 
+                  required
                   className="w-full border border-gray-200 rounded-lg p-3 text-gray-900 placeholder:text-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
                 />
               </div>
@@ -130,7 +163,11 @@ const Login = () => {
                 </div>
                 <input 
                   type="password" 
+                  name="password"
+                  value={formData.password}
+                  onChange={onChange}
                   placeholder="••••••••" 
+                  required
                   className="w-full border border-gray-200 rounded-lg p-3 text-gray-900 placeholder:text-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
                 />
               </div>
@@ -140,8 +177,12 @@ const Login = () => {
                 <label htmlFor="remember" className="ml-2 text-sm text-gray-500">Remember me for 30 days</label>
               </div>
 
-              <button className="w-full bg-[#0F172A] text-white py-3 rounded-lg font-semibold hover:bg-[#1E293B] transition-colors">
-                Log In
+              <button 
+                type="submit"
+                disabled={loading}
+                className="w-full bg-[#0F172A] text-white py-3 rounded-lg font-semibold hover:bg-[#1E293B] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {loading ? 'Logging in...' : 'Log In'}
               </button>
             </form>
 

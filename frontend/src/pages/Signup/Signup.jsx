@@ -1,16 +1,47 @@
 import React, { useState } from 'react';
 import { CheckCircle2, Mail, Lock, User, ArrowRight } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
+import axios from 'axios';
 
 const Signup = () => {
   const [userType, setUserType] = useState('buyer');
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    password: '',
+    role: 'buyer'
+  });
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-  const handleSignup = (e) => {
+  const onChange = (e) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  const handleUserTypeToggle = (type) => {
+    setUserType(type);
+    setFormData({ ...formData, role: type });
+  };
+
+  const handleSignup = async (e) => {
     e.preventDefault();
-    // Simulate signup by saving a mock token
-    localStorage.setItem('token', 'mock-jwt-token');
-    navigate('/');
+    setError('');
+    setLoading(true);
+
+    try {
+      const apiUrl = import.meta.env.VITE_API_URL || 'https://zylora-3.onrender.com/api';
+      const res = await axios.post(`${apiUrl}/auth/signup`, formData);
+      
+      if (res.data.success) {
+        localStorage.setItem('token', res.data.token);
+        navigate('/');
+      }
+    } catch (err) {
+      setError(err.response?.data?.error || 'Registration failed. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -96,13 +127,13 @@ const Signup = () => {
             {/* Toggle */}
             <div className="bg-gray-100 p-1 rounded-lg flex mb-12">
               <button 
-                onClick={() => setUserType('buyer')}
+                onClick={() => handleUserTypeToggle('buyer')}
                 className={`flex-1 py-2 text-sm font-medium rounded-md transition-all ${userType === 'buyer' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
               >
                 Individual Buyer
               </button>
               <button 
-                onClick={() => setUserType('seller')}
+                onClick={() => handleUserTypeToggle('seller')}
                 className={`flex-1 py-2 text-sm font-medium rounded-md transition-all ${userType === 'seller' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
               >
                 Business Seller
@@ -115,11 +146,20 @@ const Signup = () => {
             </div>
 
             <form className="space-y-6" onSubmit={handleSignup}>
+              {error && (
+                <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg text-sm">
+                  {error}
+                </div>
+              )}
               <div>
                 <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Full Name</label>
                 <input 
                   type="text" 
+                  name="name"
+                  value={formData.name}
+                  onChange={onChange}
                   placeholder="John Doe" 
+                  required
                   className="w-full border border-gray-200 rounded-lg p-3 text-gray-900 placeholder:text-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
                 />
               </div>
@@ -127,7 +167,11 @@ const Signup = () => {
                 <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Email Address</label>
                 <input 
                   type="email" 
+                  name="email"
+                  value={formData.email}
+                  onChange={onChange}
                   placeholder="name@company.com" 
+                  required
                   className="w-full border border-gray-200 rounded-lg p-3 text-gray-900 placeholder:text-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
                 />
               </div>
@@ -137,20 +181,29 @@ const Signup = () => {
                 </div>
                 <input 
                   type="password" 
+                  name="password"
+                  value={formData.password}
+                  onChange={onChange}
                   placeholder="••••••••" 
+                  required
+                  minLength="6"
                   className="w-full border border-gray-200 rounded-lg p-3 text-gray-900 placeholder:text-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
                 />
               </div>
 
               <div className="flex items-center">
-                <input type="checkbox" id="terms" className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 h-4 w-4" />
+                <input type="checkbox" id="terms" required className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 h-4 w-4" />
                 <label htmlFor="terms" className="ml-2 text-sm text-gray-500">
                   I agree to the <a href="#" className="text-blue-600 hover:underline">Terms & Conditions</a>
                 </label>
               </div>
 
-              <button className="w-full bg-[#0F172A] text-white py-3 rounded-lg font-semibold hover:bg-[#1E293B] transition-colors">
-                Sign Up
+              <button 
+                type="submit"
+                disabled={loading}
+                className="w-full bg-[#0F172A] text-white py-3 rounded-lg font-semibold hover:bg-[#1E293B] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {loading ? 'Creating Account...' : 'Sign Up'}
               </button>
             </form>
 
