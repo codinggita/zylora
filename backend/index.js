@@ -19,9 +19,11 @@ app.use(cors());
 
 // Route files
 const auth = require('./routes/authRoutes');
+const orders = require('./routes/orderRoutes');
 
 // Mount routers
 app.use('/api/auth', auth);
+app.use('/api/orders', orders);
 
 const PORT = process.env.PORT || 5000;
 
