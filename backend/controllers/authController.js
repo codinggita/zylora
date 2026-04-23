@@ -79,6 +79,33 @@ exports.getMe = async (req, res) => {
   }
 };
 
+// @desc    Update user details
+// @route   PUT /api/auth/updatedetails
+// @access  Private
+exports.updateDetails = async (req, res) => {
+  try {
+    const fieldsToUpdate = {
+      name: req.body.name,
+      phone: req.body.phone
+    };
+
+    const user = await User.findByIdAndUpdate(req.user.id, fieldsToUpdate, {
+      new: true,
+      runValidators: true
+    });
+
+    res.status(200).json({
+      success: true,
+      data: user
+    });
+  } catch (err) {
+    res.status(400).json({
+      success: false,
+      error: err.message
+    });
+  }
+};
+
 // Get token from model, create cookie and send response
 const sendTokenResponse = (user, statusCode, res) => {
   // Create token

@@ -1,4 +1,5 @@
 import React from 'react';
+import { motion } from 'framer-motion';
 import { 
   Check, ArrowRight, Package, ShoppingBag, 
   MapPin, CreditCard, Search, User, Heart, ShoppingCart, LogOut
@@ -68,26 +69,64 @@ const OrderSuccess = () => {
         </div>
       </header>
 
-      <main className="max-w-3xl mx-auto px-4 pt-12 text-center">
+      <motion.main 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6, ease: "easeOut" }}
+        className="max-w-3xl mx-auto px-4 pt-12 text-center"
+      >
         {/* Success Icon */}
-        <div className="inline-flex items-center justify-center w-16 h-16 bg-green-100 rounded-full mb-6">
+        <motion.div 
+          initial={{ scale: 0 }}
+          animate={{ scale: 1 }}
+          transition={{ 
+            type: "spring",
+            stiffness: 260,
+            damping: 20,
+            delay: 0.2 
+          }}
+          className="inline-flex items-center justify-center w-16 h-16 bg-green-100 rounded-full mb-6"
+        >
           <div className="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center text-white">
             <Check size={24} strokeWidth={3} />
           </div>
-        </div>
+        </motion.div>
 
-        <h1 className="text-3xl md:text-4xl font-serif font-black text-gray-900 mb-2">Order Placed Successfully! 🎉</h1>
-        <p className="text-gray-500 text-sm mb-8 font-medium">
+        <motion.h1 
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.4 }}
+          className="text-3xl md:text-4xl font-serif font-black text-gray-900 mb-2"
+        >
+          Order Placed Successfully! 🎉
+        </motion.h1>
+        
+        <motion.p 
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.5 }}
+          className="text-gray-500 text-sm mb-8 font-medium"
+        >
           Thank you, {order.shippingAddress.name}! Your order is being processed and will be delivered by <span className="font-bold text-gray-900">25 April</span>.
-        </p>
+        </motion.p>
 
         {/* Order ID Badge */}
-        <div className="inline-block bg-[#0A1628] text-white px-6 py-2.5 rounded-lg text-xs font-bold tracking-widest uppercase mb-12">
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ delay: 0.6 }}
+          className="inline-block bg-[#0A1628] text-white px-6 py-2.5 rounded-lg text-xs font-bold tracking-widest uppercase mb-12"
+        >
           Order ID: <span className="text-amber-500">{order._id.substring(0, 12).toUpperCase()}</span>
-        </div>
+        </motion.div>
 
         {/* Order Summary Card */}
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden text-left mb-12">
+        <motion.div 
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.7 }}
+          className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden text-left mb-12"
+        >
           <div className="bg-gray-50 px-6 py-4 border-b border-gray-100">
             <h3 className="text-xs font-black uppercase tracking-widest text-gray-400">Order Summary</h3>
           </div>
@@ -126,10 +165,15 @@ const OrderSuccess = () => {
               </div>
             </div>
           </div>
-        </div>
+        </motion.div>
 
         {/* Action Buttons */}
-        <div className="flex flex-col md:flex-row gap-4 justify-center mb-24">
+        <motion.div 
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.9 }}
+          className="flex flex-col md:flex-row gap-4 justify-center mb-24"
+        >
           <button 
             onClick={() => navigate('/my-orders')}
             className="bg-[#0A1628] text-white px-10 py-4 rounded-xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-black transition-all shadow-lg shadow-gray-200"
@@ -142,15 +186,23 @@ const OrderSuccess = () => {
           >
             <ShoppingBag size={16} /> Continue Shopping
           </button>
-        </div>
+        </motion.div>
 
         {/* Recommendations Section */}
-        <div className="text-left">
+        <motion.div 
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 1.1 }}
+          className="text-left"
+        >
           <h2 className="text-xl font-serif font-black mb-8">You Might Also Like</h2>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {recommendations.map((prod) => (
-              <div 
+            {recommendations.map((prod, idx) => (
+              <motion.div 
                 key={prod.id} 
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 1.1 + (idx * 0.1) }}
                 className="bg-white rounded-xl border border-gray-100 p-3 hover:shadow-md transition-shadow cursor-pointer group"
                 onClick={() => navigate(`/product/${prod.id}`)}
               >
@@ -168,11 +220,11 @@ const OrderSuccess = () => {
                     <ShoppingCart size={12} />
                   </div>
                 </div>
-              </div>
+              </motion.div>
             ))}
           </div>
-        </div>
-      </main>
+        </motion.div>
+      </motion.main>
 
       {/* Footer */}
       <footer className="bg-[#0A1628] text-white mt-24 pt-16 pb-8 border-t border-gray-800">

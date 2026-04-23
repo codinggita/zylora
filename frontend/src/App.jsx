@@ -8,6 +8,7 @@ import CategoryPage from './pages/CategoryPage/CategoryPage';
 import Cart from './pages/Cart/Cart';
 import Checkout from './pages/Checkout/Checkout';
 import OrderSuccess from './pages/OrderSuccess/OrderSuccess';
+import Profile from './pages/Profile/Profile';
 import ProtectedRoute from './components/ProtectedRoute';
 import './App.css';
 import { CartProvider } from './context/CartContext';
@@ -75,6 +76,22 @@ function App() {
           element={
             <ProtectedRoute>
               <OrderSuccess />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/profile" 
+          element={
+            <ProtectedRoute>
+              <Profile />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/my-orders" 
+          element={
+            <ProtectedRoute>
+              <Profile />
             </ProtectedRoute>
           } 
         />

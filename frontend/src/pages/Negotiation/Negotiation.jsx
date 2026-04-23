@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { 
   ArrowLeft, Search, Heart, ShoppingCart, User, 
   LogOut, Menu, Send, Paperclip, Phone, Video, 
@@ -180,28 +181,36 @@ const Negotiation = () => {
 
             {/* Messages Area */}
             <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-[#F9FAFB]/50">
-              {messages.map((msg) => (
-                <div key={msg.id} className={`flex ${msg.sender === 'you' ? 'justify-end' : 'justify-start'}`}>
-                  <div className={`max-w-[80%] ${msg.sender === 'you' ? 'order-2' : ''}`}>
-                    <div className={`p-4 rounded-2xl text-sm font-medium leading-relaxed shadow-sm ${
-                      msg.sender === 'you' 
-                        ? 'bg-[#1E293B] text-white rounded-tr-none' 
-                        : 'bg-white text-gray-800 border border-gray-100 rounded-tl-none'
-                    }`}>
-                      {msg.text}
+              <AnimatePresence initial={false}>
+                {messages.map((msg) => (
+                  <motion.div 
+                    key={msg.id} 
+                    initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    transition={{ duration: 0.2 }}
+                    className={`flex ${msg.sender === 'you' ? 'justify-end' : 'justify-start'}`}
+                  >
+                    <div className={`max-w-[80%] ${msg.sender === 'you' ? 'order-2' : ''}`}>
+                      <div className={`p-4 rounded-2xl text-sm font-medium leading-relaxed shadow-sm ${
+                        msg.sender === 'you' 
+                          ? 'bg-[#1E293B] text-white rounded-tr-none' 
+                          : 'bg-white text-gray-800 border border-gray-100 rounded-tl-none'
+                      }`}>
+                        {msg.text}
+                      </div>
+                      <div className={`flex items-center gap-2 mt-2 text-[10px] font-black uppercase tracking-widest text-gray-400 ${msg.sender === 'you' ? 'justify-end' : 'justify-start'}`}>
+                        {msg.sender === 'seller' && <span className="text-gray-900 font-black">{product.seller?.name || 'TECHZONE'}</span>}
+                        <span>{msg.time}</span>
+                        {msg.sender === 'you' && (
+                          <span className={msg.status === 'read' ? 'text-blue-500' : 'text-gray-300'}>
+                            <Check size={12} strokeWidth={3} />
+                          </span>
+                        )}
+                      </div>
                     </div>
-                    <div className={`flex items-center gap-2 mt-2 text-[10px] font-black uppercase tracking-widest text-gray-400 ${msg.sender === 'you' ? 'justify-end' : 'justify-start'}`}>
-                      {msg.sender === 'seller' && <span className="text-gray-900 font-black">{product.seller?.name || 'TECHZONE'}</span>}
-                      <span>{msg.time}</span>
-                      {msg.sender === 'you' && (
-                        <span className={msg.status === 'read' ? 'text-blue-500' : 'text-gray-300'}>
-                          <Check size={12} strokeWidth={3} />
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              ))}
+                  </motion.div>
+                ))}
+              </AnimatePresence>
               <div ref={chatEndRef} />
             </div>
 

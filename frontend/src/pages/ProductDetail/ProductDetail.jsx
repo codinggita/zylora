@@ -64,7 +64,11 @@ const ProductDetail = () => {
           <div className="flex items-center gap-6 text-gray-300">
             <div className="hidden md:flex items-center gap-4">
               <Heart size={20} className="cursor-pointer hover:text-white" />
-              <User size={20} className="cursor-pointer hover:text-white" />
+              <User 
+                size={20} 
+                className="cursor-pointer hover:text-white" 
+                onClick={() => navigate('/profile')}
+              />
               <div 
                 className="relative cursor-pointer hover:text-white text-amber-500"
                 onClick={() => navigate('/cart')}

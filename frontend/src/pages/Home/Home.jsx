@@ -67,7 +67,11 @@ const Home = () => {
                 <ShoppingCart size={20} />
                 <span className="absolute -top-2 -right-2 bg-amber-500 text-[10px] text-white font-bold px-1 rounded-full">{cartCount}</span>
               </div>
-              <User size={20} className="lg:hidden cursor-pointer hover:text-white" />
+              <User 
+                size={20} 
+                className="cursor-pointer hover:text-white" 
+                onClick={() => navigate('/profile')}
+              />
             </div>
           </div>
         </div>

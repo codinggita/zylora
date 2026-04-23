@@ -26,6 +26,10 @@ const userSchema = new mongoose.Schema({
     enum: ['buyer', 'seller'],
     default: 'buyer'
   },
+  phone: {
+    type: String,
+    default: ''
+  },
   createdAt: {
     type: Date,
     default: Date.now
