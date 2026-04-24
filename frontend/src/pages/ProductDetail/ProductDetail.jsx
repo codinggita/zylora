@@ -9,11 +9,13 @@ import { useNavigate, Link, useParams } from 'react-router-dom';
 import axios from 'axios';
 import { products as staticProducts } from '../../data/products';
 import { useCart } from '../../context/CartContext';
+import { useWishlist } from '../../context/WishlistContext';
 
 const ProductDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { addToCart, cartCount } = useCart();
+  const { addToWishlist, removeFromWishlist, isInWishlist, wishlistCount } = useWishlist();
   
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -157,7 +159,12 @@ const ProductDetail = () => {
           </div>
           <div className="flex items-center gap-6 text-gray-300">
             <div className="hidden md:flex items-center gap-4">
-              <Heart size={20} className="cursor-pointer hover:text-white" />
+              <div className="relative cursor-pointer hover:text-white" onClick={() => navigate('/wishlist')}>
+                <Heart size={20} className={wishlistCount > 0 ? 'text-red-500 fill-red-500' : ''} />
+                {wishlistCount > 0 && (
+                  <span className="absolute -top-2 -right-2 bg-red-500 text-[10px] text-white font-bold px-1 rounded-full">{wishlistCount}</span>
+                )}
+              </div>
               <User 
                 size={20} 
                 className="cursor-pointer hover:text-white" 
@@ -181,9 +188,8 @@ const ProductDetail = () => {
       {/* Breadcrumbs */}
       <div className="max-w-7xl mx-auto px-4 py-4 flex items-center gap-2 text-xs text-gray-500">
         <Link to="/" className="hover:text-blue-600">Home</Link> <ChevronRight size={12} />
-        <span>Mobiles</span> <ChevronRight size={12} />
-        <span>Samsung</span> <ChevronRight size={12} />
-        <span className="text-gray-900 font-medium">Galaxy M34 5G</span>
+        <span>{product.category || 'Products'}</span> <ChevronRight size={12} />
+        <span className="text-gray-900 font-medium">{product.name}</span>
       </div>
 
       <main className="max-w-7xl mx-auto px-4 grid grid-cols-1 lg:grid-cols-12 gap-8 mt-4">
@@ -203,8 +209,11 @@ const ProductDetail = () => {
           </div>
           <div className="flex-1 bg-white rounded-2xl border border-gray-100 flex items-center justify-center p-8 relative order-1 md:order-2 aspect-square md:aspect-auto">
             <img src={product.images[selectedImg]} alt={product.name} className="max-w-full max-h-full object-contain" />
-            <button className="absolute top-4 right-4 p-2 bg-white rounded-full shadow-md text-gray-400 hover:text-red-500 transition-colors">
-              <Heart size={20} />
+            <button 
+              onClick={() => isInWishlist(product.id) ? removeFromWishlist(product.id) : addToWishlist(product.id)}
+              className={`absolute top-4 right-4 p-2 bg-white rounded-full shadow-md transition-colors ${isInWishlist(product.id) ? 'text-red-500' : 'text-gray-400 hover:text-red-500'}`}
+            >
+              <Heart size={20} fill={isInWishlist(product.id) ? "currentColor" : "none"} />
             </button>
           </div>
         </div>

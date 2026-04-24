@@ -98,11 +98,13 @@ app.use(cors());
 const auth = require('./routes/authRoutes');
 const orders = require('./routes/orderRoutes');
 const products = require('./routes/productRoutes');
+const wishlist = require('./routes/wishlistRoutes');
 
 // Mount routers
 app.use('/api/auth', auth);
 app.use('/api/orders', orders);
 app.use('/api/products', products);
+app.use('/api/wishlist', wishlist);
 
 const PORT = process.env.PORT || 5000;
 

@@ -6,11 +6,13 @@ import {
 } from 'lucide-react';
 import { products } from '../../data/products';
 import { useCart } from '../../context/CartContext';
+import { useWishlist } from '../../context/WishlistContext';
 
 const CategoryPage = () => {
   const { categoryName } = useParams();
   const navigate = useNavigate();
   const { cartCount } = useCart();
+  const { wishlistCount } = useWishlist();
 
   // Filter products by category (case-insensitive)
   const categoryProducts = products.filter(
@@ -50,13 +52,20 @@ const CategoryPage = () => {
               <span className="text-xs font-semibold group-hover:text-amber-500 flex items-center gap-1"><LogOut size={12} /> Logout</span>
             </button>
             <div className="flex items-center gap-4 text-gray-300">
-              <Heart size={20} className="cursor-pointer hover:text-white" />
+              <div className="relative cursor-pointer hover:text-white" onClick={() => navigate('/wishlist')}>
+                <Heart size={20} className={wishlistCount > 0 ? 'text-red-500 fill-red-500' : ''} />
+                {wishlistCount > 0 && (
+                  <span className="absolute -top-2 -right-2 bg-red-500 text-[10px] text-white font-bold px-1 rounded-full min-w-[18px] text-center">{wishlistCount}</span>
+                )}
+              </div>
               <div 
                 className="relative cursor-pointer hover:text-white text-amber-500"
                 onClick={() => navigate('/cart')}
               >
                 <ShoppingCart size={20} />
-                <span className="absolute -top-2 -right-2 bg-amber-500 text-[10px] text-white font-bold px-1 rounded-full">{cartCount}</span>
+                {cartCount > 0 && (
+                  <span className="absolute -top-2 -right-2 bg-amber-500 text-[10px] text-white font-bold px-1 rounded-full">{cartCount}</span>
+                )}
               </div>
             </div>
           </div>

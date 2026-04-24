@@ -8,10 +8,12 @@ import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
 import { products as staticProducts } from '../../data/products';
 import { useCart } from '../../context/CartContext';
+import { useWishlist } from '../../context/WishlistContext';
 
 const Home = () => {
   const navigate = useNavigate();
   const { cartCount } = useCart();
+  const { wishlistCount } = useWishlist();
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -100,20 +102,28 @@ const Home = () => {
                 <LogOut size={12} /> Logout
               </span>
             </button>
-            <div className="flex items-center gap-4 text-gray-300">
-              <Heart size={20} className="cursor-pointer hover:text-white" />
-              <div 
-                className="relative cursor-pointer hover:text-white"
-                onClick={() => navigate('/cart')}
-              >
-                <ShoppingCart size={20} />
-                <span className="absolute -top-2 -right-2 bg-amber-500 text-[10px] text-white font-bold px-1 rounded-full">{cartCount}</span>
+
+            <div className="flex items-center gap-4">
+              <div className="relative cursor-pointer hover:text-amber-500 transition-colors" onClick={() => navigate('/wishlist')}>
+                <Heart size={20} className={wishlistCount > 0 ? 'text-red-500 fill-red-500' : ''} />
+                {wishlistCount > 0 && (
+                  <span className="absolute -top-2 -right-2 bg-red-500 text-[10px] text-white font-bold px-1 rounded-full min-w-[18px] text-center">{wishlistCount}</span>
+                )}
               </div>
               <User 
                 size={20} 
-                className="cursor-pointer hover:text-white" 
+                className="cursor-pointer hover:text-amber-500 transition-colors" 
                 onClick={() => navigate('/profile')}
               />
+              <div 
+                className="relative cursor-pointer hover:text-amber-500 transition-colors"
+                onClick={() => navigate('/cart')}
+              >
+                <ShoppingCart size={20} />
+                {cartCount > 0 && (
+                  <span className="absolute -top-2 -right-2 bg-amber-500 text-[10px] text-white font-bold px-1 rounded-full min-w-[18px] text-center">{cartCount}</span>
+                )}
+              </div>
             </div>
           </div>
         </div>

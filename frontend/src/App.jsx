@@ -9,18 +9,22 @@ import Cart from './pages/Cart/Cart';
 import Checkout from './pages/Checkout/Checkout';
 import OrderSuccess from './pages/OrderSuccess/OrderSuccess';
 import Profile from './pages/Profile/Profile';
+import TrackOrder from './pages/TrackOrder/TrackOrder';
+import Wishlist from './pages/Wishlist/Wishlist';
 import AgriAuctions from './pages/AgriAuctions/AgriAuctions';
 import SellerDashboard from './pages/SellerDashboard/SellerDashboard';
 import SellerNegotiations from './pages/SellerNegotiations/SellerNegotiations';
 import ProtectedRoute from './components/ProtectedRoute';
 import './App.css';
 import { CartProvider } from './context/CartContext';
+import { WishlistProvider } from './context/WishlistContext';
 
 function App() {
   return (
-    <CartProvider>
-      <Router>
-        <Routes>
+    <WishlistProvider>
+      <CartProvider>
+        <Router>
+          <Routes>
           {/* Protected Route for Homepage */}
           <Route 
             path="/" 
@@ -99,6 +103,22 @@ function App() {
           } 
         />
         <Route 
+          path="/wishlist" 
+          element={
+            <ProtectedRoute>
+              <Wishlist />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/track-order/:id" 
+          element={
+            <ProtectedRoute>
+              <TrackOrder />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
           path="/agri-auctions" 
           element={
             <ProtectedRoute>
@@ -128,6 +148,7 @@ function App() {
         </Routes>
       </Router>
     </CartProvider>
+    </WishlistProvider>
   );
 }
 

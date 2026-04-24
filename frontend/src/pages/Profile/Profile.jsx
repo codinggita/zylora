@@ -3,16 +3,20 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   User, Package, MapPin, CreditCard, Settings, 
   LogOut, ChevronRight, Search, Heart, ShoppingCart,
-  Clock, CheckCircle, Truck, AlertCircle, Menu, ArrowLeft, LayoutDashboard
+  Clock, CheckCircle, Truck, AlertCircle, Menu, ArrowLeft,
+  MessageSquare, Bell, HelpCircle
 } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
 import { useCart } from '../../context/CartContext';
+import { useWishlist } from '../../context/WishlistContext';
 
 const Profile = () => {
   const navigate = useNavigate();
   const { cartCount } = useCart();
+  const { wishlistCount } = useWishlist();
   const [activeTab, setActiveTab] = useState('orders');
+  const [orderFilter, setOrderFilter] = useState('All');
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState(null);
@@ -118,95 +122,96 @@ const Profile = () => {
     <div className="min-h-screen bg-[#F8F9FB] text-gray-900 font-sans">
       {/* Header */}
       <header className="bg-[#0A1628] text-white sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between gap-4">
-          <div className="flex items-center gap-6">
-            <Link to="/" className="text-xl md:text-2xl font-bold tracking-tight text-white">ZyLora</Link>
-            <button className="hidden lg:flex items-center gap-2 text-sm font-medium text-gray-300 hover:text-white">
-              <Menu size={18} /> Categories
-            </button>
+        <div className="max-w-[1600px] mx-auto px-6 py-4 flex items-center justify-between gap-8">
+          <div className="flex items-center gap-10">
+            <Link to="/" className="text-2xl font-bold tracking-tight text-white">ZyLora</Link>
+            <nav className="hidden lg:flex items-center gap-6">
+              <Link to="/seller-dashboard" className="text-xs font-medium text-gray-400 hover:text-white transition-colors">Become a Seller</Link>
+              <Link to="/agri-auctions" className="text-xs font-medium text-gray-400 hover:text-white transition-colors">Agri Auctions</Link>
+            </nav>
           </div>
-          <div className="flex-1 max-w-2xl relative mx-4">
+          
+          <div className="flex-1 max-w-xl relative">
             <input 
               type="text" 
-              placeholder="Search orders, products..." 
-              className="w-full bg-[#111827] border border-gray-800 rounded-full py-2 px-10 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
+              placeholder="Search orders..." 
+              className="w-full bg-[#1F2937] border-none rounded-lg py-2.5 px-10 text-xs focus:outline-none focus:ring-1 focus:ring-gray-700 placeholder:text-gray-500"
             />
             <Search className="absolute left-3 top-2.5 text-gray-500" size={16} />
           </div>
-          <div className="flex items-center gap-6 text-gray-300">
-            <Heart size={20} className="cursor-pointer hover:text-white hidden md:block" />
-            <div className="relative cursor-pointer hover:text-white text-amber-500" onClick={() => navigate('/cart')}>
-              <ShoppingCart size={20} />
-              <span className="absolute -top-2 -right-2 bg-amber-500 text-[10px] text-white font-bold px-1 rounded-full">{cartCount}</span>
-            </div>
-            <button onClick={handleLogout} className="text-gray-400 hover:text-amber-500 transition-colors">
+
+          <div className="flex items-center gap-6 text-gray-400">
+            <button onClick={handleLogout} className="hover:text-amber-500 transition-colors">
               <LogOut size={20} />
             </button>
+            <User size={20} className="cursor-pointer hover:text-amber-500 transition-colors" onClick={() => navigate('/profile')} />
+            <div className="relative cursor-pointer hover:text-amber-500 transition-colors" onClick={() => navigate('/wishlist')}>
+              <Heart size={20} className={wishlistCount > 0 ? 'text-red-500 fill-red-500' : ''} />
+              {wishlistCount > 0 && (
+                <span className="absolute -top-2 -right-2 bg-red-500 text-[10px] text-white font-bold px-1 rounded-full min-w-[18px] text-center">{wishlistCount}</span>
+              )}
+            </div>
+            <div className="relative cursor-pointer hover:text-amber-500 transition-colors" onClick={() => navigate('/cart')}>
+              <ShoppingCart size={20} />
+              {cartCount > 0 && (
+                <span className="absolute -top-2 -right-2 bg-amber-500 text-[10px] text-white font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center">{cartCount}</span>
+              )}
+            </div>
           </div>
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-4 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+      <main className="max-w-[1600px] mx-auto px-6 py-8">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
           
           {/* Sidebar */}
-          <aside className="lg:col-span-3 space-y-6">
+          <aside className="lg:col-span-3">
             <motion.div 
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
-              className="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm"
+              className="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm mb-6"
             >
-              <div className="flex flex-col items-center text-center">
-                <div className="w-20 h-20 bg-[#0A1628] rounded-2xl flex items-center justify-center text-white text-2xl font-bold mb-4 shadow-lg">
-                  {user?.name?.charAt(0) || 'U'}
+              <div className="flex items-center gap-4 mb-10">
+                <div className="w-12 h-12 bg-black rounded-full flex items-center justify-center text-white text-sm font-bold shadow-md">
+                  {user?.name?.split(' ').map(n => n[0]).join('') || 'U'}
                 </div>
-                <h2 className="text-lg font-bold text-gray-900">{user?.name || 'User Name'}</h2>
-                <p className="text-xs text-gray-500 font-medium mb-6">{user?.email || 'user@example.com'}</p>
-                <div className="bg-amber-50 text-amber-600 text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-widest border border-amber-100">
-                  {user?.role === 'seller' ? 'Business Seller' : 'Priority Member'}
+                <div>
+                  <h2 className="text-sm font-bold text-gray-900">{user?.name || 'User Name'}</h2>
+                  <p className="text-[10px] text-gray-500 font-medium">
+                    {user?.role === 'seller' ? 'Pro Seller' : 'Pro Buyer'}
+                  </p>
                 </div>
-                {user?.role === 'seller' && (
-                  <Link 
-                    to="/seller-dashboard" 
-                    className="mt-4 w-full flex items-center justify-center gap-2 py-2.5 bg-blue-600 text-white text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-blue-700 transition-all shadow-md shadow-blue-200"
-                  >
-                    <LayoutDashboard size={14} /> Go to Dashboard
-                  </Link>
-                )}
               </div>
 
-              <nav className="mt-8 space-y-1">
+              <nav className="space-y-1">
                 {[
                   { id: 'orders', label: 'My Orders', icon: Package },
+                  { id: 'wishlist', label: 'Wishlist', icon: Heart },
+                  { id: 'negotiations', label: 'My Negotiations', icon: MessageSquare },
                   { id: 'addresses', label: 'Addresses', icon: MapPin },
-                  { id: 'payment', label: 'Payment Methods', icon: CreditCard },
-                  { id: 'settings', label: 'Account Settings', icon: Settings },
+                  { id: 'payment', label: 'Payments', icon: CreditCard },
+                  { id: 'notifications', label: 'Notifications', icon: Bell },
+                  { id: 'settings', label: 'Settings', icon: Settings },
+                  { id: 'help', label: 'Help', icon: HelpCircle },
                 ].map((item) => (
                   <button
                     key={item.id}
                     onClick={() => setActiveTab(item.id)}
-                    className={`w-full flex items-center justify-between p-3 rounded-xl transition-all group ${
+                    className={`w-full flex items-center gap-4 px-4 py-3 rounded-lg transition-all group ${
                       activeTab === item.id 
-                        ? 'bg-[#0A1628] text-white shadow-md' 
-                        : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'
+                        ? 'bg-blue-50 text-blue-600' 
+                        : 'text-gray-400 hover:bg-gray-50 hover:text-gray-900'
                     }`}
                   >
-                    <div className="flex items-center gap-3">
-                      <item.icon size={18} />
-                      <span className="text-xs font-bold uppercase tracking-widest">{item.label}</span>
-                    </div>
-                    <ChevronRight size={14} className={activeTab === item.id ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'} />
+                    <item.icon size={18} className={activeTab === item.id ? 'text-blue-600' : 'text-gray-400 group-hover:text-gray-900'} />
+                    <span className="text-xs font-semibold">{item.label}</span>
+                    {activeTab === item.id && (
+                      <div className="ml-auto w-1 h-5 bg-amber-500 rounded-full" />
+                    )}
                   </button>
                 ))}
               </nav>
             </motion.div>
-
-            <button 
-              onClick={handleLogout}
-              className="w-full flex items-center justify-center gap-2 p-4 text-xs font-bold text-red-500 hover:bg-red-50 rounded-2xl transition-all border border-transparent hover:border-red-100"
-            >
-              <LogOut size={16} /> LOGOUT SESSION
-            </button>
           </aside>
 
           {/* Main Content */}
@@ -218,22 +223,30 @@ const Profile = () => {
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -10 }}
-                  className="space-y-6"
+                  className="space-y-8"
                 >
                   <div className="flex items-center justify-between">
-                    <h2 className="text-2xl font-serif font-black text-gray-900">Order History</h2>
-                    <div className="flex gap-2">
-                      <select className="bg-white border border-gray-100 rounded-lg px-4 py-2 text-xs font-bold text-gray-500 focus:outline-none shadow-sm">
-                        <option>Last 3 Months</option>
-                        <option>2023 Orders</option>
-                        <option>Older</option>
-                      </select>
+                    <h2 className="text-3xl font-bold text-gray-900">My Orders</h2>
+                    <div className="flex bg-white border border-gray-100 rounded-lg p-1 shadow-sm">
+                      {['All', 'Processing', 'Shipped', 'Delivered'].map((filter) => (
+                        <button
+                          key={filter}
+                          onClick={() => setOrderFilter(filter)}
+                          className={`px-6 py-2 rounded-md text-xs font-bold transition-all ${
+                            orderFilter === filter 
+                              ? 'bg-black text-white shadow-md' 
+                              : 'text-gray-500 hover:text-gray-900'
+                          }`}
+                        >
+                          {filter}
+                        </button>
+                      ))}
                     </div>
                   </div>
 
                   {loading ? (
                     <div className="flex flex-col items-center justify-center py-20 text-gray-400">
-                      <div className="w-8 h-8 border-4 border-gray-200 border-t-[#0A1628] rounded-full animate-spin mb-4"></div>
+                      <div className="w-8 h-8 border-4 border-gray-200 border-t-black rounded-full animate-spin mb-4"></div>
                       <p className="text-xs font-bold uppercase tracking-widest">Loading your orders...</p>
                     </div>
                   ) : orders.length === 0 ? (
@@ -245,72 +258,101 @@ const Profile = () => {
                       <p className="text-sm text-gray-500 mb-6">Looks like you haven't placed any orders recently.</p>
                       <button 
                         onClick={() => navigate('/')}
-                        className="bg-[#0A1628] text-white px-8 py-3 rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-black transition-all shadow-lg shadow-gray-200"
+                        className="bg-black text-white px-8 py-3 rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-gray-800 transition-all shadow-lg"
                       >
                         Start Shopping
                       </button>
                     </div>
                   ) : (
-                    <div className="space-y-4">
-                      {orders.map((order) => (
+                    <div className="space-y-6">
+                      {orders.filter(o => orderFilter === 'All' || o.status.toLowerCase() === orderFilter.toLowerCase()).length === 0 ? (
+                        <div className="bg-white rounded-2xl border border-gray-100 p-12 text-center shadow-sm">
+                          <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <Clock size={32} className="text-gray-300" />
+                          </div>
+                          <h3 className="text-lg font-bold text-gray-900 mb-2">No {orderFilter === 'All' ? '' : orderFilter} Orders</h3>
+                          <p className="text-sm text-gray-500">
+                            {orderFilter === 'Processing' ? 'You don\'t have any orders being processed right now.' :
+                             orderFilter === 'Shipped' ? 'None of your orders are currently in transit.' :
+                             orderFilter === 'Delivered' ? 'You haven\'t received any orders yet.' :
+                             'You haven\'t placed any orders yet.'}
+                          </p>
+                        </div>
+                      ) : (
+                        orders
+                          .filter(o => orderFilter === 'All' || o.status.toLowerCase() === orderFilter.toLowerCase())
+                          .map((order) => (
                         <motion.div 
                           key={order._id}
                           layout
-                          className="bg-white rounded-2xl border border-gray-100 overflow-hidden shadow-sm hover:shadow-md transition-shadow"
+                          className="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm hover:shadow-md transition-all"
                         >
-                          <div className="p-4 md:p-6 flex flex-wrap items-center justify-between gap-4 border-b border-gray-50">
-                            <div className="flex items-center gap-4">
-                              <div className={`flex items-center gap-2 px-3 py-1 rounded-full border text-[10px] font-black uppercase tracking-widest ${getStatusClass(order.status)}`}>
-                                {getStatusIcon(order.status)}
-                                {order.status}
+                          {order.orderItems.map((item, idx) => (
+                            <div key={idx} className="flex flex-col md:flex-row gap-8">
+                              <div className="w-40 h-40 bg-gray-50 rounded-2xl flex items-center justify-center p-4 border border-gray-100 flex-shrink-0">
+                                <img src={item.image} alt={item.name} className="max-w-full max-h-full object-contain" />
                               </div>
-                              <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
-                                Placed on {new Date(order.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
-                              </span>
-                            </div>
-                            <div className="text-right">
-                              <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-1">Order ID</span>
-                              <span className="text-xs font-bold text-gray-900 font-mono">#{order._id.substring(order._id.length - 8).toUpperCase()}</span>
-                            </div>
-                          </div>
-                          
-                          <div className="p-4 md:p-6">
-                            <div className="flex flex-col md:flex-row gap-6">
-                              <div className="flex-1 space-y-4">
-                                {order.orderItems.map((item, idx) => (
-                                  <div key={idx} className="flex gap-4">
-                                    <div className="w-16 h-16 bg-gray-50 rounded-lg flex items-center justify-center p-2 border border-gray-100 flex-shrink-0">
-                                      <img src={item.image} alt={item.name} className="max-w-full max-h-full object-contain" />
-                                    </div>
-                                    <div className="flex-1 min-w-0">
-                                      <h4 className="text-sm font-bold text-gray-900 truncate">{item.name}</h4>
-                                      <p className="text-xs text-gray-500 mt-1">Quantity: {item.quantity} • Price: ₹{item.price.toLocaleString()}</p>
-                                    </div>
+                              
+                              <div className="flex-1 flex flex-col">
+                                <div className="flex justify-between items-start mb-2">
+                                  <div>
+                                    <h4 className="text-lg font-bold text-gray-900 mb-1">{item.name}</h4>
+                                    <p className="text-xs text-gray-500">
+                                      Order #ZY-{order._id.substring(order._id.length - 5).toUpperCase()} • Placed on {new Date(order.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                                    </p>
                                   </div>
-                                ))}
-                              </div>
-                              <div className="md:w-48 space-y-4">
-                                <div className="bg-gray-50 rounded-xl p-4">
-                                  <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-1">Total Amount</span>
-                                  <span className="text-lg font-black text-gray-900">₹{order.totalPrice.toLocaleString()}</span>
+                                  <div className="flex flex-col items-end gap-2">
+                                    <span className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border ${
+                                      order.status.toLowerCase() === 'shipped' ? 'bg-amber-100 text-amber-700 border-amber-200' :
+                                      order.status.toLowerCase() === 'delivered' ? 'bg-green-100 text-green-700 border-green-200' :
+                                      'bg-blue-100 text-blue-700 border-blue-200'
+                                    }`}>
+                                      {order.status}
+                                    </span>
+                                    {order.isNegotiated && (
+                                      <span className="bg-[#10B981] text-white text-[10px] font-black px-4 py-1.5 rounded-full uppercase tracking-widest">
+                                        Negotiated Price
+                                      </span>
+                                    )}
+                                  </div>
                                 </div>
-                                <button 
-                                  onClick={() => navigate('/order-success', { state: { order } })}
-                                  className="w-full border border-gray-200 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-gray-50 transition-all"
-                                >
-                                  View Details
-                                </button>
+
+                                <div className="mt-4 flex items-baseline gap-3">
+                                  <span className="text-xl font-bold text-gray-900">₹{item.price.toLocaleString()}</span>
+                                  {item.originalPrice && (
+                                    <span className="text-sm text-gray-400 line-through">₹{item.originalPrice.toLocaleString()}</span>
+                                  )}
+                                </div>
+
+                                <div className="mt-auto pt-6 flex flex-wrap gap-3">
+                                  <button 
+                                    onClick={() => navigate(`/track-order/${order._id}`)}
+                                    className="bg-black text-white px-6 py-2.5 rounded-lg text-xs font-bold hover:bg-gray-800 transition-colors"
+                                  >
+                                    Track Order
+                                  </button>
+                                  <button className="border border-gray-200 text-gray-900 px-6 py-2.5 rounded-lg text-xs font-bold hover:bg-gray-50 transition-colors">
+                                    Return
+                                  </button>
+                                  <button className="border border-gray-200 text-gray-900 px-6 py-2.5 rounded-lg text-xs font-bold hover:bg-gray-50 transition-colors">
+                                    Review
+                                  </button>
+                                  <button className="bg-amber-500 text-white px-6 py-2.5 rounded-lg text-xs font-bold hover:bg-amber-600 transition-colors">
+                                    Buy Again
+                                  </button>
+                                </div>
                               </div>
                             </div>
-                          </div>
+                          ))}
                         </motion.div>
-                      ))}
-                    </div>
-                  )}
-                </motion.div>
-              )}
+                      ))
+                    )}
+                  </div>
+                )}
+              </motion.div>
+            )}
 
-              {activeTab === 'settings' && (
+            {activeTab === 'settings' && (
                 <motion.div
                   key="settings"
                   initial={{ opacity: 0, y: 10 }}
@@ -417,21 +459,26 @@ const Profile = () => {
                 </motion.div>
               )}
 
-              {['addresses', 'payment'].includes(activeTab) && (
+              {['wishlist', 'negotiations', 'notifications', 'help', 'addresses', 'payment'].includes(activeTab) && (
                 <motion.div
-                  key="other"
+                  key="placeholders"
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   className="bg-white rounded-2xl border border-gray-100 p-12 text-center shadow-sm"
                 >
                   <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4">
-                    {activeTab === 'addresses' ? <MapPin size={32} className="text-gray-300" /> : <CreditCard size={32} className="text-gray-300" />}
+                    {activeTab === 'wishlist' ? <Heart size={32} className="text-gray-300" /> :
+                     activeTab === 'negotiations' ? <MessageSquare size={32} className="text-gray-300" /> :
+                     activeTab === 'notifications' ? <Bell size={32} className="text-gray-300" /> :
+                     activeTab === 'help' ? <HelpCircle size={32} className="text-gray-300" /> :
+                     activeTab === 'addresses' ? <MapPin size={32} className="text-gray-300" /> : 
+                     <CreditCard size={32} className="text-gray-300" />}
                   </div>
-                  <h3 className="text-lg font-bold text-gray-900 mb-2">{activeTab.charAt(0).toUpperCase() + activeTab.slice(1)} Module</h3>
+                  <h3 className="text-lg font-bold text-gray-900 mb-2">{activeTab.charAt(0).toUpperCase() + activeTab.slice(1)} Section</h3>
                   <p className="text-sm text-gray-500 mb-6">This section is currently under development.</p>
                   <button 
                     onClick={() => setActiveTab('orders')}
-                    className="text-[#0A1628] font-bold text-xs uppercase tracking-widest flex items-center justify-center gap-2 mx-auto hover:gap-3 transition-all"
+                    className="text-black font-bold text-xs uppercase tracking-widest flex items-center justify-center gap-2 mx-auto hover:gap-3 transition-all"
                   >
                     <ArrowLeft size={14} /> Back to My Orders
                   </button>
@@ -442,17 +489,38 @@ const Profile = () => {
         </div>
       </main>
 
-      {/* Footer (Simplified) */}
-      <footer className="bg-[#0A1628] text-white mt-24 pt-16 pb-8 border-t border-gray-800">
-        <div className="max-w-7xl mx-auto px-4 text-center">
-          <h2 className="text-2xl font-bold tracking-tight mb-4">ZyLora</h2>
-          <p className="text-gray-400 text-[10px] font-medium uppercase tracking-[0.2em] mb-8">Premium Agricultural & Electronic Marketplace</p>
-          <div className="flex justify-center gap-8 text-[8px] text-gray-500 font-black uppercase tracking-widest">
-            <span className="hover:text-white cursor-pointer transition-colors">Support</span>
-            <span className="hover:text-white cursor-pointer transition-colors">Privacy</span>
-            <span className="hover:text-white cursor-pointer transition-colors">Terms</span>
+      {/* Footer */}
+      <footer className="bg-[#0A1628] text-white mt-24 py-20 border-t border-gray-800">
+        <div className="max-w-[1600px] mx-auto px-6 grid grid-cols-1 md:grid-cols-4 gap-12">
+          <div className="col-span-1 md:col-span-1">
+            <h2 className="text-3xl font-bold tracking-tight mb-6">ZyLora</h2>
+            <p className="text-gray-400 text-xs leading-relaxed max-w-xs font-medium">
+              Premium agricultural and retail marketplace for professionals.
+            </p>
           </div>
-          <p className="text-[8px] text-gray-600 mt-12 uppercase tracking-widest">© 2024 ZYLORA. ALL RIGHTS RESERVED.</p>
+          
+          <div>
+            <h3 className="text-amber-500 text-[10px] font-black uppercase tracking-[0.2em] mb-6">Platform</h3>
+            <ul className="space-y-4 text-xs font-medium text-gray-400">
+              <li className="hover:text-white cursor-pointer transition-colors">About Zylora</li>
+              <li className="hover:text-white cursor-pointer transition-colors">Agri Auctions</li>
+              <li className="hover:text-white cursor-pointer transition-colors">Bulk Discounts</li>
+            </ul>
+          </div>
+
+          <div>
+            <h3 className="text-amber-500 text-[10px] font-black uppercase tracking-[0.2em] mb-6">Support</h3>
+            <ul className="space-y-4 text-xs font-medium text-gray-400">
+              <li className="hover:text-white cursor-pointer transition-colors">Help Center</li>
+              <li className="hover:text-white cursor-pointer transition-colors">Shipping Policy</li>
+              <li className="hover:text-white cursor-pointer transition-colors">Returns</li>
+            </ul>
+          </div>
+
+          <div>
+            <h3 className="text-amber-500 text-[10px] font-black uppercase tracking-[0.2em] mb-6">Legal</h3>
+            <p className="text-gray-500 text-[10px] font-medium">© 2024 Zylora. All rights reserved.</p>
+          </div>
         </div>
       </footer>
     </div>

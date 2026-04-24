@@ -6,10 +6,12 @@ import {
 } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useCart } from '../../context/CartContext';
+import { useWishlist } from '../../context/WishlistContext';
 
 const Cart = () => {
   const navigate = useNavigate();
   const { cartItems, removeFromCart, updateQuantity, cartCount } = useCart();
+  const { wishlistCount } = useWishlist();
   
   const calculateTotal = () => {
     const subtotal = cartItems.reduce((acc, item) => acc + (item.price * item.quantity), 0);
@@ -58,11 +60,18 @@ const Cart = () => {
           <div className="flex items-center gap-6 text-gray-300">
             <div className="hidden md:flex items-center gap-4">
               <LogOut size={20} className="cursor-pointer hover:text-white" onClick={handleLogout} />
-              <User size={20} className="cursor-pointer hover:text-white" />
-              <Heart size={20} className="cursor-pointer hover:text-white" />
+              <User size={20} className="cursor-pointer hover:text-white" onClick={() => navigate('/profile')} />
+              <div className="relative cursor-pointer hover:text-white" onClick={() => navigate('/wishlist')}>
+                <Heart size={20} className={wishlistCount > 0 ? 'text-red-500 fill-red-500' : ''} />
+                {wishlistCount > 0 && (
+                  <span className="absolute -top-2 -right-2 bg-red-500 text-[10px] text-white font-bold px-1 rounded-full min-w-[18px] text-center">{wishlistCount}</span>
+                )}
+              </div>
               <div className="relative cursor-pointer text-amber-500">
                 <ShoppingCart size={20} />
-                <span className="absolute -top-2 -right-2 bg-amber-500 text-[10px] text-white font-bold px-1 rounded-full">{cartCount}</span>
+                {cartCount > 0 && (
+                  <span className="absolute -top-2 -right-2 bg-amber-500 text-[10px] text-white font-bold px-1 rounded-full">{cartCount}</span>
+                )}
               </div>
             </div>
           </div>
