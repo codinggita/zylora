@@ -1,16 +1,54 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Search, Menu, ShoppingCart, Heart, User, 
   ChevronRight, Clock, Star, ShieldCheck, 
-  Truck, RotateCcw, Headset, ArrowRight, LogOut
+  Truck, RotateCcw, Headset, ArrowRight, LogOut, CheckCircle2
 } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
-import { products } from '../../data/products';
+import axios from 'axios';
+import { products as staticProducts } from '../../data/products';
 import { useCart } from '../../context/CartContext';
 
 const Home = () => {
   const navigate = useNavigate();
   const { cartCount } = useCart();
+  const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  const BACKEND_URL = window.location.hostname === 'localhost' 
+    ? 'http://localhost:5000' 
+    : 'https://zylora-3.onrender.com';
+
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        const res = await axios.get(`${BACKEND_URL}/api/products`);
+        if (res.data.success) {
+          // Combine static products with dynamic ones, or just use dynamic
+          // For now, let's show dynamic products first, then static ones if any
+          const dynamicProducts = res.data.data.map(p => ({
+            id: p._id,
+            name: p.name,
+            price: p.price,
+            oldPrice: p.price * 1.2, // Fake discount for display
+            images: p.images,
+            rating: 4.5, // Default rating
+            discount: '15% OFF',
+            isDynamic: true
+          }));
+          
+          setProducts([...dynamicProducts, ...staticProducts]);
+        }
+      } catch (err) {
+        console.error('Error fetching products:', err);
+        setProducts(staticProducts);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProducts();
+  }, [BACKEND_URL]);
 
   const handleLogout = () => {
     localStorage.removeItem('token');
@@ -163,17 +201,23 @@ const Home = () => {
               ENDS IN: 12h : 44m : 24s
             </div>
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-            {products.map((prod, i) => (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-x-8 gap-y-12">
+            {products?.map((prod, i) => (
               <div 
                 key={i} 
                 className="group cursor-pointer"
                 onClick={() => navigate(`/product/${prod.id}`)}
               >
                 <div className="relative aspect-square bg-[#F3F4F6] rounded-xl overflow-hidden mb-4">
-                  <img src={prod.images[0]} alt={prod.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                  <img src={prod.images?.[0] || 'https://via.placeholder.com/300'} alt={prod.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                   <span className="absolute top-3 left-3 bg-amber-500 text-white text-[10px] font-bold px-2 py-1 rounded">{prod.discount}</span>
-                  <button className="absolute bottom-3 right-3 bg-white p-2 rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-opacity translate-y-2 group-hover:translate-y-0 duration-300">
+                  <button 
+                    className="absolute bottom-3 right-3 bg-white p-2 rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-opacity translate-y-2 group-hover:translate-y-0 duration-300"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      navigate(`/product/${prod.id}`);
+                    }}
+                  >
                     <ShoppingCart size={18} className="text-gray-900" />
                   </button>
                 </div>
@@ -228,7 +272,7 @@ const Home = () => {
           <span className="text-amber-500 font-bold">👑</span>
           <h2 className="text-xl font-bold">Top-Rated Products</h2>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           {[
             { name: 'Nike Pegasus 40', price: '11,995', img: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&q=80&w=400', tag: 'TRUSTED SELLER' },
             { name: 'Prestige Pressure Cooker', price: '1,795', img: 'https://images.unsplash.com/photo-1584990344610-b2b12f4d2bca?auto=format&fit=crop&q=80&w=400', tag: 'PREMIUM QUALITY' }
@@ -381,10 +425,5 @@ const Home = () => {
     </div>
   );
 };
-
-// Internal components to handle lucide-react name differences
-const CheckCircle2 = ({ size }) => (
-  <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg>
-);
 
 export default Home;

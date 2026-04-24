@@ -31,7 +31,14 @@ const Login = () => {
       
       if (res.data.success) {
         localStorage.setItem('token', res.data.token);
-        navigate('/');
+        localStorage.setItem('user', JSON.stringify(res.data.user));
+        
+        // Redirect based on role
+        if (res.data.user.role === 'seller') {
+          navigate('/seller-dashboard');
+        } else {
+          navigate('/');
+        }
       }
     } catch (err) {
       setError(err.response?.data?.error || 'Login failed. Please check your credentials.');

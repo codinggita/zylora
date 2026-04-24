@@ -13,7 +13,7 @@ const orderSchema = new mongoose.Schema({
       image: { type: String, required: true },
       price: { type: Number, required: true },
       product: {
-        type: Number, // Using Number because frontend products.js uses numeric IDs
+        type: String, // Can be numeric (static) or ObjectID string (dynamic)
         required: true
       }
     }

@@ -30,6 +30,18 @@ const userSchema = new mongoose.Schema({
     type: String,
     default: ''
   },
+  storeName: {
+    type: String,
+    default: ''
+  },
+  gstNumber: {
+    type: String,
+    default: ''
+  },
+  businessAddress: {
+    type: String,
+    default: ''
+  },
   createdAt: {
     type: Date,
     default: Date.now
