@@ -24,7 +24,7 @@ const ProductDetail = () => {
   const [activeTab, setActiveTab] = useState('description');
 
   const BACKEND_URL = window.location.hostname === 'localhost' 
-    ? 'http://localhost:5000' 
+    ? 'http://localhost:5001' 
     : 'https://zylora-3.onrender.com';
 
   useEffect(() => {

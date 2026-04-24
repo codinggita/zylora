@@ -4,55 +4,148 @@ import {
   ArrowLeft, Search, Heart, ShoppingCart, User, 
   LogOut, Menu, Send, Paperclip, Phone, Video, 
   CheckCircle, Clock, ShieldCheck, Tag, Info,
-  Check
+  Check,
+  Edit2
 } from 'lucide-react';
 import { useNavigate, Link, useParams } from 'react-router-dom';
 import { products } from '../../data/products';
 import { useCart } from '../../context/CartContext';
 import { io } from 'socket.io-client';
+import axios from 'axios';
 
 const Negotiation = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { cartCount } = useCart();
-  const product = products.find(p => p.id === parseInt(id)) || products[0];
+  const [product, setProduct] = useState(null);
+  const [loading, setLoading] = useState(true);
   
-  const [messages, setMessages] = useState([
-    { id: 1, sender: 'you', text: "Hello, I'm interested in the " + product.name + ". Would you consider ₹" + (product.price * 0.85).toLocaleString() + " for a quick deal?", time: '10:45 AM', status: 'read' },
-    { id: 2, sender: 'seller', text: "Hi! Thanks for reaching out. ₹" + (product.price * 0.85).toLocaleString() + " is a bit low given the condition. How about ₹" + (product.price * 0.95).toLocaleString() + "?", time: '10:48 AM' },
-    { id: 3, sender: 'you', text: "Can we meet in the middle at ₹" + (product.price * 0.9).toLocaleString() + "? I can complete the payment immediately.", time: '10:52 AM', status: 'read' },
-    { id: 4, sender: 'seller', text: "I agree to ₹" + (product.price * 0.9).toLocaleString() + ". It's a fair price. Sending over the formal offer now.", time: '10:55 AM' },
-  ]);
+  const [messages, setMessages] = useState([]);
 
   const [newMessage, setNewMessage] = useState('');
-  const [dealStatus, setDealStatus] = useState('DEAL AGREED'); // PENDING, COUNTERED, AGREED
-  const [agreedPrice, setAgreedPrice] = useState(product.price * 0.9);
+  const [dealStatus, setDealStatus] = useState('PENDING'); // PENDING, COUNTERED, OFFER_SENT, AGREED, DECLINED
+  const [agreedPrice, setAgreedPrice] = useState(0);
   const chatEndRef = useRef(null);
   const socket = useRef(null);
+  const [userRole, setUserRole] = useState('buyer');
 
-  const scrollToBottom = () => {
-    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  const scrollToBottom = (force = false) => {
+    const messagesContainer = chatEndRef.current?.parentElement;
+    if (messagesContainer) {
+      const { scrollTop, scrollHeight, clientHeight } = messagesContainer;
+      const isNearBottom = scrollHeight - scrollTop - clientHeight < 150;
+      if (force || isNearBottom) {
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+      }
+    }
   };
 
   useEffect(() => {
-    scrollToBottom();
+    const lastMessage = messages[messages.length - 1];
+    const isMyMessage = lastMessage?.sender === 'you' || lastMessage?.sender === 'system';
+    scrollToBottom(isMyMessage);
   }, [messages]);
 
+  const userRoleRef = useRef('buyer');
+
   useEffect(() => {
-    // Determine backend URL
+    // Get user role
+    const user = JSON.parse(localStorage.getItem('user'));
+    if (user && user.role) {
+      setUserRole(user.role);
+      userRoleRef.current = user.role;
+    }
+
     const BACKEND_URL = window.location.hostname === 'localhost' 
-      ? 'http://localhost:5000' 
+      ? 'http://localhost:5001' 
       : 'https://zylora-3.onrender.com';
+
+    const fetchProduct = async () => {
+      try {
+        // 1. Try static products first (numeric ID)
+        const staticProd = products.find(p => p.id === parseInt(id));
+        if (staticProd) {
+          setProduct(staticProd);
+          setAgreedPrice(staticProd.price * 0.9);
+          setMessages([
+            { id: 1, sender: 'you', text: `Hello, I'm interested in the ${staticProd.name}. Would you consider ₹${(staticProd.price * 0.85).toLocaleString()} for a quick deal?`, time: '10:45 AM', status: 'read' },
+            { id: 2, sender: 'seller', text: `Hi! Thanks for reaching out. ₹${(staticProd.price * 0.85).toLocaleString()} is a bit low given the condition. How about ₹${(staticProd.price * 0.95).toLocaleString()}?`, time: '10:48 AM' }
+          ]);
+          setLoading(false);
+          return;
+        }
+
+        // 2. Try backend (MongoDB _id)
+        const res = await axios.get(`${BACKEND_URL}/api/products/${id}`);
+        if (res.data.success) {
+          const p = res.data.data;
+          const formattedProd = {
+            id: p._id,
+            name: p.name,
+            price: p.price,
+            images: p.images || ['https://via.placeholder.com/300'],
+            seller: p.seller || { name: 'Verified Seller' },
+            brand: p.brand || 'Premium'
+          };
+          setProduct(formattedProd);
+          setAgreedPrice(formattedProd.price * 0.9);
+          setMessages([
+            { id: 1, sender: 'you', text: `Hello, I'm interested in the ${formattedProd.name}. Would you consider ₹${(formattedProd.price * 0.85).toLocaleString()} for a quick deal?`, time: '10:45 AM', status: 'read' }
+          ]);
+        }
+      } catch (err) {
+        console.error('Error fetching product:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProduct();
 
     // Initialize socket
     socket.current = io(BACKEND_URL);
 
     socket.current.on('connect', () => {
       console.log('Connected to WebSocket server');
+      // Join a specific room for this product negotiation
+      socket.current.emit('join_negotiation', id);
     });
 
     socket.current.on('receive_message', (message) => {
-      setMessages(prev => [...prev, { ...message, sender: 'seller' }]);
+      console.log('Message received from socket:', message);
+      const displaySender = message.sender === userRoleRef.current ? 'you' : message.sender;
+
+      setMessages(prev => [...prev, {
+        id: Date.now(),
+        sender: displaySender,
+        text: message.text,
+        time: message.time,
+        status: 'received'
+      }]);
+    });
+
+    socket.current.on('price_update', (data) => {
+      console.log('Price update received:', data);
+      if (data.agreedPrice !== undefined) {
+        setAgreedPrice(data.agreedPrice);
+      }
+    });
+
+    socket.current.on('deal_update', (data) => {
+      console.log('Deal update received:', data);
+      if (data.status) {
+        setDealStatus(data.status);
+        
+        // Add a system message to the chat
+        const systemMsg = {
+          id: Date.now(),
+          sender: 'system',
+          text: `Deal status updated to: ${data.status} at ₹${data.price}`,
+          time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          isSystem: true
+        };
+        setMessages(prev => [...prev, systemMsg]);
+      }
     });
 
     return () => {
@@ -79,17 +172,61 @@ const Negotiation = () => {
       socket.current.emit('send_message', {
         productId: id,
         text: newMessage,
-        sender: 'buyer'
+        sender: userRole,
+        time: msg.time
       });
     }
 
     setNewMessage('');
   };
 
+  const handleUpdateDealStatus = (status) => {
+    setDealStatus(status);
+    if (socket.current) {
+      socket.current.emit('deal_update', {
+        productId: id,
+        status: status,
+        price: agreedPrice,
+        sender: userRole
+      });
+    }
+
+    // Add a local system message
+    const systemMsg = {
+      id: Date.now(),
+      sender: 'system',
+      text: `You ${status === 'AGREED' ? 'accepted' : status === 'DECLINED' ? 'declined' : status === 'OFFER_SENT' ? 'sent a formal offer' : 'updated'} the deal at ₹${agreedPrice}`,
+      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      isSystem: true
+    };
+    setMessages(prev => [...prev, systemMsg]);
+  };
+
   const handleLogout = () => {
     localStorage.removeItem('token');
     navigate('/login');
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#F8F9FB]">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
+
+  if (!product) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#F8F9FB]">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold text-gray-900">Product Not Found</h2>
+          <button onClick={() => navigate('/')} className="mt-4 bg-blue-600 text-white px-6 py-2 rounded-lg">
+            Go Home
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#F8F9FB] text-gray-900 font-sans">
@@ -98,7 +235,7 @@ const Negotiation = () => {
         <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between gap-4">
           <div className="flex items-center gap-6">
             <Link to="/" className="text-xl md:text-2xl font-bold tracking-tight text-white">ZyLora</Link>
-            <button className="hidden lg:flex items-center gap-2 text-sm font-medium text-gray-300 hover:text-white">
+            <button type="button" className="hidden lg:flex items-center gap-2 text-sm font-medium text-gray-300 hover:text-white">
               <Menu size={18} /> Categories
             </button>
           </div>
@@ -119,7 +256,7 @@ const Negotiation = () => {
                 <span className="absolute -top-2 -right-2 bg-amber-500 text-[10px] text-white font-bold px-1 rounded-full">{cartCount}</span>
               </div>
             </div>
-            <button onClick={handleLogout} className="text-gray-400 hover:text-amber-500 transition-colors">
+            <button type="button" onClick={handleLogout} className="text-gray-400 hover:text-amber-500 transition-colors">
               <LogOut size={20} />
             </button>
           </div>
@@ -129,6 +266,7 @@ const Negotiation = () => {
       <main className="max-w-7xl mx-auto px-4 py-6">
         {/* Breadcrumb */}
         <button 
+          type="button"
           onClick={() => navigate(-1)}
           className="flex items-center gap-2 text-xs font-bold text-gray-500 hover:text-blue-600 transition-colors mb-6 uppercase tracking-widest"
         >
@@ -144,8 +282,15 @@ const Negotiation = () => {
             <div>
               <h2 className="font-bold text-gray-900">{product.name}</h2>
               <div className="flex items-center gap-2 mt-1">
-                <span className="text-xs text-gray-500">Seller: <span className="font-bold text-gray-900">{product.seller?.name || 'TechZone'}</span></span>
-                <span className="bg-orange-50 text-orange-600 text-[8px] font-black px-1.5 py-0.5 rounded uppercase tracking-tighter">Priority Buyer</span>
+                <span className="text-xs text-gray-500">
+                  {userRole === 'seller' ? 'Buyer: ' : 'Seller: '}
+                  <span className="font-bold text-gray-900">
+                    {userRole === 'seller' ? 'Direct Buyer' : (product.seller?.name || 'TechZone')}
+                  </span>
+                </span>
+                <span className="bg-orange-50 text-orange-600 text-[8px] font-black px-1.5 py-0.5 rounded uppercase tracking-tighter">
+                  {userRole === 'seller' ? 'Verified Buyer' : 'Priority Buyer'}
+                </span>
               </div>
             </div>
           </div>
@@ -156,10 +301,14 @@ const Negotiation = () => {
         </div>
 
         {/* Info Banner */}
-        <div className="bg-blue-50 border border-blue-100 rounded-xl p-3 flex items-start gap-3 mb-6">
-          <Info size={16} className="text-blue-600 mt-0.5" />
-          <p className="text-[11px] text-blue-800 font-medium">
-            Negotiating directly with seller. Formal offers are legally binding once accepted by both parties.
+        <div className={`border rounded-xl p-3 flex items-start gap-3 mb-6 ${
+          userRole === 'seller' ? 'bg-indigo-50 border-indigo-100' : 'bg-blue-50 border-blue-100'
+        }`}>
+          <Info size={16} className={userRole === 'seller' ? 'text-indigo-600 mt-0.5' : 'text-blue-600 mt-0.5'} />
+          <p className={`text-[11px] font-medium ${userRole === 'seller' ? 'text-indigo-800' : 'text-blue-800'}`}>
+            {userRole === 'seller' 
+              ? 'You are negotiating with a potential buyer. All agreed offers will be finalized upon buyer payment.' 
+              : 'Negotiating directly with seller. Formal offers are legally binding once accepted by both parties.'}
           </p>
         </div>
 
@@ -168,13 +317,13 @@ const Negotiation = () => {
           <div className="lg:col-span-8 bg-white rounded-2xl border border-gray-100 shadow-sm flex flex-col h-[600px]">
             {/* Tabs */}
             <div className="flex border-b border-gray-100 px-6">
-              <button className="py-4 px-4 border-b-2 border-gray-900 text-xs font-black uppercase tracking-widest flex items-center gap-2">
+              <button type="button" className="py-4 px-4 border-b-2 border-gray-900 text-xs font-black uppercase tracking-widest flex items-center gap-2">
                 <Send size={14} className="rotate-45 -mt-1" /> Chat
               </button>
-              <button className="py-4 px-4 border-b-2 border-transparent text-gray-400 hover:text-gray-600 text-xs font-black uppercase tracking-widest flex items-center gap-2">
+              <button type="button" className="py-4 px-4 border-b-2 border-transparent text-gray-400 hover:text-gray-600 text-xs font-black uppercase tracking-widest flex items-center gap-2">
                 <Phone size={14} /> Voice
               </button>
-              <button className="py-4 px-4 border-b-2 border-transparent text-gray-400 hover:text-gray-600 text-xs font-black uppercase tracking-widest flex items-center gap-2">
+              <button type="button" className="py-4 px-4 border-b-2 border-transparent text-gray-400 hover:text-gray-600 text-xs font-black uppercase tracking-widest flex items-center gap-2">
                 <Video size={14} /> Video
               </button>
             </div>
@@ -188,26 +337,36 @@ const Negotiation = () => {
                     initial={{ opacity: 0, y: 10, scale: 0.95 }}
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     transition={{ duration: 0.2 }}
-                    className={`flex ${msg.sender === 'you' ? 'justify-end' : 'justify-start'}`}
+                    className={`flex ${msg.isSystem ? 'justify-center' : msg.sender === 'you' ? 'justify-end' : 'justify-start'}`}
                   >
-                    <div className={`max-w-[80%] ${msg.sender === 'you' ? 'order-2' : ''}`}>
-                      <div className={`p-4 rounded-2xl text-sm font-medium leading-relaxed shadow-sm ${
-                        msg.sender === 'you' 
-                          ? 'bg-[#1E293B] text-white rounded-tr-none' 
-                          : 'bg-white text-gray-800 border border-gray-100 rounded-tl-none'
-                      }`}>
-                        {msg.text}
+                    {msg.isSystem ? (
+                      <div className="bg-gray-100 text-gray-500 text-[10px] font-black uppercase tracking-widest px-4 py-1.5 rounded-full border border-gray-200">
+                        {msg.text} • {msg.time}
                       </div>
-                      <div className={`flex items-center gap-2 mt-2 text-[10px] font-black uppercase tracking-widest text-gray-400 ${msg.sender === 'you' ? 'justify-end' : 'justify-start'}`}>
-                        {msg.sender === 'seller' && <span className="text-gray-900 font-black">{product.seller?.name || 'TECHZONE'}</span>}
-                        <span>{msg.time}</span>
-                        {msg.sender === 'you' && (
-                          <span className={msg.status === 'read' ? 'text-blue-500' : 'text-gray-300'}>
-                            <Check size={12} strokeWidth={3} />
-                          </span>
-                        )}
+                    ) : (
+                      <div className={`max-w-[80%] ${msg.sender === 'you' ? 'order-2' : ''}`}>
+                        <div className={`p-4 rounded-2xl text-sm font-medium leading-relaxed shadow-sm ${
+                          msg.sender === 'you' 
+                            ? 'bg-[#1E293B] text-white rounded-tr-none' 
+                            : 'bg-white text-gray-800 border border-gray-100 rounded-tl-none'
+                        }`}>
+                          {msg.text}
+                        </div>
+                        <div className={`flex items-center gap-2 mt-2 text-[10px] font-black uppercase tracking-widest text-gray-400 ${msg.sender === 'you' ? 'justify-end' : 'justify-start'}`}>
+                          {msg.sender !== 'you' && (
+                            <span className="text-gray-900 font-black">
+                              {userRole === 'seller' ? 'BUYER' : 'SELLER'}
+                            </span>
+                          )}
+                          <span>{msg.time}</span>
+                          {msg.sender === 'you' && (
+                            <span className={msg.status === 'read' ? 'text-blue-500' : 'text-gray-300'}>
+                              <Check size={12} strokeWidth={3} />
+                            </span>
+                          )}
+                        </div>
                       </div>
-                    </div>
+                    )}
                   </motion.div>
                 ))}
               </AnimatePresence>
@@ -236,47 +395,114 @@ const Negotiation = () => {
                   <Send size={20} />
                 </button>
               </form>
-              <button className="w-full bg-amber-500 text-white py-3.5 rounded-xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-amber-600 transition-all shadow-lg shadow-amber-500/20">
-                <ShieldCheck size={16} /> Send Formal Offer
-              </button>
-            </div>
-          </div>
-
-          {/* Sidebar Section */}
-          <div className="lg:col-span-4 space-y-6">
-            {/* Negotiation Status */}
-            <div className="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm">
-              <div className="flex items-center justify-between mb-8">
-                <h3 className="font-serif text-xl font-bold italic">Negotiation Status</h3>
-                <span className="bg-green-500 text-white text-[8px] font-black px-2 py-1 rounded uppercase tracking-widest flex items-center gap-1">
-                  <CheckCircle size={10} /> {dealStatus}
-                </span>
+                <button 
+                  type="button"
+                  onClick={() => handleUpdateDealStatus(userRole === 'seller' ? 'OFFER_SENT' : 'COUNTERED')}
+                  className={`w-full py-3.5 rounded-xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-2 transition-all shadow-lg ${
+                  userRole === 'seller' 
+                    ? 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-indigo-500/20' 
+                    : 'bg-amber-500 text-white hover:bg-amber-600 shadow-amber-500/20'
+                }`}>
+                  <ShieldCheck size={16} /> {userRole === 'seller' ? 'Send Formal Offer' : 'Send Formal Offer'}
+                </button>
               </div>
-
-              <div className="space-y-6">
-                <div>
-                  <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Final Agreed Price</div>
-                  <div className="text-4xl font-serif font-black tracking-tighter">₹{agreedPrice.toLocaleString()}</div>
+            </div>
+  
+            {/* Sidebar Section */}
+            <div className="lg:col-span-4 space-y-6">
+              {/* Negotiation Status */}
+              <div className="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm">
+                <div className="flex items-center justify-between mb-8">
+                  <h3 className="font-serif text-xl font-bold italic">Negotiation Status</h3>
+                  <span className={`text-white text-[8px] font-black px-2 py-1 rounded uppercase tracking-widest flex items-center gap-1 ${
+                    dealStatus === 'AGREED' ? 'bg-green-500' : 
+                    dealStatus === 'OFFER_SENT' ? 'bg-indigo-500' :
+                    dealStatus === 'DECLINED' ? 'bg-red-500' :
+                    'bg-amber-500'
+                  }`}>
+                    <CheckCircle size={10} /> {dealStatus}
+                  </span>
                 </div>
-
-                <div className="bg-[#F0FDF4] border border-[#DCFCE7] rounded-xl p-4 flex items-center justify-between">
-                  <div>
-                    <div className="text-[10px] font-black text-green-700/60 uppercase tracking-widest mb-0.5">Total Savings</div>
-                    <div className="text-lg font-black text-green-600">₹{(product.price - agreedPrice).toLocaleString()} ({( ((product.price - agreedPrice)/product.price)*100 ).toFixed(1)}% OFF)</div>
+  
+                <div className="space-y-6">
+                  <div className="group relative">
+                    <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Final Agreed Price</div>
+                    <div className="flex items-center gap-1 relative">
+                      <span className="text-2xl font-serif font-black text-gray-900">₹</span>
+                      <input 
+                        type="number"
+                        value={agreedPrice}
+                        onChange={(e) => {
+                          const newPrice = Number(e.target.value);
+                          setAgreedPrice(newPrice);
+                          if (socket.current) {
+                            socket.current.emit('price_update', {
+                              productId: id,
+                              agreedPrice: newPrice
+                            });
+                          }
+                        }}
+                        className="w-full text-4xl font-serif font-black tracking-tighter text-gray-900 focus:outline-none focus:ring-0 bg-transparent border-none p-0 appearance-none m-0"
+                        style={{ MozAppearance: 'textfield' }}
+                      />
+                      <div className="absolute right-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <Edit2 size={14} className="text-gray-300" />
+                      </div>
+                    </div>
+                    <div className="h-[2px] w-full bg-gray-100 group-focus-within:bg-blue-600 transition-colors mt-1"></div>
                   </div>
-                  <div className="text-green-500">
-                    <Tag size={24} />
+  
+                  <div className={`rounded-xl p-4 flex items-center justify-between border ${
+                    userRole === 'seller' ? 'bg-indigo-50 border-indigo-100' : 'bg-[#F0FDF4] border-[#DCFCE7]'
+                  }`}>
+                    <div>
+                      <div className={`text-[10px] font-black uppercase tracking-widest mb-0.5 ${
+                        userRole === 'seller' ? 'text-indigo-700/60' : 'text-green-700/60'
+                      }`}>
+                        {userRole === 'seller' ? 'Discount Offered' : 'Total Savings'}
+                      </div>
+                      <div className={`text-lg font-black ${userRole === 'seller' ? 'text-indigo-600' : 'text-green-600'}`}>
+                        ₹{(Math.abs(product.price - agreedPrice)).toFixed(2)} ({( ((product.price - agreedPrice)/product.price)*100 ).toFixed(1)}% {product.price > agreedPrice ? 'OFF' : 'ABOVE'})
+                      </div>
+                    </div>
+                    <div className={userRole === 'seller' ? 'text-indigo-500' : 'text-green-500'}>
+                      <Tag size={24} />
+                    </div>
                   </div>
-                </div>
-
+  
                 <div className="space-y-3 pt-4">
+                  {userRole === 'buyer' ? (
+                    <button 
+                      type="button"
+                      onClick={() => {
+                        if (dealStatus === 'AGREED') {
+                          navigate('/checkout', { state: { price: agreedPrice } });
+                        } else {
+                          handleUpdateDealStatus('AGREED');
+                          // Also navigate immediately after agreeing
+                          setTimeout(() => {
+                            navigate('/checkout', { state: { price: agreedPrice } });
+                          }, 500);
+                        }
+                      }}
+                      className="w-full bg-[#10B981] text-white py-4 rounded-xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-[#059669] transition-all shadow-lg shadow-green-500/20"
+                    >
+                      <ShoppingCart size={16} /> {dealStatus === 'AGREED' ? 'Proceed to Pay' : 'Accept & Proceed'}
+                    </button>
+                  ) : (
+                    <button 
+                      type="button"
+                      onClick={() => handleUpdateDealStatus('AGREED')}
+                      className="w-full bg-blue-600 text-white py-4 rounded-xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-blue-700 transition-all shadow-lg shadow-blue-500/20"
+                    >
+                      <CheckCircle size={16} /> Confirm Offer to Buyer
+                    </button>
+                  )}
                   <button 
-                    onClick={() => navigate('/checkout', { state: { price: agreedPrice } })}
-                    className="w-full bg-[#10B981] text-white py-4 rounded-xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-[#059669] transition-all shadow-lg shadow-green-500/20"
+                    type="button"
+                    onClick={() => handleUpdateDealStatus('DECLINED')}
+                    className="w-full bg-white text-gray-400 py-4 rounded-xl font-black text-xs uppercase tracking-widest border border-gray-100 hover:bg-gray-50 transition-all flex items-center justify-center gap-2"
                   >
-                    <ShoppingCart size={16} /> Accept & Proceed to Pay
-                  </button>
-                  <button className="w-full bg-white text-gray-400 py-4 rounded-xl font-black text-xs uppercase tracking-widest border border-gray-100 hover:bg-gray-50 transition-all flex items-center justify-center gap-2">
                     <ArrowLeft size={16} className="rotate-45" /> Decline Deal
                   </button>
                 </div>
@@ -311,23 +537,30 @@ const Negotiation = () => {
               </div>
             </div>
 
-            {/* Seller Card */}
-            <div className="bg-[#0A1628] rounded-2xl p-6 text-white shadow-sm">
+            {/* Seller/Buyer Card */}
+            <div className={`rounded-2xl p-6 text-white shadow-sm ${
+              userRole === 'seller' ? 'bg-[#4F46E5]' : 'bg-[#0A1628]'
+            }`}>
               <div className="flex items-center gap-4 mb-4">
-                <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center font-black text-gray-900 text-lg">
-                  TZ
+                <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center font-black text-gray-900 text-lg uppercase">
+                  {userRole === 'seller' ? 'DB' : 'TZ'}
                 </div>
                 <div>
                   <div className="flex items-center gap-2">
-                    <h4 className="font-bold text-sm">TechZone Verified</h4>
+                    <h4 className="font-bold text-sm">
+                      {userRole === 'seller' ? 'Direct Buyer (Verified)' : 'TechZone Verified'}
+                    </h4>
                     <div className="flex text-amber-500">
                       {[1,2,3,4,5].map(s => <Check key={s} size={10} fill="currentColor" />)}
                     </div>
                   </div>
                 </div>
               </div>
-              <p className="text-[10px] text-gray-400 leading-relaxed font-medium italic">
-                "Specializing in certified refurbished electronics with 12-month standard warranty. 98% positive feedback."
+              <p className="text-[10px] text-gray-100/80 leading-relaxed font-medium italic">
+                {userRole === 'seller' 
+                  ? '"Buyer since 2023. 100% successful payment rate. Priority member of ZyLora Prime."'
+                  : '"Specializing in certified refurbished electronics with 12-month standard warranty. 98% positive feedback."'
+                }
               </p>
             </div>
           </div>

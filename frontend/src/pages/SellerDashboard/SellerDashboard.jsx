@@ -25,7 +25,7 @@ const SellerDashboard = () => {
   });
 
   const BACKEND_URL = window.location.hostname === 'localhost' 
-    ? 'http://localhost:5000' 
+    ? 'http://localhost:5001' 
     : 'https://zylora-3.onrender.com';
 
   const fetchSellerProducts = async () => {
@@ -156,17 +156,17 @@ const SellerDashboard = () => {
 
           <nav className="space-y-1 flex-1">
             {[
-              { name: 'Dashboard', icon: LayoutDashboard, active: true },
-              { name: 'My Products', icon: Package },
-              { name: 'Orders', icon: ShoppingCart },
-              { name: 'Negotiations', icon: MessageSquare },
-              { name: 'Auction Manager', icon: Gavel },
-              { name: 'Earnings', icon: Wallet },
-              { name: 'Returns', icon: RotateCcw },
+              { name: 'Dashboard', icon: LayoutDashboard, active: true, path: '/seller-dashboard' },
+              { name: 'My Products', icon: Package, path: '#' },
+              { name: 'Orders', icon: ShoppingCart, path: '#' },
+              { name: 'Negotiations', icon: MessageSquare, path: '/seller-negotiations' },
+              { name: 'Auction Manager', icon: Gavel, path: '#' },
+              { name: 'Earnings', icon: Wallet, path: '#' },
+              { name: 'Returns', icon: RotateCcw, path: '#' },
             ].map((item) => (
-              <a 
+              <Link 
                 key={item.name}
-                href="#" 
+                to={item.path} 
                 className={`flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
                   item.active 
                     ? 'bg-blue-50 text-blue-600' 
@@ -175,7 +175,7 @@ const SellerDashboard = () => {
               >
                 <item.icon size={18} />
                 {item.name}
-              </a>
+              </Link>
             ))}
           </nav>
 

@@ -138,8 +138,8 @@ const Checkout = () => {
 
     try {
       const BACKEND_URL = window.location.hostname === 'localhost' 
-        ? 'http://localhost:5000' 
-        : 'https://zylora-3.onrender.com';
+    ? 'http://localhost:5001' 
+    : 'https://zylora-3.onrender.com';
 
       const token = localStorage.getItem('token');
       

@@ -11,6 +11,7 @@ import OrderSuccess from './pages/OrderSuccess/OrderSuccess';
 import Profile from './pages/Profile/Profile';
 import AgriAuctions from './pages/AgriAuctions/AgriAuctions';
 import SellerDashboard from './pages/SellerDashboard/SellerDashboard';
+import SellerNegotiations from './pages/SellerNegotiations/SellerNegotiations';
 import ProtectedRoute from './components/ProtectedRoute';
 import './App.css';
 import { CartProvider } from './context/CartContext';
@@ -106,13 +107,21 @@ function App() {
           } 
         />
         <Route 
-          path="/seller-dashboard" 
-          element={
-            <ProtectedRoute>
-              <SellerDashboard />
-            </ProtectedRoute>
-          } 
-        />
+            path="/seller-dashboard" 
+            element={
+              <ProtectedRoute>
+                <SellerDashboard />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/seller-negotiations" 
+            element={
+              <ProtectedRoute>
+                <SellerNegotiations />
+              </ProtectedRoute>
+            } 
+          />
           
           {/* Catch-all route redirects to home (which will redirect to login if not authenticated) */}
           <Route path="*" element={<Navigate to="/" replace />} />
