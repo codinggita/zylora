@@ -10,6 +10,7 @@ import Checkout from './pages/Checkout/Checkout';
 import OrderSuccess from './pages/OrderSuccess/OrderSuccess';
 import Profile from './pages/Profile/Profile';
 import AgriAuctions from './pages/AgriAuctions/AgriAuctions';
+import SellerDashboard from './pages/SellerDashboard/SellerDashboard';
 import ProtectedRoute from './components/ProtectedRoute';
 import './App.css';
 import { CartProvider } from './context/CartContext';
@@ -101,6 +102,14 @@ function App() {
           element={
             <ProtectedRoute>
               <AgriAuctions />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/seller-dashboard" 
+          element={
+            <ProtectedRoute>
+              <SellerDashboard />
             </ProtectedRoute>
           } 
         />

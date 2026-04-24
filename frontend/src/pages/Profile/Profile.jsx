@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   User, Package, MapPin, CreditCard, Settings, 
   LogOut, ChevronRight, Search, Heart, ShoppingCart,
-  Clock, CheckCircle, Truck, AlertCircle, Menu, ArrowLeft
+  Clock, CheckCircle, Truck, AlertCircle, Menu, ArrowLeft, LayoutDashboard
 } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
@@ -45,7 +45,10 @@ const Profile = () => {
         setUser(userData);
         setEditForm({
           name: userData.name || '',
-          phone: userData.phone || ''
+          phone: userData.phone || '',
+          storeName: userData.storeName || '',
+          gstNumber: userData.gstNumber || '',
+          businessAddress: userData.businessAddress || ''
         });
 
         // Fetch orders
@@ -160,8 +163,16 @@ const Profile = () => {
                 <h2 className="text-lg font-bold text-gray-900">{user?.name || 'User Name'}</h2>
                 <p className="text-xs text-gray-500 font-medium mb-6">{user?.email || 'user@example.com'}</p>
                 <div className="bg-amber-50 text-amber-600 text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-widest border border-amber-100">
-                  Priority Member
+                  {user?.role === 'seller' ? 'Business Seller' : 'Priority Member'}
                 </div>
+                {user?.role === 'seller' && (
+                  <Link 
+                    to="/seller-dashboard" 
+                    className="mt-4 w-full flex items-center justify-center gap-2 py-2.5 bg-blue-600 text-white text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-blue-700 transition-all shadow-md shadow-blue-200"
+                  >
+                    <LayoutDashboard size={14} /> Go to Dashboard
+                  </Link>
+                )}
               </div>
 
               <nav className="mt-8 space-y-1">
@@ -335,6 +346,44 @@ const Profile = () => {
                           />
                         </div>
                       </div>
+
+                      {user?.role === 'seller' && (
+                        <motion.div 
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: 'auto' }}
+                          className="space-y-6 pt-2"
+                        >
+                          <div className="space-y-2">
+                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1">Store Name</label>
+                            <input 
+                              type="text"
+                              value={editForm.storeName}
+                              onChange={(e) => setEditForm({...editForm, storeName: e.target.value})}
+                              className="w-full bg-gray-50 border border-gray-100 rounded-xl py-3 px-4 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+                              placeholder="Your business name"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1">GST Number</label>
+                            <input 
+                              type="text"
+                              value={editForm.gstNumber}
+                              onChange={(e) => setEditForm({...editForm, gstNumber: e.target.value})}
+                              className="w-full bg-gray-50 border border-gray-100 rounded-xl py-3 px-4 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+                              placeholder="22AAAAA0000A1Z5"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1">Business Address</label>
+                            <textarea 
+                              value={editForm.businessAddress}
+                              onChange={(e) => setEditForm({...editForm, businessAddress: e.target.value})}
+                              className="w-full bg-gray-50 border border-gray-100 rounded-xl py-3 px-4 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all min-h-[100px]"
+                              placeholder="Complete office/shop address"
+                            />
+                          </div>
+                        </motion.div>
+                      )}
 
                       <div className="space-y-2">
                         <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1">Email Address</label>

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Search, Menu, ShoppingCart, Heart, User, 
   ChevronRight, Star, Clock, ShieldCheck, 
@@ -6,7 +6,8 @@ import {
   Plus, Minus, Share2, Store, ArrowLeft, LogOut
 } from 'lucide-react';
 import { useNavigate, Link, useParams } from 'react-router-dom';
-import { products } from '../../data/products';
+import axios from 'axios';
+import { products as staticProducts } from '../../data/products';
 import { useCart } from '../../context/CartContext';
 
 const ProductDetail = () => {
@@ -14,26 +15,115 @@ const ProductDetail = () => {
   const navigate = useNavigate();
   const { addToCart, cartCount } = useCart();
   
-  // Find product by ID from data file
-  const productData = products.find(p => p.id === parseInt(id)) || products[0];
-
+  const [product, setProduct] = useState(null);
+  const [loading, setLoading] = useState(true);
   const [selectedImg, setSelectedImg] = useState(0);
-  const [selectedColor, setSelectedColor] = useState(productData.colors[0].name);
-  const [selectedStorage, setSelectedStorage] = useState(productData.storageOptions[0]);
+  const [selectedColor, setSelectedColor] = useState('');
+  const [selectedStorage, setSelectedStorage] = useState('');
   const [quantity, setQuantity] = useState(1);
   const [activeTab, setActiveTab] = useState('description');
+
+  const BACKEND_URL = window.location.hostname === 'localhost' 
+    ? 'http://localhost:5000' 
+    : 'https://zylora-3.onrender.com';
+
+  useEffect(() => {
+    const fetchProduct = async () => {
+      try {
+        // Try to find in static products first (numeric IDs)
+        const staticProd = staticProducts.find(p => p.id === parseInt(id));
+        if (staticProd) {
+          setProduct(staticProd);
+          setSelectedColor(staticProd.colors?.[0]?.name || 'Default');
+          setSelectedStorage(staticProd.storageOptions?.[0] || 'Standard');
+          setLoading(false);
+          return;
+        }
+
+        // Otherwise fetch from backend (MongoDB ObjectIDs)
+        const res = await axios.get(`${BACKEND_URL}/api/products/${id}`);
+        if (res.data.success) {
+          const p = res.data.data;
+          const formattedProd = {
+            id: p._id,
+            name: p.name,
+            price: p.price,
+            oldPrice: p.price * 1.2,
+            images: p.images,
+            description: p.description,
+            category: p.category,
+            stock: p.stock,
+            rating: 4.5,
+            reviewsCount: 128,
+            totalReviews: 85,
+            discount: '15% OFF',
+            colors: [{ name: 'Default', class: 'bg-black' }],
+            storageOptions: ['Standard'],
+            highlights: ['Premium Quality', 'Verified Seller', 'Secure Payment'],
+            features: [
+              { title: 'Premium Quality', desc: 'Sourced from verified sellers with quality assurance.' },
+              { title: 'Secure Transaction', desc: '100% protected payments and reliable delivery.' }
+            ],
+            specs: [
+              { label: 'Category', value: p.category },
+              { label: 'Condition', value: 'New' },
+              { label: 'Seller', value: p.seller?.storeName || 'Verified Seller' },
+              { label: 'Stock', value: p.stock > 0 ? 'In Stock' : 'Out of Stock' }
+            ],
+            seller: {
+              name: p.seller?.storeName || 'Verified Seller',
+              initials: (p.seller?.storeName || 'VS').substring(0, 2).toUpperCase(),
+              isCertified: true,
+              platformRating: '4.8'
+            },
+            bulkDeals: [
+              { range: '10-50 units', price: `₹${(p.price * 0.9).toLocaleString()}`, savings: '10% OFF', highlight: false },
+              { range: '50-100 units', price: `₹${(p.price * 0.85).toLocaleString()}`, savings: '15% OFF', highlight: true },
+              { range: '100+ units', price: `₹${(p.price * 0.8).toLocaleString()}`, savings: '20% OFF', highlight: false }
+            ],
+            frequentlyBought: [],
+            similarModels: []
+          };
+          setProduct(formattedProd);
+          setSelectedColor('Default');
+          setSelectedStorage('Standard');
+        }
+      } catch (err) {
+        console.error('Error fetching product:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProduct();
+  }, [id, BACKEND_URL]);
 
   const handleLogout = () => {
     localStorage.removeItem('token');
     navigate('/login');
   };
 
-  const product = productData;
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
+
+  if (!product) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold text-gray-900">Product Not Found</h2>
+          <Link to="/" className="text-blue-600 hover:underline mt-4 inline-block">Back to Home</Link>
+        </div>
+      </div>
+    );
+  }
 
   const handleAddToCart = () => {
     addToCart(product, quantity);
-    // Optional: navigate to cart or show a toast
-    // navigate('/cart');
   };
 
   const showNegotiateButton = () => {
@@ -101,7 +191,7 @@ const ProductDetail = () => {
         {/* Left: Image Gallery */}
         <div className="lg:col-span-6 flex flex-col md:flex-row gap-4">
           <div className="flex md:flex-col gap-3 order-2 md:order-1">
-            {product.images.map((img, i) => (
+            {product.images?.map((img, i) => (
               <div 
                 key={i}
                 onClick={() => setSelectedImg(i)}
@@ -156,7 +246,7 @@ const ProductDetail = () => {
             <div>
               <span className="text-xs font-bold text-gray-400 uppercase tracking-widest">Color</span>
               <div className="flex gap-3 mt-3">
-                {product.colors.map((color, i) => (
+                {product.colors?.map((color, i) => (
                   <button 
                     key={i}
                     onClick={() => setSelectedColor(color.name)}
@@ -171,7 +261,7 @@ const ProductDetail = () => {
             <div>
               <span className="text-xs font-bold text-gray-400 uppercase tracking-widest">Storage / RAM</span>
               <div className="flex gap-3 mt-3">
-                {product.storageOptions.map((opt, i) => (
+                {product.storageOptions?.map((opt, i) => (
                   <button 
                     key={i}
                     onClick={() => setSelectedStorage(opt)}
@@ -244,7 +334,7 @@ const ProductDetail = () => {
                 <span>Price / Unit</span>
                 <span className="text-right">Savings</span>
               </div>
-              {product.bulkDeals.map((deal, i) => (
+              {product.bulkDeals?.map((deal, i) => (
                 <div 
                   key={i} 
                   className={`grid grid-cols-3 text-sm py-2 px-3 rounded-lg font-medium ${deal.highlight ? 'bg-white shadow-sm text-blue-600 border border-blue-100' : 'text-green-800'}`}
@@ -291,7 +381,7 @@ const ProductDetail = () => {
             </p>
 
             <div className="grid md:grid-cols-2 gap-6 mt-12">
-              {product.features.map((feature, i) => (
+              {product.features?.map((feature, i) => (
                 <div key={i} className="bg-gray-50 p-6 rounded-2xl flex gap-4">
                   <div className="bg-white p-3 rounded-xl shadow-sm h-fit">
                     {i === 0 ? <Clock className="text-blue-600" size={24} /> : <Star className="text-blue-600" size={24} />}
@@ -309,7 +399,7 @@ const ProductDetail = () => {
               <div className="border border-gray-100 rounded-2xl overflow-hidden">
                 <table className="w-full text-sm">
                   <tbody>
-                    {product.specs.map((spec, i) => (
+                    {product.specs?.map((spec, i) => (
                       <tr key={i} className={i % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
                         <td className="px-6 py-4 font-bold text-gray-500 w-1/3 border-r border-gray-100">{spec.label}</td>
                         <td className="px-6 py-4 text-gray-900">{spec.value}</td>
@@ -328,19 +418,19 @@ const ProductDetail = () => {
               <h4 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">Seller Information</h4>
               <div className="flex items-center gap-4 mb-6">
                 <div className="w-12 h-12 bg-gray-900 text-white flex items-center justify-center rounded-xl font-bold text-xl">
-                  {product.seller.initials}
+                  {product.seller?.initials || 'VS'}
                 </div>
                 <div>
                   <div className="flex items-center gap-2">
-                    <h5 className="font-bold">{product.seller.name}</h5>
-                    {product.seller.isCertified && <ShieldCheck size={16} className="text-blue-600" />}
+                    <h5 className="font-bold">{product.seller?.name || 'Verified Seller'}</h5>
+                    {product.seller?.isCertified && <ShieldCheck size={16} className="text-blue-600" />}
                   </div>
-                  <p className="text-xs text-blue-600 font-medium">{product.seller.isCertified ? 'Certified Bulk Seller' : 'Verified Seller'}</p>
+                  <p className="text-xs text-blue-600 font-medium">{product.seller?.isCertified ? 'Certified Bulk Seller' : 'Verified Seller'}</p>
                 </div>
               </div>
               <div className="flex items-center justify-between text-sm py-3 border-y border-gray-50 mb-6">
                 <span className="text-gray-500">Platform Rating</span>
-                <span className="font-bold text-gray-900">{product.seller.platformRating} <span className="text-gray-300 font-normal">/ 5</span></span>
+                <span className="font-bold text-gray-900">{product.seller?.platformRating || '4.5'} <span className="text-gray-300 font-normal">/ 5</span></span>
               </div>
               <button className="w-full border border-gray-200 py-3 rounded-xl font-bold text-sm hover:bg-gray-50 transition-colors">
                 Visit Store Profile
@@ -351,7 +441,7 @@ const ProductDetail = () => {
             <div className="bg-gray-50 rounded-2xl p-6">
               <h4 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-6">Frequently Bought Together</h4>
               <div className="space-y-4">
-                {product.frequentlyBought.map((item, i) => (
+                {product.frequentlyBought?.map((item, i) => (
                   <div key={i} className="flex items-center justify-between bg-white p-3 rounded-xl shadow-sm border border-gray-100">
                     <div className="flex items-center gap-3">
                       <img src={item.img} alt="" className="w-10 h-10 object-contain" />
@@ -384,7 +474,7 @@ const ProductDetail = () => {
         </div>
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-          {product.similarModels.map((prod, i) => (
+          {product.similarModels?.map((prod, i) => (
             <div 
               key={i} 
               className="group cursor-pointer"

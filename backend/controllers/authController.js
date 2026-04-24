@@ -6,14 +6,18 @@ const jwt = require('jsonwebtoken');
 // @access  Public
 exports.signup = async (req, res) => {
   try {
-    const { name, email, password, role } = req.body;
+    const { name, email, password, role, phone, storeName, gstNumber, businessAddress } = req.body;
 
     // Create user
     const user = await User.create({
       name,
       email,
       password,
-      role
+      role,
+      phone,
+      storeName,
+      gstNumber,
+      businessAddress
     });
 
     sendTokenResponse(user, 201, res);
@@ -86,7 +90,10 @@ exports.updateDetails = async (req, res) => {
   try {
     const fieldsToUpdate = {
       name: req.body.name,
-      phone: req.body.phone
+      phone: req.body.phone,
+      storeName: req.body.storeName,
+      gstNumber: req.body.gstNumber,
+      businessAddress: req.body.businessAddress
     };
 
     const user = await User.findByIdAndUpdate(req.user.id, fieldsToUpdate, {
@@ -115,6 +122,12 @@ const sendTokenResponse = (user, statusCode, res) => {
 
   res.status(statusCode).json({
     success: true,
-    token
+    token,
+    user: {
+      id: user._id,
+      name: user.name,
+      email: user.email,
+      role: user.role
+    }
   });
 };

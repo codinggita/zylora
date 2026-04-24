@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { CheckCircle2, Mail, Lock, User, ArrowRight } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import { motion } from 'framer-motion';
 
 const Signup = () => {
   const [userType, setUserType] = useState('buyer');
@@ -9,7 +10,11 @@ const Signup = () => {
     name: '',
     email: '',
     password: '',
-    role: 'buyer'
+    role: 'buyer',
+    phone: '',
+    storeName: '',
+    gstNumber: '',
+    businessAddress: ''
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -38,7 +43,14 @@ const Signup = () => {
       
       if (res.data.success) {
         localStorage.setItem('token', res.data.token);
-        navigate('/');
+        localStorage.setItem('user', JSON.stringify(res.data.user));
+        
+        // Redirect based on role
+        if (res.data.user.role === 'seller') {
+          navigate('/seller-dashboard');
+        } else {
+          navigate('/');
+        }
       }
     } catch (err) {
       setError(err.response?.data?.error || 'Registration failed. Please try again.');
@@ -166,6 +178,65 @@ const Signup = () => {
                   className="w-full border border-gray-200 rounded-lg p-3 text-gray-900 placeholder:text-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
                 />
               </div>
+
+              {userType === 'seller' && (
+                <motion.div 
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  className="space-y-6"
+                >
+                  <div>
+                    <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Store Name</label>
+                    <input 
+                      type="text" 
+                      name="storeName"
+                      value={formData.storeName}
+                      onChange={onChange}
+                      placeholder="ZyLora Electronics" 
+                      required
+                      className="w-full border border-gray-200 rounded-lg p-3 text-gray-900 placeholder:text-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">GST Number</label>
+                      <input 
+                        type="text" 
+                        name="gstNumber"
+                        value={formData.gstNumber}
+                        onChange={onChange}
+                        placeholder="22AAAAA0000A1Z5" 
+                        required
+                        className="w-full border border-gray-200 rounded-lg p-3 text-gray-900 placeholder:text-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Mobile Number</label>
+                      <input 
+                        type="text" 
+                        name="phone"
+                        value={formData.phone}
+                        onChange={onChange}
+                        placeholder="+91 XXXXX XXXXX" 
+                        required
+                        className="w-full border border-gray-200 rounded-lg p-3 text-gray-900 placeholder:text-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Business Address</label>
+                    <textarea 
+                      name="businessAddress"
+                      value={formData.businessAddress}
+                      onChange={onChange}
+                      placeholder="Shop No. 12, Main Market, Mumbai" 
+                      required
+                      className="w-full border border-gray-200 rounded-lg p-3 text-gray-900 placeholder:text-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 min-h-[80px]"
+                    />
+                  </div>
+                </motion.div>
+              )}
+
               <div>
                 <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Email Address</label>
                 <input 
