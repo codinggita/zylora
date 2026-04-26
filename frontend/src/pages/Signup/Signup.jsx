@@ -3,8 +3,12 @@ import { CheckCircle2, Mail, Lock, User, ArrowRight } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { motion } from 'framer-motion';
+import { useCart } from '../../context/CartContext';
+import { useWishlist } from '../../context/WishlistContext';
 
 const Signup = () => {
+  const { fetchCart } = useCart();
+  const { fetchWishlist } = useWishlist();
   const [userType, setUserType] = useState('buyer');
   const [formData, setFormData] = useState({
     name: '',
@@ -45,12 +49,18 @@ const Signup = () => {
         localStorage.setItem('token', res.data.token);
         localStorage.setItem('user', JSON.stringify(res.data.user));
         
-        // Redirect based on role
+        // Redirect immediately based on role
         if (res.data.user.role === 'seller') {
           navigate('/seller-dashboard');
         } else {
           navigate('/');
         }
+
+        // Refresh cart and wishlist data in background
+        Promise.all([
+          fetchCart(),
+          fetchWishlist()
+        ]).catch(err => console.error('Error refreshing contexts:', err));
       }
     } catch (err) {
       setError(err.response?.data?.error || 'Registration failed. Please try again.');

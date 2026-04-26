@@ -1,60 +1,69 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useSearchParams, useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
 import Header from '../../components/Header';
 import { 
-  ChevronRight, Star, ArrowLeft, Filter, SlidersHorizontal, Loader2,
-  ShoppingCart, Search
+  ChevronRight, Star, ArrowLeft, Filter, SlidersHorizontal, Loader2, Search as SearchIcon,
+  ShoppingCart
 } from 'lucide-react';
 
-const CategoryPage = () => {
-  const { categoryName } = useParams();
+const SearchPage = () => {
+  const [searchParams] = useSearchParams();
+  const query = searchParams.get('q') || '';
   const navigate = useNavigate();
 
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  const BACKEND_URL = window.location.hostname === 'localhost' 
+    ? 'http://localhost:5001' 
+    : 'https://zylora-3.onrender.com';
+
   useEffect(() => {
-    const fetchCategoryProducts = async () => {
+    const fetchSearchResults = async () => {
+      if (!query) {
+        setProducts([]);
+        setLoading(false);
+        return;
+      }
+
       try {
         setLoading(true);
-        const BACKEND_URL = window.location.hostname === 'localhost' 
-          ? 'http://localhost:5001' 
-          : 'https://zylora-3.onrender.com';
-
-        const res = await axios.get(`${BACKEND_URL}/api/products?category=${categoryName}`);
+        const res = await axios.get(`${BACKEND_URL}/api/products?keyword=${encodeURIComponent(query)}`);
         if (res.data.success) {
           setProducts(res.data.data);
         }
       } catch (err) {
-        console.error('Error fetching category products:', err);
-        setError('Failed to load products');
+        console.error('Error fetching search results:', err);
+        setError('Failed to load search results');
       } finally {
         setLoading(false);
       }
     };
 
-    fetchCategoryProducts();
-  }, [categoryName]);
+    fetchSearchResults();
+  }, [query, BACKEND_URL]);
 
   return (
     <div className="min-h-screen bg-[#F8F9FB] text-gray-900 font-sans">
-      <Header placeholder={`Search in ${categoryName}...`} />
+      <Header />
 
-      {/* Category Banner & Breadcrumbs */}
+      {/* Results Header */}
       <div className="bg-white border-b border-gray-100">
         <div className="max-w-7xl mx-auto px-4 py-8">
           <div className="flex items-center gap-2 text-xs text-gray-400 mb-4 uppercase tracking-widest font-bold">
             <Link to="/" className="hover:text-blue-600">Home</Link>
             <ChevronRight size={12} />
-            <span className="text-gray-900">{categoryName}</span>
+            <span className="text-gray-900">Search Results</span>
           </div>
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
             <div>
-              <h1 className="text-4xl font-black text-gray-900 capitalize tracking-tight">{categoryName}</h1>
-              <p className="text-gray-500 mt-2 text-sm max-w-md">
-                Browse our curated collection of professional-grade {categoryName.toLowerCase()} with exclusive bulk pricing.
+              <h1 className="text-3xl font-black text-gray-900 tracking-tight">
+                {query ? `Results for "${query}"` : 'Search Products'}
+              </h1>
+              <p className="text-gray-500 mt-2 text-sm">
+                {loading ? 'Searching...' : `Found ${products.length} products matching your criteria.`}
               </p>
             </div>
             <div className="flex items-center gap-3">
@@ -74,7 +83,7 @@ const CategoryPage = () => {
         {loading ? (
           <div className="flex flex-col items-center justify-center py-20">
             <Loader2 className="animate-spin text-blue-600 mb-4" size={40} />
-            <p className="text-gray-500 font-medium">Loading premium products...</p>
+            <p className="text-gray-500 font-medium">Searching for premium goods...</p>
           </div>
         ) : error ? (
           <div className="text-center py-20">
@@ -89,10 +98,10 @@ const CategoryPage = () => {
         ) : products.length === 0 ? (
           <div className="text-center py-24 bg-white rounded-3xl border border-dashed border-gray-200">
             <div className="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-6">
-              <Search size={32} className="text-gray-300" />
+              <SearchIcon size={32} className="text-gray-300" />
             </div>
-            <h3 className="text-xl font-bold text-gray-900">No products found</h3>
-            <p className="text-gray-500 mt-2">We couldn't find any products in the "{categoryName}" category.</p>
+            <h3 className="text-xl font-bold text-gray-900">No results found</h3>
+            <p className="text-gray-500 mt-2">We couldn't find any products matching your search "{query}".</p>
             <button 
               onClick={() => navigate('/')}
               className="mt-8 text-blue-600 font-bold flex items-center gap-2 mx-auto hover:underline"
@@ -104,9 +113,9 @@ const CategoryPage = () => {
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
             {products.map((prod) => (
               <div 
-                key={prod._id || prod.id} 
+                key={prod._id} 
                 className="group bg-white rounded-2xl border border-transparent hover:border-blue-100 hover:shadow-xl hover:shadow-blue-500/5 transition-all duration-300 overflow-hidden cursor-pointer"
-                onClick={() => navigate(`/product/${prod._id || prod.id}`)}
+                onClick={() => navigate(`/product/${prod._id}`)}
               >
                 <div className="aspect-square relative bg-gray-50 flex items-center justify-center p-8">
                   <img 
@@ -120,15 +129,13 @@ const CategoryPage = () => {
                         {prod.discount}
                       </span>
                     )}
-                    {prod.seller?.isCertified && (
-                      <span className="bg-blue-600 text-white text-[10px] font-bold px-2 py-1 rounded shadow-sm">
-                        PRO
-                      </span>
-                    )}
                   </div>
                   <button 
                     className="absolute bottom-4 right-4 bg-white p-2.5 rounded-full shadow-lg opacity-0 group-hover:opacity-100 translate-y-4 group-hover:translate-y-0 transition-all duration-300 text-gray-900 hover:bg-blue-600 hover:text-white"
-                    onClick={(e) => e.stopPropagation()}
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        navigate(`/product/${prod._id}`);
+                    }}
                   >
                     <ShoppingCart size={18} />
                   </button>
@@ -168,4 +175,4 @@ const CategoryPage = () => {
   );
 };
 
-export default CategoryPage;
+export default SearchPage;

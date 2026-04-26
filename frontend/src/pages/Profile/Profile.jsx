@@ -2,14 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   User, Package, MapPin, CreditCard, Settings, 
-  LogOut, ChevronRight, Search, Heart, ShoppingCart,
-  Clock, CheckCircle, Truck, AlertCircle, Menu, ArrowLeft,
-  MessageSquare, Bell, HelpCircle
+  ChevronRight, Clock, CheckCircle, Truck, AlertCircle, 
+  MessageSquare, Bell, HelpCircle, Heart, ShieldCheck, Store
 } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
 import { useCart } from '../../context/CartContext';
 import { useWishlist } from '../../context/WishlistContext';
+import Header from '../../components/Header';
 
 const Profile = () => {
   const navigate = useNavigate();
@@ -61,6 +61,10 @@ const Profile = () => {
         setLoading(false);
       } catch (error) {
         console.error('Error fetching profile data:', error);
+        if (error.response?.status === 401) {
+          localStorage.removeItem('token');
+          navigate('/login');
+        }
         setLoading(false);
       }
     };
@@ -88,17 +92,18 @@ const Profile = () => {
       }
     } catch (error) {
       console.error('Error updating profile:', error);
-      alert(error.response?.data?.error || 'Failed to update profile');
+      if (error.response?.status === 401) {
+        localStorage.removeItem('token');
+        navigate('/login');
+      } else {
+        alert(error.response?.data?.error || 'Failed to update profile');
+      }
     } finally {
       setUpdating(false);
     }
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    navigate('/login');
-  };
+
 
   const getStatusIcon = (status) => {
     switch (status.toLowerCase()) {
@@ -120,46 +125,7 @@ const Profile = () => {
 
   return (
     <div className="min-h-screen bg-[#F8F9FB] text-gray-900 font-sans">
-      {/* Header */}
-      <header className="bg-[#0A1628] text-white sticky top-0 z-50">
-        <div className="max-w-[1600px] mx-auto px-6 py-4 flex items-center justify-between gap-8">
-          <div className="flex items-center gap-10">
-            <Link to="/" className="text-2xl font-bold tracking-tight text-white">ZyLora</Link>
-            <nav className="hidden lg:flex items-center gap-6">
-              <Link to="/seller-dashboard" className="text-xs font-medium text-gray-400 hover:text-white transition-colors">Become a Seller</Link>
-              <Link to="/agri-auctions" className="text-xs font-medium text-gray-400 hover:text-white transition-colors">Agri Auctions</Link>
-            </nav>
-          </div>
-          
-          <div className="flex-1 max-w-xl relative">
-            <input 
-              type="text" 
-              placeholder="Search orders..." 
-              className="w-full bg-[#1F2937] border-none rounded-lg py-2.5 px-10 text-xs focus:outline-none focus:ring-1 focus:ring-gray-700 placeholder:text-gray-500"
-            />
-            <Search className="absolute left-3 top-2.5 text-gray-500" size={16} />
-          </div>
-
-          <div className="flex items-center gap-6 text-gray-400">
-            <button onClick={handleLogout} className="hover:text-amber-500 transition-colors">
-              <LogOut size={20} />
-            </button>
-            <User size={20} className="cursor-pointer hover:text-amber-500 transition-colors" onClick={() => navigate('/profile')} />
-            <div className="relative cursor-pointer hover:text-amber-500 transition-colors" onClick={() => navigate('/wishlist')}>
-              <Heart size={20} className={wishlistCount > 0 ? 'text-red-500 fill-red-500' : ''} />
-              {wishlistCount > 0 && (
-                <span className="absolute -top-2 -right-2 bg-red-500 text-[10px] text-white font-bold px-1 rounded-full min-w-[18px] text-center">{wishlistCount}</span>
-              )}
-            </div>
-            <div className="relative cursor-pointer hover:text-amber-500 transition-colors" onClick={() => navigate('/cart')}>
-              <ShoppingCart size={20} />
-              {cartCount > 0 && (
-                <span className="absolute -top-2 -right-2 bg-amber-500 text-[10px] text-white font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center">{cartCount}</span>
-              )}
-            </div>
-          </div>
-        </div>
-      </header>
+      <Header />
 
       <main className="max-w-[1600px] mx-auto px-6 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
@@ -171,15 +137,25 @@ const Profile = () => {
               animate={{ opacity: 1, x: 0 }}
               className="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm mb-6"
             >
-              <div className="flex items-center gap-4 mb-10">
-                <div className="w-12 h-12 bg-black rounded-full flex items-center justify-center text-white text-sm font-bold shadow-md">
+              <div className="flex flex-col items-center text-center gap-3 mb-8">
+                <div className="w-16 h-16 bg-black rounded-full flex items-center justify-center text-white text-lg font-bold shadow-md">
                   {user?.name?.split(' ').map(n => n[0]).join('') || 'U'}
                 </div>
                 <div>
-                  <h2 className="text-sm font-bold text-gray-900">{user?.name || 'User Name'}</h2>
-                  <p className="text-[10px] text-gray-500 font-medium">
-                    {user?.role === 'seller' ? 'Pro Seller' : 'Pro Buyer'}
-                  </p>
+                  <h2 className="text-sm font-bold text-gray-900 mb-1">{user?.name || 'User Name'}</h2>
+                  <p className="text-[11px] text-gray-400 mb-2">{user?.email}</p>
+                  {/* Role Badge */}
+                  {user?.role === 'seller' ? (
+                    <span className="inline-flex items-center gap-1.5 bg-amber-50 border border-amber-200 text-amber-700 px-3 py-1 rounded-full text-[11px] font-black uppercase tracking-wider">
+                      <Store size={12} />
+                      Business Seller
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1.5 bg-blue-50 border border-blue-200 text-blue-700 px-3 py-1 rounded-full text-[11px] font-black uppercase tracking-wider">
+                      <ShieldCheck size={12} />
+                      Individual Buyer
+                    </span>
+                  )}
                 </div>
               </div>
 
@@ -436,6 +412,30 @@ const Profile = () => {
                           className="w-full bg-gray-100 border border-gray-100 rounded-xl py-3 px-4 text-sm font-bold text-gray-400 cursor-not-allowed"
                         />
                         <p className="text-[10px] text-gray-400 italic mt-1 px-1">Email cannot be changed for security reasons.</p>
+                      </div>
+
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1">Account Role</label>
+                        <div className="flex items-center gap-3 bg-gray-50 border border-gray-100 rounded-xl py-3 px-4">
+                          {user?.role === 'seller' ? (
+                            <>
+                              <span className="inline-flex items-center gap-2 bg-amber-100 border border-amber-200 text-amber-700 px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-widest">
+                                <Store size={13} />
+                                Business Seller
+                              </span>
+                              <p className="text-[11px] text-gray-400">You have seller privileges on ZyLora.</p>
+                            </>
+                          ) : (
+                            <>
+                              <span className="inline-flex items-center gap-2 bg-blue-100 border border-blue-200 text-blue-700 px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-widest">
+                                <ShieldCheck size={13} />
+                                Individual Buyer
+                              </span>
+                              <p className="text-[11px] text-gray-400">You have buyer access on ZyLora.</p>
+                            </>
+                          )}
+                        </div>
+                        <p className="text-[10px] text-gray-400 italic mt-1 px-1">Role cannot be changed. Contact support if needed.</p>
                       </div>
 
                       <div className="pt-4">

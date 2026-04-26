@@ -1,21 +1,24 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  Search, Menu, ShoppingCart, Heart, User, 
   ChevronRight, Star, Clock, ShieldCheck, 
   Truck, RotateCcw, MessageSquare, Info,
-  Plus, Minus, Share2, Store, ArrowLeft, LogOut
+  Plus, Minus, Share2, Store, ArrowLeft,
+  ShoppingCart, Heart
 } from 'lucide-react';
 import { useNavigate, Link, useParams } from 'react-router-dom';
 import axios from 'axios';
 import { products as staticProducts } from '../../data/products';
 import { useCart } from '../../context/CartContext';
 import { useWishlist } from '../../context/WishlistContext';
+import Header from '../../components/Header';
 
 const ProductDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { addToCart, cartCount } = useCart();
   const { addToWishlist, removeFromWishlist, isInWishlist, wishlistCount } = useWishlist();
+  const user = JSON.parse(localStorage.getItem('user') || 'null');
+  const isSeller = user?.role === 'seller';
   
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -100,10 +103,7 @@ const ProductDetail = () => {
     fetchProduct();
   }, [id, BACKEND_URL]);
 
-  const handleLogout = () => {
-    localStorage.removeItem('token');
-    navigate('/login');
-  };
+  const [isWishlisted, setIsWishlisted] = useState(false);
 
   if (loading) {
     return (
@@ -128,6 +128,15 @@ const ProductDetail = () => {
     addToCart(product, quantity);
   };
 
+  const handleNegotiationNavigation = () => {
+    if (isSeller) {
+      navigate('/seller-negotiations');
+      return;
+    }
+
+    navigate(`/negotiate/${product.id}`);
+  };
+
   const showNegotiateButton = () => {
     if (product.price <= 500) return quantity >= 10;
     if (product.price <= 1000) return quantity >= 8;
@@ -136,58 +145,16 @@ const ProductDetail = () => {
 
   return (
     <div className="min-h-screen bg-[#F8F9FB] text-gray-900 font-sans pb-12">
-      {/* Main Header (Reused from Home) */}
-      <header className="bg-[#0A1628] text-white sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between gap-4">
-          <div className="flex items-center gap-6">
-            <Link to="/" className="text-xl md:text-2xl font-bold tracking-tight text-white">ZyLora</Link>
-            <button className="hidden lg:flex items-center gap-2 text-sm font-medium text-gray-300 hover:text-white">
-              <Menu size={18} /> Categories
-            </button>
-            <div className="hidden lg:flex items-center gap-6 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 ml-4">
-                <a href="#" className="hover:text-white transition-colors">Become a Seller</a>
-                <Link to="/agri-auctions" className="hover:text-white transition-colors">Agri Auctions</Link>
-            </div>
-          </div>
-          <div className="flex-1 max-w-2xl relative">
-            <input 
-              type="text" 
-              placeholder="Search devices, bulk stock..." 
-              className="w-full bg-[#111827] border border-gray-800 rounded-full py-2 px-10 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
-            />
-            <Search className="absolute left-3 top-2 text-gray-500" size={18} />
-          </div>
-          <div className="flex items-center gap-6 text-gray-300">
-            <div className="hidden md:flex items-center gap-4">
-              <div className="relative cursor-pointer hover:text-white" onClick={() => navigate('/wishlist')}>
-                <Heart size={20} className={wishlistCount > 0 ? 'text-red-500 fill-red-500' : ''} />
-                {wishlistCount > 0 && (
-                  <span className="absolute -top-2 -right-2 bg-red-500 text-[10px] text-white font-bold px-1 rounded-full">{wishlistCount}</span>
-                )}
-              </div>
-              <User 
-                size={20} 
-                className="cursor-pointer hover:text-white" 
-                onClick={() => navigate('/profile')}
-              />
-              <div 
-                className="relative cursor-pointer hover:text-white text-amber-500"
-                onClick={() => navigate('/cart')}
-              >
-                <ShoppingCart size={20} />
-                <span className="absolute -top-2 -right-2 bg-amber-500 text-[10px] text-white font-bold px-1 rounded-full">{cartCount}</span>
-              </div>
-            </div>
-            <button onClick={handleLogout} className="text-gray-400 hover:text-amber-500 transition-colors">
-              <LogOut size={20} />
-            </button>
-          </div>
-        </div>
-      </header>
+      <Header />
 
       {/* Breadcrumbs */}
       <div className="max-w-7xl mx-auto px-4 py-4 flex items-center gap-2 text-xs text-gray-500">
-        <Link to="/" className="hover:text-blue-600">Home</Link> <ChevronRight size={12} />
+        <Link 
+          to={isSeller ? '/seller-dashboard' : '/'} 
+          className="hover:text-blue-600"
+        >
+          {isSeller ? 'Dashboard' : 'Home'}
+        </Link> <ChevronRight size={12} />
         <span>{product.category || 'Products'}</span> <ChevronRight size={12} />
         <span className="text-gray-900 font-medium">{product.name}</span>
       </div>
@@ -318,10 +285,10 @@ const ProductDetail = () => {
 
           {showNegotiateButton() && (
             <button 
-              onClick={() => navigate(`/negotiate/${product.id}`)}
+              onClick={handleNegotiationNavigation}
               className="w-full mt-4 bg-teal-600 text-white py-4 rounded-xl font-bold hover:bg-teal-700 transition-all flex items-center justify-center gap-2 shadow-lg shadow-teal-600/20 border-2 border-teal-500"
             >
-              <MessageSquare size={18} /> NEGOTIATE PRICE
+              <MessageSquare size={18} /> {isSeller ? 'VIEW NEGOTIATIONS' : 'NEGOTIATE PRICE'}
             </button>
           )}
 
@@ -358,10 +325,10 @@ const ProductDetail = () => {
             </div>
 
             <button 
-              onClick={() => navigate(`/negotiate/${product.id}`)}
+              onClick={handleNegotiationNavigation}
               className="w-full mt-6 bg-[#0D9488] text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-[#0F766E] transition-colors shadow-lg shadow-teal-500/20"
             >
-              <MessageSquare size={18} /> Make Bulk Offer
+              <MessageSquare size={18} /> {isSeller ? 'View Bulk Negotiations' : 'Make Bulk Offer'}
             </button>
           </div>
         </div>

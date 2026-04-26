@@ -14,6 +14,25 @@ const productSchema = new mongoose.Schema({
     type: Number,
     required: [true, 'Please add a price']
   },
+  oldPrice: {
+    type: Number
+  },
+  discount: {
+    type: String,
+    default: '0%'
+  },
+  brand: {
+    type: String,
+    default: 'Generic'
+  },
+  rating: {
+    type: Number,
+    default: 0
+  },
+  numReviews: {
+    type: Number,
+    default: 0
+  },
   category: {
     type: String,
     required: [true, 'Please add a category']

@@ -2,11 +2,11 @@ import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { 
   LayoutDashboard, Package, ShoppingCart, MessageSquare, 
-  Gavel, Wallet, RotateCcw, Search, Bell, User, Heart,
-  ArrowRight, MessageCircle
+  Gavel, Wallet, RotateCcw, ArrowRight, MessageCircle
 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import Header from '../../components/Header';
 
 const SellerNegotiations = () => {
   const navigate = useNavigate();
@@ -29,43 +29,22 @@ const SellerNegotiations = () => {
       }
     } catch (err) {
       console.error('Failed to fetch products:', err);
+      if (err.response?.status === 401) {
+        localStorage.removeItem('token');
+        navigate('/login');
+      }
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    const user = JSON.parse(localStorage.getItem('user'));
-    if (!user || user.role !== 'seller') {
-      navigate('/');
-    } else {
-      fetchSellerProducts();
-    }
-  }, [navigate]);
-
-  const handleLogout = () => {
-    localStorage.removeItem('token');
-    navigate('/login');
-  };
+    fetchSellerProducts();
+  }, []);
 
   return (
     <div className="min-h-screen bg-[#F8F9FB] flex flex-col font-sans">
-      {/* Header */}
-      <header className="bg-[#0A1628] text-white sticky top-0 z-50">
-        <div className="max-w-[1600px] mx-auto px-6 py-3 flex items-center justify-between gap-8">
-          <div className="flex items-center gap-8">
-            <Link to="/" className="text-2xl font-bold tracking-tight">ZyLora</Link>
-          </div>
-
-          <div className="flex items-center gap-5 text-gray-400">
-            <Bell size={20} className="cursor-pointer hover:text-white" />
-            <User size={20} className="cursor-pointer hover:text-white" />
-            <button onClick={handleLogout} className="ml-2 p-2 hover:bg-gray-800 rounded-full transition-colors">
-              <RotateCcw size={18} />
-            </button>
-          </div>
-        </div>
-      </header>
+      <Header />
 
       <div className="flex flex-1 max-w-[1600px] mx-auto w-full">
         {/* Sidebar */}

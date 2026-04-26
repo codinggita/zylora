@@ -2,8 +2,12 @@ import React, { useState } from 'react';
 import { CheckCircle2, Mail, Lock, User, ArrowRight } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import { useCart } from '../../context/CartContext';
+import { useWishlist } from '../../context/WishlistContext';
 
 const Login = () => {
+  const { fetchCart } = useCart();
+  const { fetchWishlist } = useWishlist();
   const [userType, setUserType] = useState('buyer');
   const [formData, setFormData] = useState({
     email: '',
@@ -27,18 +31,24 @@ const Login = () => {
         (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
           ? 'http://localhost:5001/api' 
           : 'https://zylora-3.onrender.com/api');
-      const res = await axios.post(`${apiUrl}/auth/login`, formData);
+      const res = await axios.post(`${apiUrl}/auth/login`, { ...formData, role: userType });
       
       if (res.data.success) {
         localStorage.setItem('token', res.data.token);
         localStorage.setItem('user', JSON.stringify(res.data.user));
         
-        // Redirect based on role
+        // Redirect immediately based on role
         if (res.data.user.role === 'seller') {
           navigate('/seller-dashboard');
         } else {
           navigate('/');
         }
+
+        // Refresh cart and wishlist data in background
+        Promise.all([
+          fetchCart(),
+          fetchWishlist()
+        ]).catch(err => console.error('Error refreshing contexts:', err));
       }
     } catch (err) {
       setError(err.response?.data?.error || 'Login failed. Please check your credentials.');

@@ -34,7 +34,7 @@ exports.signup = async (req, res) => {
 // @access  Public
 exports.login = async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { email, password, role } = req.body;
 
     // Validate email & password
     if (!email || !password) {
@@ -46,6 +46,14 @@ exports.login = async (req, res) => {
 
     if (!user) {
       return res.status(401).json({ success: false, error: 'Invalid credentials' });
+    }
+
+    // Check if role matches if provided
+    if (role && user.role !== role) {
+      return res.status(401).json({ 
+        success: false, 
+        error: `This account is registered as a ${user.role}. Please login through the correct portal.` 
+      });
     }
 
     // Check if password matches
@@ -110,6 +118,119 @@ exports.updateDetails = async (req, res) => {
       success: false,
       error: err.message
     });
+  }
+};
+
+// @desc    Add address
+// @route   POST /api/auth/addresses
+// @access  Private
+exports.addAddress = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id);
+    
+    // If it's the first address, make it selected
+    if (user.addresses.length === 0) {
+      req.body.selected = true;
+    } else if (req.body.selected) {
+      // Unselect others
+      user.addresses.forEach(addr => addr.selected = false);
+    }
+
+    user.addresses.push(req.body);
+    await user.save();
+
+    res.status(200).json({
+      success: true,
+      data: user.addresses
+    });
+  } catch (err) {
+    res.status(400).json({ success: false, error: err.message });
+  }
+};
+
+// @desc    Update address
+// @route   PUT /api/auth/addresses/:id
+// @access  Private
+exports.updateAddress = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id);
+    const address = user.addresses.id(req.params.id);
+
+    if (!address) {
+      return res.status(404).json({ success: false, error: 'Address not found' });
+    }
+
+    if (req.body.selected) {
+      user.addresses.forEach(addr => addr.selected = false);
+    }
+
+    address.set(req.body);
+    await user.save();
+
+    res.status(200).json({
+      success: true,
+      data: user.addresses
+    });
+  } catch (err) {
+    res.status(400).json({ success: false, error: err.message });
+  }
+};
+
+// @desc    Delete address
+// @route   DELETE /api/auth/addresses/:id
+// @access  Private
+exports.deleteAddress = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id);
+    const address = user.addresses.id(req.params.id);
+
+    if (!address) {
+      return res.status(404).json({ success: false, error: 'Address not found' });
+    }
+
+    const wasSelected = address.selected;
+    address.remove();
+    
+    // If we deleted the selected address and have others, select the first one
+    if (wasSelected && user.addresses.length > 0) {
+      user.addresses[0].selected = true;
+    }
+
+    await user.save();
+
+    res.status(200).json({
+      success: true,
+      data: user.addresses
+    });
+  } catch (err) {
+    res.status(400).json({ success: false, error: err.message });
+  }
+};
+
+// @desc    Select address
+// @route   PUT /api/auth/addresses/:id/select
+// @access  Private
+exports.selectAddress = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id);
+    const address = user.addresses.id(req.params.id);
+
+    if (!address) {
+      return res.status(404).json({ success: false, error: 'Address not found' });
+    }
+
+    user.addresses.forEach(addr => {
+      addr.selected = addr._id.toString() === req.params.id;
+    });
+
+    await user.save();
+
+    res.status(200).json({
+      success: true,
+      data: user.addresses
+    });
+  } catch (err) {
+    res.status(400).json({ success: false, error: err.message });
   }
 };
 
