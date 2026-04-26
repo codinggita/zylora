@@ -15,6 +15,7 @@ import Wishlist from './pages/Wishlist/Wishlist';
 import AgriAuctions from './pages/AgriAuctions/AgriAuctions';
 import SellerDashboard from './pages/SellerDashboard/SellerDashboard';
 import SellerNegotiations from './pages/SellerNegotiations/SellerNegotiations';
+import SellerOrders from './pages/SellerOrders/SellerOrders';
 import ProtectedRoute from './components/ProtectedRoute';
 import './App.css';
 import { CartProvider } from './context/CartContext';
@@ -152,6 +153,14 @@ function App() {
             element={
               <ProtectedRoute role="seller">
                 <SellerNegotiations />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/seller-orders" 
+            element={
+              <ProtectedRoute role="seller">
+                <SellerOrders />
               </ProtectedRoute>
             } 
           />
