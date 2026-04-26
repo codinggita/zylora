@@ -1,17 +1,16 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  ArrowLeft, Search, Heart, ShoppingCart, User, 
-  LogOut, Menu, Send, Paperclip, Phone, Video, 
-  CheckCircle, Clock, ShieldCheck, Tag, Info,
-  Check,
-  Edit2
+import {
+  ArrowLeft, Send, Phone, Video, Check, 
+  Paperclip, ShieldCheck, Edit2, CheckCircle,
+  Info, ShoppingCart, Tag
 } from 'lucide-react';
 import { useNavigate, Link, useParams } from 'react-router-dom';
 import { products } from '../../data/products';
 import { useCart } from '../../context/CartContext';
 import { io } from 'socket.io-client';
 import axios from 'axios';
+import Header from '../../components/Header';
 
 const Negotiation = () => {
   const { id } = useParams();
@@ -28,6 +27,7 @@ const Negotiation = () => {
   const chatEndRef = useRef(null);
   const socket = useRef(null);
   const [userRole, setUserRole] = useState('buyer');
+  const isSeller = userRole === 'seller';
 
   const scrollToBottom = (force = false) => {
     const messagesContainer = chatEndRef.current?.parentElement;
@@ -49,37 +49,42 @@ const Negotiation = () => {
   const userRoleRef = useRef('buyer');
 
   useEffect(() => {
-    // Get user role
-    const user = JSON.parse(localStorage.getItem('user'));
-    if (user && user.role) {
-      setUserRole(user.role);
-      userRoleRef.current = user.role;
+    // Improved user data parsing with fallback
+    const userData = localStorage.getItem('user');
+    let user = null;
+    try {
+      user = userData ? JSON.parse(userData) : null;
+    } catch (err) {
+      console.error('Error parsing user data:', err);
+    }
+
+    let currentUserId = null;
+    if (user) {
+      const role = user.role || 'buyer';
+      setUserRole(role);
+      userRoleRef.current = role;
+      currentUserId = user._id || user.id;
+    } else {
+      // Fallback if no user is found
+      setUserRole('buyer');
+      userRoleRef.current = 'buyer';
     }
 
     const BACKEND_URL = window.location.hostname === 'localhost' 
       ? 'http://localhost:5001' 
       : 'https://zylora-3.onrender.com';
 
-    const fetchProduct = async () => {
+    const fetchProductAndChat = async () => {
       try {
-        // 1. Try static products first (numeric ID)
-        const staticProd = products.find(p => p.id === parseInt(id));
-        if (staticProd) {
-          setProduct(staticProd);
-          setAgreedPrice(staticProd.price * 0.9);
-          setMessages([
-            { id: 1, sender: 'you', text: `Hello, I'm interested in the ${staticProd.name}. Would you consider ₹${(staticProd.price * 0.85).toLocaleString()} for a quick deal?`, time: '10:45 AM', status: 'read' },
-            { id: 2, sender: 'seller', text: `Hi! Thanks for reaching out. ₹${(staticProd.price * 0.85).toLocaleString()} is a bit low given the condition. How about ₹${(staticProd.price * 0.95).toLocaleString()}?`, time: '10:48 AM' }
-          ]);
-          setLoading(false);
-          return;
-        }
+        const token = localStorage.getItem('token');
+        const config = { headers: { Authorization: `Bearer ${token}` } };
 
-        // 2. Try backend (MongoDB _id)
-        const res = await axios.get(`${BACKEND_URL}/api/products/${id}`);
-        if (res.data.success) {
-          const p = res.data.data;
-          const formattedProd = {
+        // 1. Fetch Product
+        const prodRes = await axios.get(`${BACKEND_URL}/api/products/${id}`);
+        let currentProduct = null;
+        if (prodRes.data.success) {
+          const p = prodRes.data.data;
+          currentProduct = {
             id: p._id,
             name: p.name,
             price: p.price,
@@ -87,38 +92,71 @@ const Negotiation = () => {
             seller: p.seller || { name: 'Verified Seller' },
             brand: p.brand || 'Premium'
           };
-          setProduct(formattedProd);
-          setAgreedPrice(formattedProd.price * 0.9);
-          setMessages([
-            { id: 1, sender: 'you', text: `Hello, I'm interested in the ${formattedProd.name}. Would you consider ₹${(formattedProd.price * 0.85).toLocaleString()} for a quick deal?`, time: '10:45 AM', status: 'read' }
-          ]);
+          setProduct(currentProduct);
+          setAgreedPrice(currentProduct.price * 0.9);
+        } else {
+          // Fallback to static
+          const staticProd = products.find(p => p.id === parseInt(id));
+          if (staticProd) {
+            currentProduct = staticProd;
+            setProduct(staticProd);
+            setAgreedPrice(staticProd.price * 0.9);
+          }
+        }
+
+        // 2. Fetch Chat History
+        if (token) {
+          const chatRes = await axios.get(`${BACKEND_URL}/api/negotiation/${id}`, config);
+          if (chatRes.data.success && chatRes.data.data.length > 0) {
+            const history = chatRes.data.data.map(m => ({
+              id: m._id,
+              sender: (m.sender._id || m.sender) === currentUserId ? 'you' : (userRole === 'seller' ? 'buyer' : 'seller'),
+              text: m.text,
+              type: m.type,
+              offerPrice: m.offerPrice,
+              time: new Date(m.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+              status: m.status
+            }));
+            setMessages(history);
+          } else if (currentProduct) {
+            // Default welcome message if no history
+            setMessages([
+              { id: 1, sender: 'seller', text: `Hi! I'm the seller of ${currentProduct.name}. How can I help you today?`, time: '10:48 AM' }
+            ]);
+          }
         }
       } catch (err) {
-        console.error('Error fetching product:', err);
+        console.error('Error fetching data:', err);
+        if (err.response?.status === 401) {
+          localStorage.removeItem('token');
+          navigate('/login');
+        }
       } finally {
         setLoading(false);
       }
     };
 
-    fetchProduct();
+    fetchProductAndChat();
 
     // Initialize socket
     socket.current = io(BACKEND_URL);
 
     socket.current.on('connect', () => {
       console.log('Connected to WebSocket server');
-      // Join a specific room for this product negotiation
       socket.current.emit('join_negotiation', id);
     });
 
     socket.current.on('receive_message', (message) => {
       console.log('Message received from socket:', message);
-      const displaySender = message.sender === userRoleRef.current ? 'you' : message.sender;
+      const isMe = message.sender === currentUserId;
+      const displaySender = isMe ? 'you' : (userRole === 'seller' ? 'buyer' : 'seller');
 
       setMessages(prev => [...prev, {
-        id: Date.now(),
+        id: message.id || Date.now(),
         sender: displaySender,
         text: message.text,
+        type: message.type,
+        offerPrice: message.offerPrice,
         time: message.time,
         status: 'received'
       }]);
@@ -157,6 +195,9 @@ const Negotiation = () => {
     e.preventDefault();
     if (!newMessage.trim()) return;
 
+    const user = JSON.parse(localStorage.getItem('user'));
+    const senderId = user?._id || user?.id;
+
     const msg = {
       id: Date.now(),
       sender: 'you',
@@ -172,8 +213,8 @@ const Negotiation = () => {
       socket.current.emit('send_message', {
         productId: id,
         text: newMessage,
-        sender: userRole,
-        time: msg.time
+        senderId: senderId,
+        type: 'text'
       });
     }
 
@@ -202,11 +243,6 @@ const Negotiation = () => {
     setMessages(prev => [...prev, systemMsg]);
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem('token');
-    navigate('/login');
-  };
-
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#F8F9FB]">
@@ -220,8 +256,8 @@ const Negotiation = () => {
       <div className="min-h-screen flex items-center justify-center bg-[#F8F9FB]">
         <div className="text-center">
           <h2 className="text-2xl font-bold text-gray-900">Product Not Found</h2>
-          <button onClick={() => navigate('/')} className="mt-4 bg-blue-600 text-white px-6 py-2 rounded-lg">
-            Go Home
+          <button onClick={() => navigate(isSeller ? '/seller-negotiations' : '/')} className="mt-4 bg-blue-600 text-white px-6 py-2 rounded-lg">
+            {isSeller ? 'Back to Negotiations' : 'Go Home'}
           </button>
         </div>
       </div>
@@ -230,38 +266,7 @@ const Negotiation = () => {
 
   return (
     <div className="min-h-screen bg-[#F8F9FB] text-gray-900 font-sans">
-      {/* Header */}
-      <header className="bg-[#0A1628] text-white sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between gap-4">
-          <div className="flex items-center gap-6">
-            <Link to="/" className="text-xl md:text-2xl font-bold tracking-tight text-white">ZyLora</Link>
-            <button type="button" className="hidden lg:flex items-center gap-2 text-sm font-medium text-gray-300 hover:text-white">
-              <Menu size={18} /> Categories
-            </button>
-          </div>
-          <div className="flex-1 max-w-2xl relative">
-            <input 
-              type="text" 
-              placeholder="Search products..." 
-              className="w-full bg-[#111827] border border-gray-800 rounded-full py-2 px-10 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
-            />
-            <Search className="absolute left-3 top-2 text-gray-500" size={18} />
-          </div>
-          <div className="flex items-center gap-6 text-gray-300">
-            <div className="hidden md:flex items-center gap-4">
-              <Heart size={20} className="cursor-pointer hover:text-white" />
-              <User size={20} className="cursor-pointer hover:text-white" />
-              <div className="relative cursor-pointer hover:text-white text-amber-500" onClick={() => navigate('/cart')}>
-                <ShoppingCart size={20} />
-                <span className="absolute -top-2 -right-2 bg-amber-500 text-[10px] text-white font-bold px-1 rounded-full">{cartCount}</span>
-              </div>
-            </div>
-            <button type="button" onClick={handleLogout} className="text-gray-400 hover:text-amber-500 transition-colors">
-              <LogOut size={20} />
-            </button>
-          </div>
-        </div>
-      </header>
+      <Header />
 
       <main className="max-w-7xl mx-auto px-4 py-6">
         {/* Breadcrumb */}

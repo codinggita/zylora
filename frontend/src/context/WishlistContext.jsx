@@ -32,6 +32,10 @@ export const WishlistProvider = ({ children }) => {
       }
     } catch (error) {
       console.error('Error fetching wishlist:', error);
+      if (error.response?.status === 401) {
+        localStorage.removeItem('token');
+        setWishlistItems([]);
+      }
     } finally {
       setLoading(false);
     }
@@ -100,9 +104,9 @@ export const WishlistProvider = ({ children }) => {
       loading, 
       addToWishlist, 
       removeFromWishlist, 
-      isInWishlist,
+      isInWishlist, 
       wishlistCount: wishlistItems.length,
-      refreshWishlist: fetchWishlist
+      fetchWishlist
     }}>
       {children}
     </WishlistContext.Provider>

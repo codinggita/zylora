@@ -4,6 +4,7 @@ const { Server } = require('socket.io');
 const dotenv = require('dotenv');
 const cors = require('cors');
 const connectDB = require('./config/db');
+const Message = require('./models/Message');
 
 // Load env vars
 dotenv.config();
@@ -33,16 +34,28 @@ io.on('connection', (socket) => {
 
   socket.on('send_message', async (data) => {
     try {
-      if (!data || !data.productId) {
+      if (!data || !data.productId || !data.senderId) {
         console.log('Invalid message data received:', data);
         return;
       }
 
-      console.log('Message received:', data);
-      socket.to(data.productId).emit('receive_message', {
+      // Save message to database
+      const newMessage = await Message.create({
+        productId: data.productId,
+        sender: data.senderId,
         text: data.text,
-        sender: data.sender,
-        time: data.time || new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        type: data.type || 'text',
+        offerPrice: data.offerPrice
+      });
+
+      console.log('Message saved and emitting:', data);
+      socket.to(data.productId).emit('receive_message', {
+        id: newMessage._id,
+        text: data.text,
+        sender: data.senderId,
+        type: data.type || 'text',
+        offerPrice: data.offerPrice,
+        time: newMessage.createdAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
       });
     } catch (err) {
       console.error('Socket send_message error:', err);
@@ -99,12 +112,16 @@ const auth = require('./routes/authRoutes');
 const orders = require('./routes/orderRoutes');
 const products = require('./routes/productRoutes');
 const wishlist = require('./routes/wishlistRoutes');
+const cart = require('./routes/cartRoutes');
+const negotiation = require('./routes/negotiationRoutes');
 
 // Mount routers
 app.use('/api/auth', auth);
 app.use('/api/orders', orders);
 app.use('/api/products', products);
 app.use('/api/wishlist', wishlist);
+app.use('/api/cart', cart);
+app.use('/api/negotiation', negotiation);
 
 const PORT = process.env.PORT || 5000;
 

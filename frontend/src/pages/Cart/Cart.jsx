@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
 import { 
-  Search, Menu, ShoppingCart, Heart, User, 
-  ChevronRight, Trash2, Plus, Minus, ShieldCheck, 
-  Truck, RotateCcw, LogOut, Ticket, ArrowLeft
+  ShoppingCart, ChevronRight, Trash2, Plus, Minus, ShieldCheck, 
+  Truck, Ticket
 } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useCart } from '../../context/CartContext';
 import { useWishlist } from '../../context/WishlistContext';
+import Header from '../../components/Header';
 
 const Cart = () => {
   const navigate = useNavigate();
@@ -30,53 +30,9 @@ const Cart = () => {
 
   const stats = calculateTotal();
 
-  const handleLogout = () => {
-    localStorage.removeItem('token');
-    navigate('/login');
-  };
-
   return (
     <div className="min-h-screen bg-[#F8F9FB] text-gray-900 font-sans pb-24">
-      {/* Main Header */}
-      <header className="bg-[#0A1628] text-white sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between gap-4">
-          <div className="flex items-center gap-6">
-            <Link to="/" className="text-xl md:text-2xl font-bold tracking-tight text-white">ZyLora</Link>
-            <div className="hidden lg:flex items-center gap-6 text-xs font-bold uppercase tracking-widest text-gray-400">
-                <a href="#" className="hover:text-white transition-colors">Become a Seller</a>
-                <a href="#" className="hover:text-white transition-colors">Agri Auctions</a>
-            </div>
-          </div>
-
-          <div className="flex-1 max-w-xl relative mx-4">
-            <input 
-              type="text" 
-              placeholder="Search auctions..." 
-              className="w-full bg-[#111827] border border-gray-800 rounded-full py-2 px-10 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
-            />
-            <Search className="absolute left-3 top-2 text-gray-500" size={18} />
-          </div>
-
-          <div className="flex items-center gap-6 text-gray-300">
-            <div className="hidden md:flex items-center gap-4">
-              <LogOut size={20} className="cursor-pointer hover:text-white" onClick={handleLogout} />
-              <User size={20} className="cursor-pointer hover:text-white" onClick={() => navigate('/profile')} />
-              <div className="relative cursor-pointer hover:text-white" onClick={() => navigate('/wishlist')}>
-                <Heart size={20} className={wishlistCount > 0 ? 'text-red-500 fill-red-500' : ''} />
-                {wishlistCount > 0 && (
-                  <span className="absolute -top-2 -right-2 bg-red-500 text-[10px] text-white font-bold px-1 rounded-full min-w-[18px] text-center">{wishlistCount}</span>
-                )}
-              </div>
-              <div className="relative cursor-pointer text-amber-500">
-                <ShoppingCart size={20} />
-                {cartCount > 0 && (
-                  <span className="absolute -top-2 -right-2 bg-amber-500 text-[10px] text-white font-bold px-1 rounded-full">{cartCount}</span>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-      </header>
+      <Header />
 
       <main className="max-w-7xl mx-auto px-4 mt-8">
         {/* Breadcrumbs */}

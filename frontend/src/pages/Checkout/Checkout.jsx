@@ -1,12 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { 
   Check, CreditCard, Landmark, Wallet, 
   ChevronRight, ArrowLeft, MapPin, 
-  ShieldCheck, HelpCircle, LogOut, User, Heart, ShoppingCart, Search, Trash2
+  ShieldCheck, HelpCircle, Trash2
 } from 'lucide-react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { useCart } from '../../context/CartContext';
+import Header from '../../components/Header';
 
 const Checkout = () => {
   const navigate = useNavigate();
@@ -15,21 +16,12 @@ const Checkout = () => {
   const { cartItems, cartCount, clearCart } = useCart();
   const [step, setStep] = useState(2); 
   const [paymentMethod, setPaymentMethod] = useState('upi');
+  const [loading, setLoading] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
 
   // Address State
-  const [addresses, setAddresses] = useState([
-    {
-      id: 1,
-      name: "Rahul Sharma",
-      type: "Home",
-      address: "Flat 402, Skyline Residency, Bandra West, Near Lilavati Hospital, Mumbai, Maharashtra 400050",
-      mobile: "+91 98765 43210",
-      selected: true
-    }
-  ]);
-
+  const [addresses, setAddresses] = useState([]);
   const [editingId, setEditingId] = useState(null);
-
   const [newAddress, setNewAddress] = useState({
     name: '',
     mobile: '',
@@ -37,96 +29,121 @@ const Checkout = () => {
     address: ''
   });
 
+  const BACKEND_URL = window.location.hostname === 'localhost' 
+    ? 'http://localhost:5001' 
+    : 'https://zylora-3.onrender.com';
+
+  useEffect(() => {
+    const fetchUserAddresses = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        if (!token) return;
+
+        const res = await axios.get(`${BACKEND_URL}/api/auth/me`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (res.data.success) {
+          setAddresses(res.data.data.addresses || []);
+        }
+      } catch (err) {
+        console.error('Error fetching addresses:', err);
+        if (err.response?.status === 401) {
+          localStorage.removeItem('token');
+          navigate('/login');
+        }
+      }
+    };
+    fetchUserAddresses();
+  }, [BACKEND_URL, navigate]);
+
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setNewAddress(prev => ({ ...prev, [name]: value }));
   };
 
   const handleEditAddress = (addr, e) => {
-    e.stopPropagation(); // Prevent card selection
-    setEditingId(addr.id);
-    
-    // Parse the address to try and extract PIN if it was added via our "Save" logic
-    let mainAddr = addr.address;
-    let pin = '';
-    if (mainAddr.includes(', PIN: ')) {
-      const parts = mainAddr.split(', PIN: ');
-      mainAddr = parts[0];
-      pin = parts[1];
-    }
-
+    e.stopPropagation();
+    setEditingId(addr._id || addr.id);
     setNewAddress({
       name: addr.name,
       mobile: addr.mobile,
-      pincode: pin,
-      address: mainAddr
+      pincode: addr.pincode || '',
+      address: addr.address
     });
     
-    // Scroll to form
     const formElement = document.getElementById('address-form');
     if (formElement) formElement.scrollIntoView({ behavior: 'smooth' });
   };
 
-  const handleDeleteAddress = (id, e) => {
-    e.stopPropagation(); // Prevent card selection
+  const handleDeleteAddress = async (id, e) => {
+    e.stopPropagation();
     if (addresses.length === 1) {
       alert("You must have at least one delivery address.");
       return;
     }
-    setAddresses(prev => {
-      const filtered = prev.filter(addr => addr.id !== id);
-      // If deleted address was selected, select the first remaining one
-      if (prev.find(a => a.id === id)?.selected) {
-        filtered[0].selected = true;
+    
+    try {
+      const token = localStorage.getItem('token');
+      const res = await axios.delete(`${BACKEND_URL}/api/auth/addresses/${id}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.data.success) {
+        setAddresses(res.data.data);
       }
-      return filtered;
-    });
+    } catch (err) {
+      console.error('Error deleting address:', err);
+      if (err.response?.status === 401) {
+        localStorage.removeItem('token');
+        navigate('/login');
+      } else {
+        alert('Failed to delete address');
+      }
+    }
   };
 
-  const handleSaveAddress = () => {
+  const handleSaveAddress = async () => {
     if (!newAddress.name || !newAddress.mobile || !newAddress.address) {
       alert("Please fill in all required fields");
       return;
     }
 
-    if (editingId) {
-      // Update existing
-      setAddresses(prev => prev.map(addr => 
-        addr.id === editingId 
-          ? { 
-              ...addr, 
-              name: newAddress.name, 
-              mobile: newAddress.mobile, 
-              address: `${newAddress.address}${newAddress.pincode ? `, PIN: ${newAddress.pincode}` : ''}`
-            } 
-          : addr
-      ));
-      setEditingId(null);
-      alert("Address updated successfully!");
-    } else {
-      // Add new
-      const addedAddress = {
-        id: Date.now(),
-        name: newAddress.name,
-        type: "New",
-        address: `${newAddress.address}${newAddress.pincode ? `, PIN: ${newAddress.pincode}` : ''}`,
-        mobile: newAddress.mobile,
-        selected: true
-      };
+    try {
+      const token = localStorage.getItem('token');
+      let res;
+      if (editingId) {
+        res = await axios.put(`${BACKEND_URL}/api/auth/addresses/${editingId}`, newAddress, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+      } else {
+        res = await axios.post(`${BACKEND_URL}/api/auth/addresses`, newAddress, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+      }
 
-      setAddresses(prev => [addedAddress, ...prev.map(a => ({ ...a, selected: false }))]);
-      alert("Address saved and selected!");
+      if (res.data.success) {
+        setAddresses(res.data.data);
+        setEditingId(null);
+        setNewAddress({ name: '', mobile: '', pincode: '', address: '' });
+        alert(editingId ? "Address updated successfully!" : "Address saved!");
+      }
+    } catch (err) {
+      console.error('Error saving address:', err);
+      alert('Failed to save address');
     }
-    
-    // Reset form
-    setNewAddress({ name: '', mobile: '', pincode: '', address: '' });
   };
 
-  const selectAddress = (id) => {
-    setAddresses(prev => prev.map(addr => ({
-      ...addr,
-      selected: addr.id === id
-    })));
+  const selectAddress = async (id) => {
+    try {
+      const token = localStorage.getItem('token');
+      const res = await axios.put(`${BACKEND_URL}/api/auth/addresses/${id}/select`, {}, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.data.success) {
+        setAddresses(res.data.data);
+      }
+    } catch (err) {
+      console.error('Error selecting address:', err);
+    }
   };
 
   const handlePlaceOrder = async () => {
@@ -193,44 +210,9 @@ const Checkout = () => {
 
   const stats = calculateTotal();
 
-  const handleLogout = () => {
-    localStorage.removeItem('token');
-    navigate('/login');
-  };
-
   return (
     <div className="min-h-screen bg-[#F8F9FB] text-gray-900 font-sans pb-24">
-      {/* Header */}
-      <header className="bg-[#0A1628] text-white sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between gap-4">
-          <div className="flex items-center gap-6">
-            <Link to="/" className="text-xl md:text-2xl font-bold tracking-tight text-white">ZyLora</Link>
-            <div className="hidden lg:flex items-center gap-6 text-xs font-bold uppercase tracking-widest text-gray-400">
-                <a href="#" className="hover:text-white transition-colors">Become a Seller</a>
-                <a href="#" className="hover:text-white transition-colors">Agri Auctions</a>
-            </div>
-          </div>
-          <div className="flex-1 max-w-xl relative mx-4">
-            <input 
-              type="text" 
-              placeholder="Search auctions..." 
-              className="w-full bg-[#111827] border border-gray-800 rounded-full py-2 px-10 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
-            />
-            <Search className="absolute left-3 top-2 text-gray-500" size={18} />
-          </div>
-          <div className="flex items-center gap-6 text-gray-300">
-            <div className="hidden md:flex items-center gap-4">
-              <LogOut size={20} className="cursor-pointer hover:text-white" onClick={handleLogout} />
-              <User size={20} className="cursor-pointer hover:text-white" />
-              <Heart size={20} className="cursor-pointer hover:text-white" />
-              <div className="relative cursor-pointer hover:text-white" onClick={() => navigate('/cart')}>
-                <ShoppingCart size={20} />
-                <span className="absolute -top-2 -right-2 bg-amber-500 text-[10px] text-white font-bold px-1 rounded-full">{cartCount}</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </header>
+      <Header placeholder="Search products..." />
 
       <main className="max-w-7xl mx-auto px-4 mt-8">
         {/* Progress Tracker */}

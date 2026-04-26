@@ -2,12 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { 
   Package, MapPin, Truck, CheckCircle, Clock, 
-  Search, Heart, ShoppingCart, LogOut, User,
-  Phone, AlertTriangle, ChevronRight
+  Phone, AlertTriangle, ChevronRight, LogOut
 } from 'lucide-react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
 import axios from 'axios';
 import { useCart } from '../../context/CartContext';
+import Header from '../../components/Header';
 
 const TrackOrder = () => {
   const { id } = useParams();
@@ -39,6 +39,10 @@ const TrackOrder = () => {
         setLoading(false);
       } catch (err) {
         console.error('Failed to fetch order:', err);
+        if (err.response?.status === 401) {
+          localStorage.removeItem('token');
+          navigate('/login');
+        }
         setLoading(false);
       }
     };
@@ -50,12 +54,6 @@ const TrackOrder = () => {
 
     return () => clearInterval(interval);
   }, [id, navigate, BACKEND_URL]);
-
-  const handleLogout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    navigate('/login');
-  };
 
   if (loading) {
     return (
@@ -139,41 +137,7 @@ const TrackOrder = () => {
 
   return (
     <div className="min-h-screen bg-[#F8F9FB] text-gray-900 font-sans pb-20">
-      {/* Header */}
-      <header className="bg-[#0A1628] text-white sticky top-0 z-50">
-        <div className="max-w-[1600px] mx-auto px-6 py-4 flex items-center justify-between gap-8">
-          <div className="flex items-center gap-10">
-            <Link to="/" className="text-2xl font-bold tracking-tight text-white">ZyLora</Link>
-            <nav className="hidden lg:flex items-center gap-6">
-              <Link to="/seller-dashboard" className="text-xs font-medium text-gray-400 hover:text-white transition-colors">Become a Seller</Link>
-              <Link to="/agri-auctions" className="text-xs font-medium text-gray-400 hover:text-white transition-colors">Agri Auctions</Link>
-            </nav>
-          </div>
-          
-          <div className="flex-1 max-w-xl relative">
-            <input 
-              type="text" 
-              placeholder="Search orders..." 
-              className="w-full bg-[#1F2937] border-none rounded-lg py-2.5 px-10 text-xs focus:outline-none focus:ring-1 focus:ring-gray-700 placeholder:text-gray-500"
-            />
-            <Search className="absolute left-3 top-2.5 text-gray-500" size={16} />
-          </div>
-
-          <div className="flex items-center gap-6 text-gray-400">
-            <button onClick={handleLogout} className="hover:text-amber-500 transition-colors">
-              <LogOut size={20} />
-            </button>
-            <User size={20} className="cursor-pointer hover:text-amber-500 transition-colors" />
-            <Heart size={20} className="cursor-pointer hover:text-amber-500 transition-colors" />
-            <div className="relative cursor-pointer hover:text-amber-500 transition-colors" onClick={() => navigate('/cart')}>
-              <ShoppingCart size={20} />
-              {cartCount > 0 && (
-                <span className="absolute -top-2 -right-2 bg-amber-500 text-[10px] text-white font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center">{cartCount}</span>
-              )}
-            </div>
-          </div>
-        </div>
-      </header>
+      <Header />
 
       <main className="max-w-[1600px] mx-auto px-6 py-8">
         {/* Breadcrumb */}

@@ -1,5 +1,6 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import Home from './pages/Home/Home';
+import SearchPage from './pages/Search/SearchPage';
 import Signup from './pages/Signup/Signup';
 import Login from './pages/Login/Login';
 import ProductDetail from './pages/ProductDetail/ProductDetail';
@@ -25,12 +26,20 @@ function App() {
       <CartProvider>
         <Router>
           <Routes>
-          {/* Protected Route for Homepage */}
+          {/* Buyer-only: Home feed redirects sellers to seller dashboard */}
           <Route 
             path="/" 
             element={
-              <ProtectedRoute>
+              <ProtectedRoute buyerOnly>
                 <Home />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/search" 
+            element={
+              <ProtectedRoute buyerOnly>
+                <SearchPage />
               </ProtectedRoute>
             } 
           />
@@ -38,6 +47,8 @@ function App() {
           {/* Public Routes */}
           <Route path="/signup" element={<Signup />} />
           <Route path="/login" element={<Login />} />
+
+          {/* Accessible by both buyers and sellers */}
           <Route 
             path="/product/:id" 
             element={
@@ -57,7 +68,7 @@ function App() {
           <Route 
             path="/category/:categoryName" 
             element={
-              <ProtectedRoute>
+              <ProtectedRoute buyerOnly>
                 <CategoryPage />
               </ProtectedRoute>
             } 
@@ -65,7 +76,7 @@ function App() {
           <Route 
           path="/cart" 
           element={
-            <ProtectedRoute>
+            <ProtectedRoute buyerOnly>
               <Cart />
             </ProtectedRoute>
           } 
@@ -73,7 +84,7 @@ function App() {
         <Route 
           path="/checkout" 
           element={
-            <ProtectedRoute>
+            <ProtectedRoute buyerOnly>
               <Checkout />
             </ProtectedRoute>
           } 
@@ -81,11 +92,12 @@ function App() {
         <Route 
           path="/order-success" 
           element={
-            <ProtectedRoute>
+            <ProtectedRoute buyerOnly>
               <OrderSuccess />
             </ProtectedRoute>
           } 
         />
+        {/* Profile accessible to both roles */}
         <Route 
           path="/profile" 
           element={
@@ -97,7 +109,7 @@ function App() {
         <Route 
           path="/my-orders" 
           element={
-            <ProtectedRoute>
+            <ProtectedRoute buyerOnly>
               <Profile />
             </ProtectedRoute>
           } 
@@ -105,7 +117,7 @@ function App() {
         <Route 
           path="/wishlist" 
           element={
-            <ProtectedRoute>
+            <ProtectedRoute buyerOnly>
               <Wishlist />
             </ProtectedRoute>
           } 
@@ -118,6 +130,7 @@ function App() {
             </ProtectedRoute>
           } 
         />
+        {/* Agri auctions accessible to both roles */}
         <Route 
           path="/agri-auctions" 
           element={
@@ -129,7 +142,7 @@ function App() {
         <Route 
             path="/seller-dashboard" 
             element={
-              <ProtectedRoute>
+              <ProtectedRoute role="seller">
                 <SellerDashboard />
               </ProtectedRoute>
             } 
@@ -137,7 +150,7 @@ function App() {
           <Route 
             path="/seller-negotiations" 
             element={
-              <ProtectedRoute>
+              <ProtectedRoute role="seller">
                 <SellerNegotiations />
               </ProtectedRoute>
             } 
@@ -146,6 +159,7 @@ function App() {
           {/* Catch-all route redirects to home (which will redirect to login if not authenticated) */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
+
       </Router>
     </CartProvider>
     </WishlistProvider>

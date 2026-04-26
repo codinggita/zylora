@@ -48,6 +48,37 @@ const userSchema = new mongoose.Schema({
       ref: 'Product'
     }
   ],
+  cart: [
+    {
+      product: {
+        type: mongoose.Schema.ObjectId,
+        ref: 'Product',
+        required: true
+      },
+      quantity: {
+        type: Number,
+        required: true,
+        default: 1
+      }
+    }
+  ],
+  addresses: [
+    {
+      name: String,
+      mobile: String,
+      address: String,
+      pincode: String,
+      type: {
+        type: String,
+        enum: ['Home', 'Work', 'Other'],
+        default: 'Home'
+      },
+      selected: {
+        type: Boolean,
+        default: false
+      }
+    }
+  ],
   createdAt: {
     type: Date,
     default: Date.now

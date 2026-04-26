@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
-  Search, Menu, ShoppingCart, Heart, User, 
   ChevronRight, Clock, Star, ShieldCheck, 
-  Truck, RotateCcw, Headset, ArrowRight, LogOut,
+  Truck, RotateCcw, Headset, ArrowRight,
   Gavel, Info, Filter, ArrowUpRight, CheckCircle2, MapPin
 } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useCart } from '../../context/CartContext';
+import Header from '../../components/Header';
 
 const AgriAuctions = () => {
   const navigate = useNavigate();
@@ -93,44 +93,9 @@ const AgriAuctions = () => {
     { commodity: 'Organic Coffee Beans', seller: 'Coorg Estates', finalBid: 38000, volume: '2 Tons', status: 'SOLD' },
   ];
 
-  const handleLogout = () => {
-    localStorage.removeItem('token');
-    navigate('/login');
-  };
-
   return (
     <div className="min-h-screen bg-[#F8F9FB] text-gray-900 font-sans">
-      {/* Main Header */}
-      <header className="bg-[#0A1628] text-white sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between gap-4">
-          <div className="flex items-center gap-6">
-            <Link to="/" className="text-xl md:text-2xl font-bold tracking-tight text-white">ZyLora</Link>
-            <div className="hidden lg:flex items-center gap-6 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">
-                <a href="#" className="hover:text-white transition-colors">Become a Seller</a>
-                <Link to="/agri-auctions" className="text-amber-500 hover:text-amber-400 transition-colors">Agri Auctions</Link>
-            </div>
-          </div>
-          <div className="flex-1 max-w-2xl relative mx-4">
-            <input 
-              type="text" 
-              placeholder="Search auctions..." 
-              className="w-full bg-[#111827] border border-gray-800 rounded-full py-2 px-10 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
-            />
-            <Search className="absolute left-3 top-2.5 text-gray-500" size={14} />
-          </div>
-          <div className="flex items-center gap-6 text-gray-300">
-            <div className="hidden md:flex items-center gap-4">
-              <LogOut size={18} className="cursor-pointer hover:text-white" onClick={handleLogout} />
-              <User size={18} className="cursor-pointer hover:text-white" onClick={() => navigate('/profile')} />
-              <Heart size={18} className="cursor-pointer hover:text-white" />
-              <div className="relative cursor-pointer hover:text-white text-amber-500" onClick={() => navigate('/cart')}>
-                <ShoppingCart size={18} />
-                <span className="absolute -top-2 -right-2 bg-amber-500 text-[8px] text-white font-bold px-1 rounded-full">{cartCount}</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </header>
+      <Header />
 
       <main className="max-w-7xl mx-auto px-4 py-6">
         {/* Breadcrumb */}

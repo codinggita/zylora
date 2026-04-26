@@ -2,10 +2,11 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { 
   Check, ArrowRight, Package, ShoppingBag, 
-  MapPin, CreditCard, Search, User, Heart, ShoppingCart, LogOut
+  CreditCard, ShoppingCart
 } from 'lucide-react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { products } from '../../data/products';
+import Header from '../../components/Header';
 
 const OrderSuccess = () => {
   const navigate = useNavigate();
@@ -27,48 +28,12 @@ const OrderSuccess = () => {
     );
   }
 
-  const handleLogout = () => {
-    localStorage.removeItem('token');
-    navigate('/login');
-  };
-
   // Recommendations logic (simple slice for now)
   const recommendations = products.slice(0, 4);
 
   return (
     <div className="min-h-screen bg-[#F8F9FB] text-gray-900 font-sans pb-24">
-      {/* Header */}
-      <header className="bg-[#0A1628] text-white sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between gap-4">
-          <div className="flex items-center gap-6">
-            <Link to="/" className="text-xl md:text-2xl font-bold tracking-tight text-white">ZyLora</Link>
-            <div className="hidden lg:flex items-center gap-6 text-xs font-bold uppercase tracking-widest text-gray-400">
-                <a href="#" className="hover:text-white transition-colors text-[10px]">Become a Seller</a>
-                <a href="#" className="hover:text-white transition-colors text-[10px]">Agri Auctions</a>
-            </div>
-          </div>
-          <div className="flex-1 max-w-xl relative mx-4">
-            <input 
-              type="text" 
-              placeholder="Search items..." 
-              className="w-full bg-[#111827] border border-gray-800 rounded-full py-1.5 px-10 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
-            />
-            <Search className="absolute left-3 top-2 text-gray-500" size={14} />
-          </div>
-          <div className="flex items-center gap-6 text-gray-300">
-            <div className="hidden md:flex items-center gap-4">
-              <LogOut size={18} className="cursor-pointer hover:text-white" onClick={handleLogout} />
-              <User size={18} className="cursor-pointer hover:text-white" />
-              <Heart size={18} className="cursor-pointer hover:text-white" />
-              <div className="relative cursor-pointer hover:text-white">
-                <ShoppingCart size={18} />
-                <span className="absolute -top-2 -right-2 bg-amber-500 text-[8px] text-white font-bold px-1 rounded-full">0</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </header>
-
+      <Header />
       <motion.main 
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}

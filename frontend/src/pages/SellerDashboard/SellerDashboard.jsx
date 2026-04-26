@@ -2,18 +2,21 @@ import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   LayoutDashboard, Package, ShoppingCart, MessageSquare, 
-  Gavel, Wallet, RotateCcw, Settings, Plus, Search, 
-  Bell, User, Heart, ArrowUpRight, TrendingUp, Clock, CheckCircle2,
-  X, Image as ImageIcon
+  Gavel, Wallet, RotateCcw, Settings, Plus, 
+  Bell, ArrowUpRight, TrendingUp, Clock, CheckCircle2,
+  X, Image as ImageIcon, Edit, Trash2
 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import Header from '../../components/Header';
 
 const SellerDashboard = () => {
   const navigate = useNavigate();
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
   const [loading, setLoading] = useState(false);
   const [sellerProducts, setSellerProducts] = useState([]);
+  const [editingProduct, setEditingProduct] = useState(null);
   const [newProduct, setNewProduct] = useState({
     name: '',
     description: '',
@@ -39,17 +42,16 @@ const SellerDashboard = () => {
       }
     } catch (err) {
       console.error('Failed to fetch products:', err);
+      if (err.response?.status === 401) {
+        localStorage.removeItem('token');
+        navigate('/login');
+      }
     }
   };
 
   useEffect(() => {
-    const user = JSON.parse(localStorage.getItem('user'));
-    if (!user || user.role !== 'seller') {
-      navigate('/');
-    } else {
-      fetchSellerProducts();
-    }
-  }, [navigate]);
+    fetchSellerProducts();
+  }, []);
 
   const handleAddProduct = async (e) => {
     e.preventDefault();
@@ -82,10 +84,80 @@ const SellerDashboard = () => {
         fetchSellerProducts();
       }
     } catch (err) {
-      alert(err.response?.data?.error || 'Failed to add product');
+      if (err.response?.status === 401) {
+        localStorage.removeItem('token');
+        navigate('/login');
+      } else {
+        alert(err.response?.data?.error || 'Failed to add product');
+      }
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleEditProduct = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      const token = localStorage.getItem('token');
+      const productData = {
+        ...editingProduct,
+        price: Number(editingProduct.price),
+        stock: Number(editingProduct.stock),
+        images: editingProduct.image ? [editingProduct.image] : editingProduct.images
+      };
+
+      const res = await axios.put(`${BACKEND_URL}/api/products/${editingProduct._id}`, productData, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      if (res.data.success) {
+        alert('Product updated successfully!');
+        setShowEditModal(false);
+        setEditingProduct(null);
+        fetchSellerProducts();
+      }
+    } catch (err) {
+      if (err.response?.status === 401) {
+        localStorage.removeItem('token');
+        navigate('/login');
+      } else {
+        alert(err.response?.data?.error || 'Failed to update product');
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDeleteProduct = async (productId) => {
+    if (!window.confirm('Are you sure you want to delete this product?')) return;
+    
+    try {
+      const token = localStorage.getItem('token');
+      const res = await axios.delete(`${BACKEND_URL}/api/products/${productId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      if (res.data.success) {
+        alert('Product deleted successfully!');
+        fetchSellerProducts();
+      }
+    } catch (err) {
+      if (err.response?.status === 401) {
+        localStorage.removeItem('token');
+        navigate('/login');
+      } else {
+        alert(err.response?.data?.error || 'Failed to delete product');
+      }
+    }
+  };
+
+  const openEditModal = (product) => {
+    setEditingProduct({
+      ...product,
+      image: product.images?.[0] || ''
+    });
+    setShowEditModal(true);
   };
 
   const stats = [
@@ -105,46 +177,9 @@ const SellerDashboard = () => {
     { id: '#ZYL-8827', items: '1 item • Paid via Credit Card', amount: '₹45,999', status: 'SHIPPED' },
   ];
 
-  const handleLogout = () => {
-    localStorage.removeItem('token');
-    navigate('/login');
-  };
-
   return (
     <div className="min-h-screen bg-[#F8F9FB] flex flex-col font-sans">
-      {/* Header */}
-      <header className="bg-[#0A1628] text-white sticky top-0 z-50">
-        <div className="max-w-[1600px] mx-auto px-6 py-3 flex items-center justify-between gap-8">
-          <div className="flex items-center gap-8">
-            <Link to="/" className="text-2xl font-bold tracking-tight">ZyLora</Link>
-            <nav className="hidden md:flex items-center gap-6 text-xs font-bold uppercase tracking-wider text-gray-400">
-              <a href="#" className="hover:text-white transition-colors">Become a Seller</a>
-              <a href="#" className="hover:text-white transition-colors">Agri Auctions</a>
-            </nav>
-          </div>
-
-          <div className="flex-1 max-w-xl relative">
-            <input 
-              type="text" 
-              placeholder="Search dashboard..." 
-              className="w-full bg-[#111827] border border-gray-800 rounded-full py-2 px-10 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
-            />
-            <Search className="absolute left-3 top-2.5 text-gray-500" size={16} />
-          </div>
-
-          <div className="flex items-center gap-5 text-gray-400">
-            <Bell size={20} className="cursor-pointer hover:text-white" />
-            <User size={20} className="cursor-pointer hover:text-white" />
-            <Heart size={20} className="cursor-pointer hover:text-white" />
-            <div className="relative cursor-pointer hover:text-white">
-              <ShoppingCart size={20} />
-            </div>
-            <button onClick={handleLogout} className="ml-2 p-2 hover:bg-gray-800 rounded-full transition-colors">
-              <RotateCcw size={18} />
-            </button>
-          </div>
-        </div>
-      </header>
+      <Header />
 
       <div className="flex flex-1 max-w-[1600px] mx-auto w-full">
         {/* Sidebar */}
@@ -334,6 +369,137 @@ const SellerDashboard = () => {
             )}
           </AnimatePresence>
 
+          <AnimatePresence>
+            {showEditModal && editingProduct && (
+              <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+                <motion.div 
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.95 }}
+                  className="bg-white rounded-2xl w-full max-w-2xl overflow-hidden shadow-2xl"
+                >
+                  <div className="p-6 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
+                    <h2 className="text-xl font-bold text-gray-900">Edit Product</h2>
+                    <button 
+                      onClick={() => setShowEditModal(false)}
+                      className="p-2 hover:bg-gray-200 rounded-full transition-colors"
+                    >
+                      <X size={20} className="text-gray-500" />
+                    </button>
+                  </div>
+
+                  <form onSubmit={handleEditProduct} className="p-8">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="md:col-span-2">
+                        <label className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2">Product Name</label>
+                        <input 
+                          type="text" 
+                          required
+                          value={editingProduct.name}
+                          onChange={(e) => setEditingProduct({...editingProduct, name: e.target.value})}
+                          placeholder="e.g. UltraBook Pro X 2024"
+                          className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+                        />
+                      </div>
+
+                      <div className="md:col-span-2">
+                        <label className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2">Description</label>
+                        <textarea 
+                          required
+                          value={editingProduct.description}
+                          onChange={(e) => setEditingProduct({...editingProduct, description: e.target.value})}
+                          rows="3"
+                          placeholder="Describe your product features and condition..."
+                          className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all resize-none"
+                        ></textarea>
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2">Price (₹)</label>
+                        <input 
+                          type="number" 
+                          required
+                          value={editingProduct.price}
+                          onChange={(e) => setEditingProduct({...editingProduct, price: e.target.value})}
+                          placeholder="0.00"
+                          className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2">Category</label>
+                        <select 
+                          value={editingProduct.category}
+                          onChange={(e) => setEditingProduct({...editingProduct, category: e.target.value})}
+                          className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+                        >
+                          <option>Electronics</option>
+                          <option>Agriculture</option>
+                          <option>Industrial</option>
+                          <option>Automotive</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2">Stock Quantity</label>
+                        <input 
+                          type="number" 
+                          required
+                          value={editingProduct.stock}
+                          onChange={(e) => setEditingProduct({...editingProduct, stock: e.target.value})}
+                          placeholder="0"
+                          className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2">Image URL</label>
+                        <input 
+                          type="url" 
+                          value={editingProduct.image}
+                          onChange={(e) => setEditingProduct({...editingProduct, image: e.target.value})}
+                          placeholder="https://..."
+                          className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="mt-8 flex items-center justify-between p-4 bg-blue-50/50 rounded-xl border border-blue-100">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-5 bg-blue-600 rounded-full relative cursor-pointer" onClick={() => setEditingProduct({...editingProduct, negotiable: !editingProduct.negotiable})}>
+                          <motion.div 
+                            animate={{ x: editingProduct.negotiable ? 20 : 2 }}
+                            className="absolute top-0.5 w-4 h-4 bg-white rounded-full shadow-sm"
+                          />
+                        </div>
+                        <span className="text-xs font-bold text-blue-900 uppercase tracking-widest">Enable Negotiation</span>
+                      </div>
+                      <p className="text-[10px] text-blue-600 font-medium max-w-[200px]">Allows buyers to send bulk deal offers for this product.</p>
+                    </div>
+
+                    <div className="mt-8 flex gap-4">
+                      <button 
+                        type="button"
+                        onClick={() => setShowEditModal(false)}
+                        className="flex-1 bg-gray-100 text-gray-600 py-3.5 rounded-xl text-sm font-bold hover:bg-gray-200 transition-all"
+                      >
+                        Cancel
+                      </button>
+                      <button 
+                        type="submit"
+                        disabled={loading}
+                        className="flex-[2] bg-blue-600 text-white py-3.5 rounded-xl text-sm font-bold hover:bg-blue-700 transition-all shadow-lg shadow-blue-200 disabled:opacity-50 flex items-center justify-center gap-2"
+                      >
+                        {loading ? 'Updating...' : 'Update Product'}
+                        <CheckCircle2 size={18} />
+                      </button>
+                    </div>
+                  </form>
+                </motion.div>
+              </div>
+            )}
+          </AnimatePresence>
+
           {/* Stats Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 mb-8">
             {stats.map((stat, i) => (
@@ -397,7 +563,8 @@ const SellerDashboard = () => {
                         <th className="px-6 py-4">Price</th>
                         <th className="px-6 py-4">Stock</th>
                         <th className="px-6 py-4">Negotiate</th>
-                        <th className="px-6 py-4 text-right">Status</th>
+                        <th className="px-6 py-4">Status</th>
+                        <th className="px-6 py-4 text-right">Actions</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-50">
@@ -417,14 +584,32 @@ const SellerDashboard = () => {
                                 {product.negotiable ? 'ENABLED' : 'DISABLED'}
                               </span>
                             </td>
-                            <td className="px-6 py-4 text-right">
+                            <td className="px-6 py-4">
                               <span className="text-[10px] font-bold text-green-600 bg-green-50 px-2 py-1 rounded">ACTIVE</span>
+                            </td>
+                            <td className="px-6 py-4 text-right">
+                              <div className="flex items-center justify-end gap-2">
+                                <button 
+                                  onClick={() => openEditModal(product)}
+                                  className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                  title="Edit Product"
+                                >
+                                  <Edit size={16} />
+                                </button>
+                                <button 
+                                  onClick={() => handleDeleteProduct(product._id)}
+                                  className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                  title="Delete Product"
+                                >
+                                  <Trash2 size={16} />
+                                </button>
+                              </div>
                             </td>
                           </tr>
                         ))
                       ) : (
                         <tr>
-                          <td colSpan="5" className="px-6 py-12 text-center text-gray-500 text-sm">
+                          <td colSpan="6" className="px-6 py-12 text-center text-gray-500 text-sm">
                             No products found. Start by adding your first product!
                           </td>
                         </tr>
