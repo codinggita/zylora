@@ -193,7 +193,7 @@ const SellerDashboard = () => {
             {[
               { name: 'Dashboard', icon: LayoutDashboard, active: true, path: '/seller-dashboard' },
               { name: 'My Products', icon: Package, path: '#' },
-              { name: 'Orders', icon: ShoppingCart, path: '#' },
+              { name: 'Orders', icon: ShoppingCart, path: '/seller-orders' },
               { name: 'Negotiations', icon: MessageSquare, path: '/seller-negotiations' },
               { name: 'Auction Manager', icon: Gavel, path: '#' },
               { name: 'Earnings', icon: Wallet, path: '#' },

@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { createOrder, getMyOrders, getOrderById } = require('../controllers/orderController');
+const { createOrder, getMyOrders, getSellerOrders, getOrderById } = require('../controllers/orderController');
 const { protect } = require('../middleware/auth');
 
 router.route('/')
@@ -8,6 +8,9 @@ router.route('/')
 
 router.route('/myorders')
   .get(protect, getMyOrders);
+
+router.route('/seller-orders')
+  .get(protect, getSellerOrders);
 
 router.route('/:id')
   .get(protect, getOrderById);

@@ -53,7 +53,7 @@ const SellerNegotiations = () => {
             {[
               { name: 'Dashboard', icon: LayoutDashboard, path: '/seller-dashboard' },
               { name: 'My Products', icon: Package, path: '#' },
-              { name: 'Orders', icon: ShoppingCart, path: '#' },
+              { name: 'Orders', icon: ShoppingCart, path: '/seller-orders' },
               { name: 'Negotiations', icon: MessageSquare, active: true, path: '/seller-negotiations' },
               { name: 'Auction Manager', icon: Gavel, path: '#' },
               { name: 'Earnings', icon: Wallet, path: '#' },
