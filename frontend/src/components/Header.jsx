@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { 
-  Search, Menu, X, ShoppingCart, Heart, User, LogOut, LayoutDashboard, Home, Gavel, MessageSquare
+  Search, Menu, X, ShoppingCart, Heart, User, LogOut, LayoutDashboard, Home, Gavel, MessageSquare, Wallet
 } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
@@ -121,7 +121,7 @@ const Header = ({ placeholder = "Search for premium goods..." }) => {
                         <ShoppingCart size={16} /> Cart {cartCount > 0 && `(${cartCount})`}
                       </Link>
                       <Link 
-                        to="/orders"
+                        to="/my-orders"
                         onClick={() => setUserDropdownOpen(false)}
                         className="block px-4 py-2 text-sm hover:bg-gray-800 transition-colors flex items-center gap-2"
                       >
@@ -221,6 +221,7 @@ const Header = ({ placeholder = "Search for premium goods..." }) => {
               <Link to="/seller-dashboard" className="text-xs font-semibold uppercase tracking-wider text-gray-400 hover:text-amber-500 transition-colors">Dashboard</Link>
               <Link to="/seller-negotiations" className="text-xs font-semibold uppercase tracking-wider text-gray-400 hover:text-amber-500 transition-colors">Negotiations</Link>
               <Link to="/seller-orders" className="text-xs font-semibold uppercase tracking-wider text-gray-400 hover:text-amber-500 transition-colors">Orders</Link>
+              <Link to="/seller-earnings" className="text-xs font-semibold uppercase tracking-wider text-gray-400 hover:text-amber-500 transition-colors">Earnings</Link>
               <Link to="/agri-auctions" className="text-xs font-semibold uppercase tracking-wider text-gray-400 hover:text-amber-500 transition-colors">Auctions</Link>
             </>
           ) : (
@@ -244,7 +245,16 @@ const Header = ({ placeholder = "Search for premium goods..." }) => {
                   <MessageSquare size={18} /> Negotiations
                 </Link>
                 <Link to="/seller-orders" onClick={closeMobileMenu} className="block px-2 py-2 text-sm hover:bg-gray-800 rounded transition-colors flex items-center gap-2">
-                  📦 Orders
+                  📦 Sales Orders
+                </Link>
+                <Link to="/my-orders" onClick={closeMobileMenu} className="block px-2 py-2 text-sm hover:bg-gray-800 rounded transition-colors flex items-center gap-2">
+                  📦 My Purchases
+                </Link>
+                <Link to="/wishlist" onClick={closeMobileMenu} className="block px-2 py-2 text-sm hover:bg-gray-800 rounded transition-colors flex items-center gap-2">
+                  <Heart size={18} /> Wishlist
+                </Link>
+                <Link to="/seller-earnings" onClick={closeMobileMenu} className="block px-2 py-2 text-sm hover:bg-gray-800 rounded transition-colors flex items-center gap-2">
+                  <Wallet size={18} /> Earnings
                 </Link>
                 <Link to="/agri-auctions" onClick={closeMobileMenu} className="block px-2 py-2 text-sm hover:bg-gray-800 rounded transition-colors flex items-center gap-2">
                   <Gavel size={18} /> Auctions
@@ -260,6 +270,9 @@ const Header = ({ placeholder = "Search for premium goods..." }) => {
                 </Link>
                 <Link to="/cart" onClick={closeMobileMenu} className="block px-2 py-2 text-sm hover:bg-gray-800 rounded transition-colors flex items-center gap-2">
                   <ShoppingCart size={18} /> Cart {cartCount > 0 && `(${cartCount})`}
+                </Link>
+                <Link to="/my-orders" onClick={closeMobileMenu} className="block px-2 py-2 text-sm hover:bg-gray-800 rounded transition-colors flex items-center gap-2">
+                  📦 My Orders
                 </Link>
                 <Link to="/seller-dashboard" onClick={closeMobileMenu} className="block px-2 py-2 text-sm hover:bg-gray-800 rounded transition-colors">
                   Become a Seller

@@ -31,10 +31,15 @@ io.on('connection', (socket) => {
     return Negotiation.findOne({ productId, seller: sellerId }).sort('-lastMessageAt');
   };
 
-  socket.on('join_negotiation', (productId) => {
+  socket.on('join_negotiation', (data) => {
+    // If data is a string, it's just productId (legacy), if object it has productId and buyerId
+    const productId = typeof data === 'string' ? data : data.productId;
+    const buyerId = typeof data === 'object' ? data.buyerId : null;
+
     if (productId) {
-      socket.join(productId);
-      console.log(`User ${socket.id} joined room: ${productId}`);
+      const room = buyerId ? `${productId}_${buyerId}` : productId;
+      socket.join(room);
+      console.log(`User ${socket.id} joined room: ${room}`);
     }
   });
 
@@ -45,7 +50,6 @@ io.on('connection', (socket) => {
         return;
       }
 
-      // Save message to database
       const newMessage = await Message.create({
         productId: data.productId,
         sender: data.senderId,
@@ -57,9 +61,22 @@ io.on('connection', (socket) => {
       const product = await Product.findById(data.productId).select('seller');
 
       if (product) {
-        if (data.senderRole === 'buyer') {
+        const targetBuyerId = data.senderRole === 'buyer' ? data.senderId : data.buyerId;
+
+        if (targetBuyerId) {
+          const existingNegotiation = await Negotiation.findOne({
+            productId: data.productId,
+            buyer: targetBuyerId,
+            seller: product.seller
+          });
+
+          let newStatus = existingNegotiation ? existingNegotiation.status : 'PENDING';
+          if (data.type === 'offer') {
+            newStatus = 'COUNTERED';
+          }
+
           const update = {
-            status: data.type === 'offer' ? 'COUNTERED' : 'PENDING',
+            status: newStatus,
             lastMessage: data.text,
             lastMessageAt: newMessage.createdAt
           };
@@ -71,7 +88,7 @@ io.on('connection', (socket) => {
           await Negotiation.findOneAndUpdate(
             {
               productId: data.productId,
-              buyer: data.senderId,
+              buyer: targetBuyerId,
               seller: product.seller
             },
             { $set: update },
@@ -81,18 +98,15 @@ io.on('connection', (socket) => {
               setDefaultsOnInsert: true
             }
           );
-        } else if (data.senderRole === 'seller') {
-          const latestNegotiation = await findLatestNegotiation(data.productId, product.seller);
-          if (latestNegotiation) {
-            latestNegotiation.lastMessage = data.text;
-            latestNegotiation.lastMessageAt = newMessage.createdAt;
-            await latestNegotiation.save();
-          }
         }
       }
 
       console.log('Message saved and emitting:', data);
-      socket.to(data.productId).emit('receive_message', {
+      
+      const targetBuyerId = data.senderRole === 'buyer' ? data.senderId : data.buyerId;
+      const room = targetBuyerId ? `${data.productId}_${targetBuyerId}` : data.productId;
+
+      socket.to(room).emit('receive_message', {
         id: newMessage._id,
         text: data.text,
         sender: data.senderId,
@@ -113,7 +127,8 @@ io.on('connection', (socket) => {
       }
 
       console.log('Price update received:', data);
-      socket.to(data.productId).emit('price_update', {
+      const room = data.buyerId ? `${data.productId}_${data.buyerId}` : data.productId;
+      socket.to(room).emit('price_update', {
          agreedPrice: data.agreedPrice
        });
      } catch (err) {
@@ -132,13 +147,13 @@ io.on('connection', (socket) => {
 
        const product = await Product.findById(data.productId).select('seller');
        if (product) {
-         let negotiation = null;
+         const targetBuyerId = data.senderRole === 'buyer' ? data.senderId : data.buyerId;
 
-         if (data.senderRole === 'buyer' && data.senderId) {
-           negotiation = await Negotiation.findOneAndUpdate(
+         if (targetBuyerId) {
+           await Negotiation.findOneAndUpdate(
              {
                productId: data.productId,
-               buyer: data.senderId,
+               buyer: targetBuyerId,
                seller: product.seller
              },
              {
@@ -155,19 +170,10 @@ io.on('connection', (socket) => {
                setDefaultsOnInsert: true
              }
            );
-         } else if (data.senderRole === 'seller') {
-           negotiation = await findLatestNegotiation(data.productId, product.seller);
-           if (negotiation) {
-             negotiation.status = data.status;
-             negotiation.agreedPrice = data.price || negotiation.agreedPrice || 0;
-             negotiation.lastMessage = `Deal status updated to ${data.status}`;
-             negotiation.lastMessageAt = new Date();
-             await negotiation.save();
-           }
          }
        }
 
-       socket.to(data.productId).emit('deal_update', {
+       socket.to(`${data.productId}_${targetBuyerId}`).emit('deal_update', {
          status: data.status,
          price: data.price,
          sender: data.sender
@@ -177,10 +183,19 @@ io.on('connection', (socket) => {
      }
    });
 
+  socket.on('join_auction', (auctionId) => {
+    if (auctionId) {
+      socket.join(`auction_${auctionId}`);
+      console.log(`User ${socket.id} joined auction room: auction_${auctionId}`);
+    }
+  });
+
   socket.on('disconnect', () => {
     console.log('User disconnected:', socket.id);
   });
 });
+
+app.set('io', io);
 
 // Body parser
 app.use(express.json());
@@ -195,6 +210,7 @@ const products = require('./routes/productRoutes');
 const wishlist = require('./routes/wishlistRoutes');
 const cart = require('./routes/cartRoutes');
 const negotiation = require('./routes/negotiationRoutes');
+const auctions = require('./routes/auctionRoutes');
 
 // Mount routers
 app.use('/api/auth', auth);
@@ -203,6 +219,7 @@ app.use('/api/products', products);
 app.use('/api/wishlist', wishlist);
 app.use('/api/cart', cart);
 app.use('/api/negotiation', negotiation);
+app.use('/api/auctions', auctions);
 
 const PORT = process.env.PORT || 5000;
 

@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Package, MapPin, CreditCard, Settings, 
   ChevronRight, Search, Heart, ShoppingCart,
-  AlertCircle, MessageSquare, LayoutDashboard, Gavel
+  AlertCircle, MessageSquare, LayoutDashboard, Gavel, Home, ArrowLeft
 } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
@@ -81,12 +81,12 @@ const Wishlist = () => {
 
               <nav className="space-y-1">
                 {[
-                  { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, path: '/seller-dashboard' },
-                  { id: 'live-auctions', label: 'Live Auctions', icon: Gavel, path: '/agri-auctions' },
+                  { id: 'home', label: 'Home', icon: Home, path: '/' },
+                  { id: 'auctions', label: 'Live Auctions', icon: Gavel, path: '/agri-auctions' },
                   { id: 'wishlist', label: 'Wishlist', icon: Heart, path: '/wishlist' },
-                  { id: 'negotiations', label: 'Negotiations', icon: MessageSquare, path: '/seller-negotiations' },
                   { id: 'orders', label: 'My Orders', icon: Package, path: '/my-orders' },
-                  { id: 'settings', label: 'Settings', icon: Settings, path: '/profile?tab=settings' },
+                  { id: 'negotiations', label: 'Negotiations', icon: MessageSquare, path: user?.role === 'seller' ? '/seller-negotiations' : '/profile' },
+                  { id: 'settings', label: 'Settings', icon: Settings, path: '/profile' },
                 ].map((item) => (
                   <Link
                     key={item.id}
@@ -99,9 +99,6 @@ const Wishlist = () => {
                   >
                     <item.icon size={18} className={activeTab === item.id ? 'text-blue-600' : 'text-gray-400 group-hover:text-gray-900'} />
                     <span className="text-xs font-semibold">{item.label}</span>
-                    {activeTab === item.id && (
-                      <div className="ml-auto w-1 h-5 bg-amber-500 rounded-full" />
-                    )}
                   </Link>
                 ))}
               </nav>

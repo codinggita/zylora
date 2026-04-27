@@ -54,7 +54,7 @@ const SellerNegotiations = () => {
               { name: 'My Products', icon: Package, path: '#' },
               { name: 'Orders', icon: ShoppingCart, path: '/seller-orders' },
               { name: 'Negotiations', icon: MessageSquare, active: true, path: '/seller-negotiations' },
-              { name: 'Auction Manager', icon: Gavel, path: '#' },
+              { name: 'Auction Manager', icon: Gavel, path: '/seller-auctions' },
               { name: 'Earnings', icon: Wallet, path: '#' },
               { name: 'Returns', icon: RotateCcw, path: '#' }
             ].map((item) => (
@@ -138,7 +138,7 @@ const SellerNegotiations = () => {
                       <p className="text-lg font-bold text-gray-900">₹{(item.agreedPrice || item.product.price).toLocaleString()}</p>
                     </div>
                     <button
-                      onClick={() => navigate(`/negotiate/${item.product.id}`)}
+                      onClick={() => navigate(`/negotiate/${item.product.id}?buyerId=${item.buyer.id}`)}
                       className="bg-gray-900 text-white p-2.5 rounded-xl hover:bg-black transition-colors"
                     >
                       <ArrowRight size={20} />

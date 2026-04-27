@@ -13,7 +13,20 @@ const Checkout = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const negotiatedPrice = location.state?.price;
+  const negotiatedProduct = location.state?.product;
   const { cartItems, cartCount, clearCart } = useCart();
+  
+  // Use negotiated product if available, otherwise use cart items
+  const checkoutItems = negotiatedProduct ? [
+    {
+      id: negotiatedProduct.id || negotiatedProduct._id,
+      name: negotiatedProduct.name,
+      price: negotiatedPrice || negotiatedProduct.price,
+      quantity: 1,
+      image: negotiatedProduct.images?.[0] || negotiatedProduct.image || 'https://via.placeholder.com/150'
+    }
+  ] : cartItems;
+
   const [step, setStep] = useState(2); 
   const [paymentMethod, setPaymentMethod] = useState('upi');
   const [loading, setLoading] = useState(false);
@@ -161,12 +174,12 @@ const Checkout = () => {
       const token = sessionStorage.getItem('token');
       
       const orderData = {
-        orderItems: cartItems.map(item => ({
+        orderItems: checkoutItems.map(item => ({
           name: item.name,
           quantity: item.quantity,
           image: item.image || (item.images && item.images[0]) || 'https://via.placeholder.com/150',
           price: item.price,
-          product: item.id
+          product: item.id || item._id
         })),
         shippingAddress: {
           name: selectedAddr.name,
@@ -187,7 +200,9 @@ const Checkout = () => {
       const response = await axios.post(`${BACKEND_URL}/api/orders`, orderData, config);
 
       if (response.data.success) {
-        clearCart();
+        if (!negotiatedProduct) {
+          clearCart();
+        }
         navigate('/order-success', { 
           state: { 
             order: response.data.data 
@@ -201,7 +216,7 @@ const Checkout = () => {
   };
 
   const calculateTotal = () => {
-    const subtotal = negotiatedPrice || cartItems.reduce((acc, item) => acc + (item.price * item.quantity), 0);
+    const subtotal = checkoutItems.reduce((acc, item) => acc + (item.price * item.quantity), 0);
     return {
       subtotal,
       total: subtotal
@@ -424,7 +439,7 @@ const Checkout = () => {
               
               <div className="p-8">
                 <div className="space-y-4 mb-8">
-                  {cartItems.map((item) => (
+                  {checkoutItems.map((item) => (
                     <div key={item.id} className="flex gap-4">
                       <div className="w-16 h-16 bg-gray-50 rounded-xl flex items-center justify-center p-2 shrink-0 border border-gray-100">
                         <img src={item.image} alt={item.name} className="max-w-full max-h-full object-contain" />
@@ -440,7 +455,7 @@ const Checkout = () => {
 
                 <div className="space-y-4 mb-8 pt-8 border-t border-gray-50">
                   <div className="flex justify-between text-sm">
-                    <span className="text-gray-500 font-medium">Price ({cartItems.length} items)</span>
+                    <span className="text-gray-500 font-medium">Price ({checkoutItems.length} items)</span>
                     <span className="text-gray-900 font-black">₹{stats.subtotal.toLocaleString()}</span>
                   </div>
                   <div className="flex justify-between text-sm">

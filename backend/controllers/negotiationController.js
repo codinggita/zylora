@@ -7,13 +7,47 @@ const Negotiation = require('../models/Negotiation');
 // @access  Private
 exports.getChatHistory = async (req, res) => {
   try {
-    const messages = await Message.find({ productId: req.params.productId })
+    const { productId } = req.params;
+    const { buyerId } = req.query;
+
+    const product = await Product.findById(productId);
+    if (!product) {
+      return res.status(404).json({ success: false, error: 'Product not found' });
+    }
+
+    let queryBuyerId = req.user.role === 'buyer' ? req.user._id : buyerId;
+
+    let negotiation = null;
+    if (queryBuyerId) {
+      negotiation = await Negotiation.findOne({
+        productId,
+        buyer: queryBuyerId
+      });
+    } else if (req.user.role === 'seller') {
+      // Fallback if seller opens without buyerId (get most recent)
+      negotiation = await Negotiation.findOne({
+        productId,
+        seller: req.user._id
+      }).sort('-updatedAt');
+      if (negotiation) {
+        queryBuyerId = negotiation.buyer;
+      }
+    }
+
+    let messageQuery = { productId };
+    // To ensure we only get messages between this specific buyer and seller
+    if (queryBuyerId) {
+      messageQuery.sender = { $in: [queryBuyerId, product.seller] };
+    }
+
+    const messages = await Message.find(messageQuery)
       .sort('createdAt')
       .populate('sender', 'name');
 
     res.status(200).json({
       success: true,
-      data: messages
+      data: messages,
+      negotiation: negotiation || null
     });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });

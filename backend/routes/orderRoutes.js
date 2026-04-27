@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { createOrder, getMyOrders, getSellerOrders, getOrderById } = require('../controllers/orderController');
+const { createOrder, getMyOrders, getSellerOrders, getOrderById, requestReturn, updateReturnStatus } = require('../controllers/orderController');
 const { protect } = require('../middleware/auth');
 
 router.route('/')
@@ -14,5 +14,11 @@ router.route('/seller-orders')
 
 router.route('/:id')
   .get(protect, getOrderById);
+
+router.route('/:id/return')
+  .put(protect, requestReturn);
+
+router.route('/:id/return-status')
+  .put(protect, updateReturnStatus);
 
 module.exports = router;

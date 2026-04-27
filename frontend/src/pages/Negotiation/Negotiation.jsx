@@ -22,7 +22,7 @@ const Negotiation = () => {
   const [messages, setMessages] = useState([]);
 
   const [newMessage, setNewMessage] = useState('');
-  const [dealStatus, setDealStatus] = useState('PENDING'); // PENDING, COUNTERED, OFFER_SENT, AGREED, DECLINED
+  const [dealStatus, setDealStatus] = useState(null); // null until fetched, then PENDING, ACCEPTED, etc.
   const [agreedPrice, setAgreedPrice] = useState(0);
   const chatEndRef = useRef(null);
   const socket = useRef(null);
@@ -106,8 +106,23 @@ const Negotiation = () => {
 
         // 2. Fetch Chat History
         if (token) {
-          const chatRes = await axios.get(`${BACKEND_URL}/api/negotiation/${id}`, config);
-          if (chatRes.data.success && chatRes.data.data.length > 0) {
+          const searchParams = new URLSearchParams(window.location.search);
+          const targetBuyerId = searchParams.get('buyerId');
+          const chatUrl = `${BACKEND_URL}/api/negotiation/${id}${targetBuyerId ? `?buyerId=${targetBuyerId}` : ''}`;
+          
+          const chatRes = await axios.get(chatUrl, config);
+          
+          if (chatRes.data.success) {
+            if (chatRes.data.negotiation) {
+              setDealStatus(chatRes.data.negotiation.status);
+              if (chatRes.data.negotiation.agreedPrice) {
+                setAgreedPrice(chatRes.data.negotiation.agreedPrice);
+              }
+            } else {
+              setDealStatus('NEW');
+            }
+
+            if (chatRes.data.data.length > 0) {
             const history = chatRes.data.data.map(m => ({
               id: m._id,
               sender: (m.sender._id || m.sender) === currentUserId ? 'you' : (userRole === 'seller' ? 'buyer' : 'seller'),
@@ -123,6 +138,7 @@ const Negotiation = () => {
             setMessages([
               { id: 1, sender: 'seller', text: `Hi! I'm the seller of ${currentProduct.name}. How can I help you today?`, time: '10:48 AM' }
             ]);
+            }
           }
         }
       } catch (err) {
@@ -143,7 +159,13 @@ const Negotiation = () => {
 
     socket.current.on('connect', () => {
       console.log('Connected to WebSocket server');
-      socket.current.emit('join_negotiation', id);
+      const searchParams = new URLSearchParams(window.location.search);
+      const targetBuyerId = searchParams.get('buyerId') || (userRoleRef.current === 'buyer' ? currentUserId : null);
+      
+      socket.current.emit('join_negotiation', { 
+        productId: id, 
+        buyerId: targetBuyerId 
+      });
     });
 
     socket.current.on('receive_message', (message) => {
@@ -209,11 +231,15 @@ const Negotiation = () => {
     setMessages(prev => [...prev, msg]);
     
     // Emit message to socket
+    const searchParams = new URLSearchParams(window.location.search);
+    const targetBuyerId = searchParams.get('buyerId');
+
     if (socket.current) {
       socket.current.emit('send_message', {
         productId: id,
         text: newMessage,
         senderId: senderId,
+        buyerId: targetBuyerId,
         senderRole: user?.role || 'buyer',
         type: 'text'
       });
@@ -224,6 +250,9 @@ const Negotiation = () => {
 
   const handleUpdateDealStatus = (status) => {
     const user = JSON.parse(sessionStorage.getItem('user') || 'null');
+    const searchParams = new URLSearchParams(window.location.search);
+    const targetBuyerId = searchParams.get('buyerId');
+
     setDealStatus(status);
     if (socket.current) {
       socket.current.emit('deal_update', {
@@ -232,6 +261,7 @@ const Negotiation = () => {
         price: agreedPrice,
         sender: userRole,
         senderRole: userRole,
+        buyerId: targetBuyerId,
         senderId: user?._id || user?.id
       });
     }
@@ -384,36 +414,69 @@ const Negotiation = () => {
 
             {/* Input Area */}
             <div className="p-6 border-t border-gray-100 space-y-4">
-              <form onSubmit={handleSendMessage} className="flex gap-3">
-                <div className="flex-1 relative">
-                  <input 
-                    type="text" 
-                    value={newMessage}
-                    onChange={(e) => setNewMessage(e.target.value)}
-                    placeholder="Type your message..." 
-                    className="w-full bg-gray-50 border border-gray-200 rounded-xl py-3 px-4 pr-12 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
-                  />
-                  <button type="button" className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
-                    <Paperclip size={20} />
-                  </button>
+              {dealStatus === 'PENDING' ? (
+                <div className="flex flex-col items-center justify-center p-4 bg-amber-50 rounded-xl border border-amber-100">
+                  <p className="text-amber-800 text-sm font-bold mb-3">
+                    {userRole === 'buyer' 
+                      ? 'Waiting for the seller to accept your negotiation request...' 
+                      : 'The buyer has requested to negotiate.'}
+                  </p>
+                  {userRole === 'seller' && (
+                    <div className="flex gap-3">
+                      <button 
+                        onClick={() => handleUpdateDealStatus('ACCEPTED')}
+                        className="bg-indigo-600 text-white px-6 py-2 rounded-lg text-sm font-bold shadow-md hover:bg-indigo-700 transition-colors"
+                      >
+                        Accept Request
+                      </button>
+                      <button 
+                        onClick={() => handleUpdateDealStatus('DECLINED')}
+                        className="bg-white text-gray-600 border border-gray-300 px-6 py-2 rounded-lg text-sm font-bold hover:bg-gray-50 transition-colors"
+                      >
+                        Decline
+                      </button>
+                    </div>
+                  )}
                 </div>
-                <button 
-                  type="submit"
-                  className="bg-[#0A1628] text-white p-3 rounded-xl hover:bg-black transition-colors shadow-lg shadow-gray-200"
-                >
-                  <Send size={20} />
-                </button>
-              </form>
-                <button 
-                  type="button"
-                  onClick={() => handleUpdateDealStatus(userRole === 'seller' ? 'OFFER_SENT' : 'COUNTERED')}
-                  className={`w-full py-3.5 rounded-xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-2 transition-all shadow-lg ${
-                  userRole === 'seller' 
-                    ? 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-indigo-500/20' 
-                    : 'bg-amber-500 text-white hover:bg-amber-600 shadow-amber-500/20'
-                }`}>
-                  <ShieldCheck size={16} /> {userRole === 'seller' ? 'Send Formal Offer' : 'Send Formal Offer'}
-                </button>
+              ) : (
+                <>
+                  <form onSubmit={handleSendMessage} className="flex gap-3">
+                    <div className="flex-1 relative">
+                      <input 
+                        type="text" 
+                        value={newMessage}
+                        onChange={(e) => setNewMessage(e.target.value)}
+                        placeholder={(dealStatus === 'NEW' && userRole === 'buyer') ? "Send a message to start negotiating..." : "Type your message..."}
+                        disabled={dealStatus === 'DECLINED'}
+                        className="w-full bg-gray-50 border border-gray-200 rounded-xl py-3 px-4 pr-12 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all disabled:opacity-50"
+                      />
+                      <button type="button" className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                        <Paperclip size={20} />
+                      </button>
+                    </div>
+                    <button 
+                      type="submit"
+                      disabled={dealStatus === 'DECLINED'}
+                      className="bg-[#0A1628] text-white p-3 rounded-xl hover:bg-black transition-colors shadow-lg shadow-gray-200 disabled:opacity-50"
+                    >
+                      <Send size={20} />
+                    </button>
+                  </form>
+                  {dealStatus !== 'NEW' && (
+                    <button 
+                      type="button"
+                      onClick={() => handleUpdateDealStatus(userRole === 'seller' ? 'OFFER_SENT' : 'COUNTERED')}
+                      disabled={dealStatus === 'DECLINED'}
+                      className={`w-full py-3.5 rounded-xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-2 transition-all shadow-lg disabled:opacity-50 ${
+                      userRole === 'seller' 
+                        ? 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-indigo-500/20' 
+                        : 'bg-amber-500 text-white hover:bg-amber-600 shadow-amber-500/20'
+                    }`}>
+                      <ShieldCheck size={16} /> {userRole === 'seller' ? 'Send Formal Offer' : 'Send Formal Offer'}
+                    </button>
+                  )}
+                </>
+              )}
               </div>
             </div>
   
@@ -445,8 +508,12 @@ const Negotiation = () => {
                           const newPrice = Number(e.target.value);
                           setAgreedPrice(newPrice);
                           if (socket.current) {
+                            const searchParams = new URLSearchParams(window.location.search);
+                            const targetBuyerId = searchParams.get('buyerId') || (userRole === 'buyer' ? JSON.parse(sessionStorage.getItem('user'))?._id : null);
+                            
                             socket.current.emit('price_update', {
                               productId: id,
+                              buyerId: targetBuyerId,
                               agreedPrice: newPrice
                             });
                           }
@@ -485,12 +552,12 @@ const Negotiation = () => {
                       type="button"
                       onClick={() => {
                         if (dealStatus === 'AGREED') {
-                          navigate('/checkout', { state: { price: agreedPrice } });
+                          navigate('/checkout', { state: { price: agreedPrice, product: product } });
                         } else {
                           handleUpdateDealStatus('AGREED');
                           // Also navigate immediately after agreeing
                           setTimeout(() => {
-                            navigate('/checkout', { state: { price: agreedPrice } });
+                            navigate('/checkout', { state: { price: agreedPrice, product: product } });
                           }, 500);
                         }
                       }}
