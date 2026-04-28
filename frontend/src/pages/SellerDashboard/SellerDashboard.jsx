@@ -11,9 +11,9 @@ import axios from 'axios';
 import Header from '../../components/Header';
 import EarningsAnalytics from '../../components/EarningsAnalytics';
 
-const SellerDashboard = () => {
+const SellerDashboard = ({ initialTab = 'Dashboard' }) => {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState('Dashboard');
+  const [activeTab, setActiveTab] = useState(initialTab);
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -277,12 +277,12 @@ const SellerDashboard = () => {
           <nav className="space-y-1 flex-1">
             {[
               { name: 'Dashboard', icon: LayoutDashboard },
-              { name: 'My Products', icon: Package, path: '#' },
+              { name: 'My Products', icon: Package, path: '/seller-dashboard' },
               { name: 'Orders', icon: ShoppingCart, path: '/seller-orders' },
               { name: 'Negotiations', icon: MessageSquare, path: '/seller-negotiations' },
-              { name: 'Auction Manager', icon: Gavel, path: '#' },
+              { name: 'Auction Manager', icon: Gavel, path: '/seller-auctions' },
               { name: 'Earnings', icon: Wallet },
-              { name: 'Returns', icon: RotateCcw, path: '#' }
+              { name: 'Returns', icon: RotateCcw, path: '/seller-orders?filter=Returns' }
             ].map((item) => {
               const isActive = item.path ? false : activeTab === item.name;
               
@@ -805,7 +805,7 @@ const SellerDashboard = () => {
                           )}
                           <div className="flex gap-2">
                             <button
-                              onClick={() => navigate('/seller-negotiations')}
+                              onClick={() => navigate(`/negotiate/${neg.product.id}?buyerId=${neg.id.split(':')[1]}`)}
                               className="flex-1 bg-black text-white py-2 rounded-lg text-xs font-bold hover:bg-gray-800 transition-colors"
                             >
                               Open Chat

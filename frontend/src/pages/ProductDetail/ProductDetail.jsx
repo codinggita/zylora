@@ -3,7 +3,7 @@ import {
   ChevronRight, Star, Clock, ShieldCheck, 
   Truck, RotateCcw, MessageSquare, Info,
   Plus, Minus, Share2, Store, ArrowLeft,
-  ShoppingCart, Heart
+  ShoppingCart, Heart, TrendingUp
 } from 'lucide-react';
 import { useNavigate, Link, useParams } from 'react-router-dom';
 import axios from 'axios';
@@ -27,14 +27,22 @@ const ProductDetail = () => {
   const [selectedStorage, setSelectedStorage] = useState('');
   const [quantity, setQuantity] = useState(1);
   const [activeTab, setActiveTab] = useState('description');
+  const [activeAuction, setActiveAuction] = useState(null);
 
   const BACKEND_URL = window.location.hostname === 'localhost' 
     ? 'http://localhost:5001' 
     : 'https://zylora-3.onrender.com';
 
   useEffect(() => {
-    const fetchProduct = async () => {
+    const fetchProductAndAuction = async () => {
       try {
+        // Fetch auctions to check if this product is on auction
+        const auctionsRes = await axios.get(`${BACKEND_URL}/api/auctions`);
+        if (auctionsRes.data.success) {
+          const auction = auctionsRes.data.data.find(a => a.product?._id === id);
+          if (auction) setActiveAuction(auction);
+        }
+
         // Try to find in static products first (numeric IDs)
         const staticProd = staticProducts.find(p => p.id === parseInt(id));
         if (staticProd) {
@@ -94,13 +102,13 @@ const ProductDetail = () => {
           setSelectedStorage('Standard');
         }
       } catch (err) {
-        console.error('Error fetching product:', err);
+        console.error('Error fetching data:', err);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchProduct();
+    fetchProductAndAuction();
   }, [id, BACKEND_URL]);
 
   const [isWishlisted, setIsWishlisted] = useState(false);
@@ -177,10 +185,10 @@ const ProductDetail = () => {
           <div className="flex-1 bg-white rounded-2xl border border-gray-100 flex items-center justify-center p-8 relative order-1 md:order-2 aspect-square md:aspect-auto">
             <img src={product.images[selectedImg]} alt={product.name} className="max-w-full max-h-full object-contain" />
             <button 
-              onClick={() => isInWishlist(product.id) ? removeFromWishlist(product.id) : addToWishlist(product.id)}
-              className={`absolute top-4 right-4 p-2 bg-white rounded-full shadow-md transition-colors ${isInWishlist(product.id) ? 'text-red-500' : 'text-gray-400 hover:text-red-500'}`}
+              onClick={() => isInWishlist(id) ? removeFromWishlist(id) : addToWishlist(id)}
+              className={`absolute top-4 right-4 p-2 bg-white rounded-full shadow-md transition-colors ${isInWishlist(id) ? 'text-red-500' : 'text-gray-400 hover:text-red-500'}`}
             >
-              <Heart size={20} fill={isInWishlist(product.id) ? "currentColor" : "none"} />
+              <Heart size={20} fill={isInWishlist(id) ? "currentColor" : "none"} />
             </button>
           </div>
         </div>
@@ -271,25 +279,60 @@ const ProductDetail = () => {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <button 
-              onClick={handleAddToCart}
-              className="bg-[#0A1628] text-white py-4 rounded-xl font-bold hover:bg-black transition-colors flex items-center justify-center gap-2"
-            >
-              <ShoppingCart size={18} /> ADD TO CART
-            </button>
-            <button className="bg-orange-500 text-white py-4 rounded-xl font-bold hover:bg-orange-600 transition-colors">
-              BUY NOW
-            </button>
-          </div>
+          {activeAuction ? (
+            <div className="mt-8 bg-red-50 border border-red-100 rounded-2xl p-6 relative overflow-hidden">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  <div className="bg-red-100 p-1.5 rounded-lg">
+                    <Clock className="text-red-600 animate-pulse" size={18} />
+                  </div>
+                  <h3 className="font-bold text-red-900 uppercase tracking-wider text-xs">Live Auction Active</h3>
+                </div>
+                <div className="bg-red-500 text-white text-[10px] font-black px-2 py-1 rounded">ENDING SOON</div>
+              </div>
+              <div className="flex justify-between items-end mb-6">
+                <div>
+                  <span className="text-[10px] font-black text-red-400 uppercase tracking-widest block mb-1">Current Highest Bid</span>
+                  <div className="flex items-baseline gap-1">
+                    <span className="text-3xl font-black text-gray-900">₹{activeAuction.currentBid.toLocaleString()}</span>
+                    <span className="text-xs font-bold text-gray-400">/ Unit</span>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <div className="text-xs font-bold text-gray-900 mb-1">{activeAuction.bids?.length || 0} Total Bids</div>
+                  <span className="text-[10px] font-black text-green-600 uppercase tracking-widest">Bidding Live</span>
+                </div>
+              </div>
+              <button 
+                onClick={() => navigate('/agri-auctions')}
+                className="w-full bg-red-600 text-white py-4 rounded-xl font-black text-xs uppercase tracking-widest hover:bg-red-700 transition-all shadow-lg shadow-red-500/20"
+              >
+                Go to Live Auction Page
+              </button>
+            </div>
+          ) : (
+            <>
+              <div className="grid grid-cols-2 gap-4 mt-6">
+                <button 
+                  onClick={handleAddToCart}
+                  className="bg-[#0A1628] text-white py-4 rounded-xl font-bold hover:bg-black transition-colors flex items-center justify-center gap-2"
+                >
+                  <ShoppingCart size={18} /> ADD TO CART
+                </button>
+                <button className="bg-orange-500 text-white py-4 rounded-xl font-bold hover:bg-orange-600 transition-colors">
+                  BUY NOW
+                </button>
+              </div>
 
-          {showNegotiateButton() && (
-            <button 
-              onClick={handleNegotiationNavigation}
-              className="w-full mt-4 bg-teal-600 text-white py-4 rounded-xl font-bold hover:bg-teal-700 transition-all flex items-center justify-center gap-2 shadow-lg shadow-teal-600/20 border-2 border-teal-500"
-            >
-              <MessageSquare size={18} /> {isSeller ? 'VIEW NEGOTIATIONS' : 'NEGOTIATE PRICE'}
-            </button>
+              {showNegotiateButton() && (
+                <button 
+                  onClick={handleNegotiationNavigation}
+                  className="w-full mt-4 bg-teal-600 text-white py-4 rounded-xl font-bold hover:bg-teal-700 transition-all flex items-center justify-center gap-2 shadow-lg shadow-teal-600/20 border-2 border-teal-500"
+                >
+                  <MessageSquare size={18} /> {isSeller ? 'VIEW NEGOTIATIONS' : 'NEGOTIATE PRICE'}
+                </button>
+              )}
+            </>
           )}
 
           {/* Bulk Pricing Card */}

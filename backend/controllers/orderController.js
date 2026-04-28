@@ -225,3 +225,111 @@ exports.getSellerOrders = async (req, res) => {
     });
   }
 };
+// @desc    Request return for an order
+// @route   PUT /api/orders/:id/return
+// @access  Private
+exports.requestReturn = async (req, res) => {
+  try {
+    const order = await Order.findById(req.params.id);
+
+    if (!order) {
+      return res.status(404).json({
+        success: false,
+        message: 'Order not found'
+      });
+    }
+
+    // Check if the order belongs to the user
+    if (order.user.toString() !== req.user._id.toString()) {
+      return res.status(401).json({
+        success: false,
+        message: 'Not authorized to perform this action'
+      });
+    }
+
+    // Only allow return if delivered
+    if (order.status !== 'Delivered') {
+      return res.status(400).json({
+        success: false,
+        message: 'Order must be delivered before requesting a return'
+      });
+    }
+
+    order.status = 'Return Requested';
+    await order.save();
+
+    res.status(200).json({
+      success: true,
+      message: 'Return request submitted successfully',
+      data: order
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      success: false,
+      message: 'Server Error'
+    });
+  }
+};
+
+// @desc    Update return status (Seller only)
+// @route   PUT /api/orders/:id/return-status
+// @access  Private/Seller
+exports.updateReturnStatus = async (req, res) => {
+  try {
+    const { status } = req.body; // 'Returned' or 'Return Rejected'
+
+    if (!['Returned', 'Return Rejected'].includes(status)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid return status'
+      });
+    }
+
+    const order = await Order.findById(req.params.id);
+
+    if (!order) {
+      return res.status(404).json({
+        success: false,
+        message: 'Order not found'
+      });
+    }
+
+    // Check if the order contains products from this seller
+    const sellerProducts = await Product.find({ seller: req.user._id }).select('_id');
+    const sellerProductIds = sellerProducts.map(p => p._id.toString());
+    
+    const hasSellerProduct = order.orderItems.some(item => 
+      sellerProductIds.includes(item.product.toString())
+    );
+
+    if (!hasSellerProduct) {
+      return res.status(401).json({
+        success: false,
+        message: 'Not authorized to update this order'
+      });
+    }
+
+    if (order.status !== 'Return Requested') {
+      return res.status(400).json({
+        success: false,
+        message: 'Order is not in return requested state'
+      });
+    }
+
+    order.status = status;
+    await order.save();
+
+    res.status(200).json({
+      success: true,
+      message: `Return request ${status.toLowerCase() === 'returned' ? 'approved' : 'rejected'}`,
+      data: order
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      success: false,
+      message: 'Server Error'
+    });
+  }
+};

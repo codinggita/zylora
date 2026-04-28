@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import Header from '../../components/Header';
+import { motion, AnimatePresence } from 'framer-motion';
 import { 
   ChevronRight, Clock, Star, ShieldCheck, 
   Truck, RotateCcw, Headset, ArrowRight, CheckCircle2,
@@ -7,46 +8,89 @@ import {
 } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
+import { io } from 'socket.io-client';
 import { products as staticProducts } from '../../data/products';
 
 const Home = () => {
   const navigate = useNavigate();
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [liveAuctions, setLiveAuctions] = useState([]);
+  const [timers, setTimers] = useState({});
 
   const BACKEND_URL = window.location.hostname === 'localhost' 
     ? 'http://localhost:5001' 
     : 'https://zylora-3.onrender.com';
 
   useEffect(() => {
-    const fetchProducts = async () => {
+    const socket = io(BACKEND_URL);
+
+    const fetchHomeData = async () => {
       try {
-        const res = await axios.get(`${BACKEND_URL}/api/products`);
-        if (res.data.success) {
-          // Combine static products with dynamic ones, or just use dynamic
-          // For now, let's show dynamic products first, then static ones if any
-          const dynamicProducts = res.data.data.map(p => ({
+        const [prodRes, auctionRes] = await Promise.all([
+          axios.get(`${BACKEND_URL}/api/products`),
+          axios.get(`${BACKEND_URL}/api/auctions/active`)
+        ]);
+
+        if (prodRes.data.success) {
+          const dynamicProducts = prodRes.data.data.map(p => ({
             id: p._id,
             name: p.name,
             price: p.price,
-            oldPrice: p.price * 1.2, // Fake discount for display
+            oldPrice: p.price * 1.2,
             images: p.images,
-            rating: 4.5, // Default rating
+            rating: 4.5,
             discount: '15% OFF',
             isDynamic: true
           }));
-          
           setProducts([...dynamicProducts, ...staticProducts]);
         }
+
+        if (auctionRes.data.success) {
+          setLiveAuctions(auctionRes.data.data);
+        }
       } catch (err) {
-        console.error('Error fetching products:', err);
+        console.error('Error fetching home data:', err);
         setProducts(staticProducts);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchProducts();
+    fetchHomeData();
+
+    socket.on('auction_bid_updated', (data) => {
+      setLiveAuctions(prev => prev.map(a => 
+        a._id === data.auctionId ? { ...a, currentBid: data.newBid, bids: data.bids } : a
+      ));
+    });
+
+    const interval = setInterval(() => {
+      const newTimers = {};
+      setLiveAuctions(prev => {
+        prev.forEach(auction => {
+          const end = new Date(auction.endTime).getTime();
+          const now = new Date().getTime();
+          const diff = end - now;
+
+          if (diff > 0) {
+            const h = Math.floor(diff / (1000 * 60 * 60));
+            const m = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+            const s = Math.floor((diff % (1000 * 60)) / 1000);
+            newTimers[auction._id] = `${h.toString().padStart(2, '0')} : ${m.toString().padStart(2, '0')} : ${s.toString().padStart(2, '0')}`;
+          } else {
+            newTimers[auction._id] = 'ENDED';
+          }
+        });
+        setTimers(newTimers);
+        return prev;
+      });
+    }, 1000);
+
+    return () => {
+      socket.disconnect();
+      clearInterval(interval);
+    };
   }, [BACKEND_URL]);
 
   return (
@@ -61,31 +105,61 @@ const Home = () => {
       <Header />
 
       {/* Hero Section */}
-      <section className="relative h-[300px] md:h-[500px] bg-gray-900 overflow-hidden">
-        <img 
+      <section className="relative h-[350px] md:h-[600px] bg-gray-900 overflow-hidden">
+        <motion.img 
+          initial={{ scale: 1.1, opacity: 0 }}
+          animate={{ scale: 1, opacity: 0.6 }}
+          transition={{ duration: 1.5, ease: "easeOut" }}
           src="https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&q=80&w=2000" 
           alt="Agri Field" 
-          className="w-full h-full object-cover opacity-60"
+          className="w-full h-full object-cover"
         />
-        <div className="absolute inset-0 bg-gradient-to-r from-black/80 to-transparent flex items-center">
+        <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/40 to-transparent flex items-center">
           <div className="max-w-7xl mx-auto px-8 w-full">
-            <div className="max-w-xl">
-              <span className="bg-amber-500 text-white text-[10px] font-bold px-2 py-1 rounded uppercase tracking-wider">Limited Period Live</span>
-              <h1 className="text-4xl md:text-6xl font-bold text-white mt-4 leading-tight font-serif">
-                Sustainable Farming,<br /> Global Reach.
-              </h1>
-              <p className="text-gray-300 mt-4 text-sm md:text-lg">
+            <motion.div 
+              initial={{ x: -50, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              transition={{ delay: 0.5, duration: 0.8 }}
+              className="max-w-xl"
+            >
+              <motion.span 
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.8 }}
+                className="bg-amber-500 text-white text-[10px] font-bold px-3 py-1.5 rounded-full uppercase tracking-widest shadow-lg shadow-amber-500/20"
+              >
+                Limited Period Live
+              </motion.span>
+              <motion.h1 
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 1 }}
+                className="text-4xl md:text-7xl font-bold text-white mt-6 leading-[1.1] font-serif"
+              >
+                Sustainable Farming,<br /> <span className="text-amber-500">Global Reach.</span>
+              </motion.h1>
+              <motion.p 
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 1.2 }}
+                className="text-gray-300 mt-6 text-sm md:text-xl leading-relaxed max-w-lg"
+              >
                 Participate in live auctions for premium organic grains and artisanal produce directly from verified farmers.
-              </p>
-              <div className="flex gap-4 mt-8">
-                <button className="bg-amber-500 hover:bg-amber-600 text-white px-8 py-3 rounded-lg font-bold transition-colors">
+              </motion.p>
+              <motion.div 
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 1.4 }}
+                className="flex flex-wrap gap-4 mt-10"
+              >
+                <button className="bg-amber-500 hover:bg-amber-600 text-white px-10 py-4 rounded-xl font-bold transition-all hover:scale-105 active:scale-95 shadow-xl shadow-amber-500/30">
                   Enter Auction
                 </button>
-                <button className="bg-white/10 hover:bg-white/20 text-white backdrop-blur-md px-8 py-3 rounded-lg font-bold border border-white/30 transition-colors">
+                <button className="bg-white/10 hover:bg-white/20 text-white backdrop-blur-xl px-10 py-4 rounded-xl font-bold border border-white/20 transition-all hover:scale-105 active:scale-95">
                   Learn More
                 </button>
-              </div>
-            </div>
+              </motion.div>
+            </motion.div>
           </div>
         </div>
         {/* Carousel Indicators */}
@@ -104,7 +178,12 @@ const Home = () => {
             View All <ChevronRight size={16} className="group-hover:translate-x-1 transition-transform" />
           </button>
         </div>
-        <div className="flex overflow-x-auto pb-6 pt-2 gap-6 md:gap-8 justify-start lg:justify-between snap-x no-scrollbar">
+        <motion.div 
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          className="flex overflow-x-auto pb-6 pt-2 gap-6 md:gap-8 justify-start lg:justify-between snap-x no-scrollbar"
+        >
             {[
               { name: 'Electronics', image: 'https://images.unsplash.com/photo-1498049794561-7780e7231661?auto=format&fit=crop&q=80&w=200' },
               { name: 'Fashion', image: 'https://images.unsplash.com/photo-1445205170230-053b83016050?auto=format&fit=crop&q=80&w=200' },
@@ -117,8 +196,12 @@ const Home = () => {
               { name: 'Books', image: 'https://images.unsplash.com/photo-1495446815901-a7297e633e8d?auto=format&fit=crop&q=80&w=200' },
               { name: 'Grocery', image: 'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&q=80&w=200' },
             ].map((cat, i) => (
-              <div 
+              <motion.div 
                 key={i} 
+                initial={{ opacity: 0, scale: 0.8 }}
+                whileInView={{ opacity: 1, scale: 1 }}
+                viewport={{ once: true }}
+                transition={{ delay: i * 0.05 }}
                 onClick={() => navigate(`/category/${cat.name}`)}
                 className="flex flex-col items-center gap-3 group cursor-pointer snap-start min-w-[72px] md:min-w-[88px]"
               >
@@ -128,9 +211,9 @@ const Home = () => {
                 </div>
               </div>
               <span className="text-[11px] md:text-sm font-bold text-gray-700 group-hover:text-amber-600 transition-colors">{cat.name}</span>
-            </div>
+            </motion.div>
           ))}
-        </div>
+        </motion.div>
       </section>
 
       {/* Today's Deals */}
@@ -145,164 +228,226 @@ const Home = () => {
           </div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-x-8 gap-y-12">
             {products?.map((prod, i) => (
-              <div 
+              <motion.div 
                 key={i} 
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: (i % 4) * 0.1 }}
                 className="group cursor-pointer"
                 onClick={() => navigate(`/product/${prod.id}`)}
               >
-                <div className="relative aspect-square bg-[#F3F4F6] rounded-xl overflow-hidden mb-4">
-                  <img src={prod.images?.[0] || 'https://via.placeholder.com/300'} alt={prod.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-                  <span className="absolute top-3 left-3 bg-amber-500 text-white text-[10px] font-bold px-2 py-1 rounded">{prod.discount}</span>
+                <div className="relative aspect-square bg-[#F3F4F6] rounded-2xl overflow-hidden mb-4 shadow-sm group-hover:shadow-xl transition-all duration-500">
+                  <img src={prod.images?.[0] || 'https://via.placeholder.com/300'} alt={prod.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
+                  <span className="absolute top-3 left-3 bg-amber-500 text-white text-[10px] font-black px-3 py-1.5 rounded-full shadow-lg shadow-amber-500/30">{prod.discount}</span>
                   <button 
-                    className="absolute bottom-3 right-3 bg-white p-2 rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-opacity translate-y-2 group-hover:translate-y-0 duration-300"
+                    className="absolute bottom-4 right-4 bg-white p-3 rounded-full shadow-xl opacity-0 group-hover:opacity-100 transition-all translate-y-4 group-hover:translate-y-0 duration-500 hover:bg-amber-500 hover:text-white"
                     onClick={(e) => {
                       e.stopPropagation();
                       navigate(`/product/${prod.id}`);
                     }}
                   >
-                    <ShoppingCart size={18} className="text-gray-900" />
+                    <ShoppingCart size={20} />
                   </button>
                 </div>
-                <h3 className="font-semibold text-sm line-clamp-1">{prod.name}</h3>
-                <div className="flex items-center gap-1 mt-1 text-amber-500">
+                <h3 className="font-bold text-sm text-gray-800 line-clamp-1 group-hover:text-amber-600 transition-colors">{prod.name}</h3>
+                <div className="flex items-center gap-1 mt-1.5 text-amber-500">
                   {[...Array(5)].map((_, i) => <Star key={i} size={12} fill={i < Math.floor(prod.rating) ? "currentColor" : "none"} />)}
-                  <span className="text-[10px] text-gray-400 ml-1">({prod.rating})</span>
+                  <span className="text-[10px] text-gray-400 font-bold ml-1">{prod.rating}</span>
                 </div>
-                <div className="flex items-center gap-2 mt-2">
-                  <span className="text-lg font-bold text-gray-900">₹{prod.price.toLocaleString()}</span>
-                  <span className="text-xs text-gray-400 line-through">₹{prod.oldPrice.toLocaleString()}</span>
+                <div className="flex items-center gap-3 mt-3">
+                  <span className="text-xl font-black text-gray-900">₹{prod.price.toLocaleString()}</span>
+                  <span className="text-xs text-gray-400 line-through font-medium">₹{prod.oldPrice.toLocaleString()}</span>
                 </div>
-              </div>
+              </motion.div>
             ))}
           </div>
         </div>
       </section>
 
       {/* Featured Banners */}
-      <section className="max-w-7xl mx-auto px-4 py-12 grid md:grid-cols-2 gap-6">
-        <div 
+      <section className="max-w-7xl mx-auto px-4 py-12 grid md:grid-cols-2 gap-8">
+        <motion.div 
+          initial={{ opacity: 0, x: -30 }}
+          whileInView={{ opacity: 1, x: 0 }}
+          viewport={{ once: true }}
           onClick={() => navigate('/category/Electronics')}
-          className="relative h-[250px] rounded-2xl overflow-hidden group cursor-pointer"
+          className="relative h-[300px] rounded-[32px] overflow-hidden group cursor-pointer shadow-xl"
         >
-          <img src="https://images.unsplash.com/photo-1496181133206-80ce9b88a853?auto=format&fit=crop&q=80&w=800" alt="Electronics" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
-          <div className="absolute inset-0 bg-black/40 flex flex-col justify-center px-8">
-            <span className="text-amber-500 text-xs font-bold uppercase tracking-widest">Next Gen Tech</span>
-            <h2 className="text-2xl font-bold text-white mt-2">Up to 40% off on premium laptops<br />and tablets.</h2>
-            <button className="bg-white text-gray-900 w-fit mt-6 px-6 py-2 rounded-lg font-bold text-sm hover:bg-gray-100 transition-colors">
+          <img src="https://images.unsplash.com/photo-1496181133206-80ce9b88a853?auto=format&fit=crop&q=80&w=800" alt="Electronics" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent flex flex-col justify-end p-8">
+            <span className="text-amber-500 text-xs font-black uppercase tracking-widest mb-2">Next Gen Tech</span>
+            <h2 className="text-3xl font-bold text-white leading-tight">Up to 40% off on premium<br />laptops and tablets.</h2>
+            <button className="bg-white text-gray-900 w-fit mt-6 px-8 py-3 rounded-xl font-bold text-sm hover:bg-amber-500 hover:text-white transition-all shadow-lg active:scale-95">
               Shop Electronics
             </button>
           </div>
-        </div>
-        <div 
+        </motion.div>
+        <motion.div 
+          initial={{ opacity: 0, x: 30 }}
+          whileInView={{ opacity: 1, x: 0 }}
+          viewport={{ once: true }}
           onClick={() => navigate('/category/Fashion')}
-          className="relative h-[250px] rounded-2xl overflow-hidden group cursor-pointer"
+          className="relative h-[300px] rounded-[32px] overflow-hidden group cursor-pointer shadow-xl"
         >
-          <img src="https://images.unsplash.com/photo-1483985988355-763728e1935b?auto=format&fit=crop&q=80&w=800" alt="Fashion" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
-          <div className="absolute inset-0 bg-black/40 flex flex-col justify-center px-8">
-            <span className="text-amber-500 text-xs font-bold uppercase tracking-widest">Spring Summer '24</span>
-            <h2 className="text-2xl font-bold text-white mt-2">The new collection curated for<br />professional lifestyle.</h2>
-            <button className="bg-white text-gray-900 w-fit mt-6 px-6 py-2 rounded-lg font-bold text-sm hover:bg-gray-100 transition-colors">
+          <img src="https://images.unsplash.com/photo-1483985988355-763728e1935b?auto=format&fit=crop&q=80&w=800" alt="Fashion" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent flex flex-col justify-end p-8">
+            <span className="text-amber-500 text-xs font-black uppercase tracking-widest mb-2">Spring Summer '24</span>
+            <h2 className="text-3xl font-bold text-white leading-tight">The new collection curated<br />for professional lifestyle.</h2>
+            <button className="bg-white text-gray-900 w-fit mt-6 px-8 py-3 rounded-xl font-bold text-sm hover:bg-amber-500 hover:text-white transition-all shadow-lg active:scale-95">
               Explore Fashion
             </button>
           </div>
-        </div>
+        </motion.div>
       </section>
 
       {/* Top Rated Products */}
       <section className="max-w-7xl mx-auto px-4 py-12">
-        <div className="flex items-center gap-2 mb-8">
-          <span className="text-amber-500 font-bold">👑</span>
-          <h2 className="text-xl font-bold">Top-Rated Products</h2>
-        </div>
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          className="flex items-center gap-3 mb-10"
+        >
+          <div className="bg-amber-500 p-2 rounded-lg shadow-lg shadow-amber-500/20">
+            <Star size={20} className="text-white" fill="currentColor" />
+          </div>
+          <h2 className="text-2xl font-bold text-gray-900">Top-Rated Selection</h2>
+        </motion.div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           {[
             { name: 'Nike Pegasus 40', price: '11,995', img: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&q=80&w=400', tag: 'TRUSTED SELLER' },
             { name: 'Prestige Pressure Cooker', price: '1,795', img: 'https://images.unsplash.com/photo-1584990344610-b2b12f4d2bca?auto=format&fit=crop&q=80&w=400', tag: 'PREMIUM QUALITY' }
           ].map((prod, i) => (
-            <div key={i} className="bg-white p-4 rounded-2xl flex gap-6 items-center shadow-sm border border-gray-100 hover:shadow-md transition-shadow cursor-pointer">
-              <div className="w-32 h-32 bg-gray-100 rounded-xl overflow-hidden shrink-0">
+            <motion.div 
+              key={i} 
+              initial={{ opacity: 0, scale: 0.95 }}
+              whileInView={{ opacity: 1, scale: 1 }}
+              viewport={{ once: true }}
+              transition={{ delay: i * 0.2 }}
+              className="bg-white p-6 rounded-[24px] flex gap-8 items-center shadow-sm border border-gray-100 hover:shadow-xl transition-all duration-500 cursor-pointer group"
+            >
+              <div className="w-36 h-36 bg-gray-50 rounded-2xl overflow-hidden shrink-0 shadow-inner group-hover:scale-105 transition-transform duration-500">
                 <img src={prod.img} alt={prod.name} className="w-full h-full object-cover" />
               </div>
               <div className="flex-1">
-                <span className="text-[10px] font-bold text-green-600 flex items-center gap-1">
+                <span className="text-[10px] font-black text-green-600 flex items-center gap-1.5 uppercase tracking-widest bg-green-50 w-fit px-3 py-1 rounded-full mb-3">
                   <CheckCircle2 size={12} /> {prod.tag}
                 </span>
-                <h3 className="font-bold text-lg mt-1">{prod.name}</h3>
-                <p className="text-xl font-black mt-2">₹{prod.price}</p>
-                <button className="mt-4 bg-[#0A1628] text-white px-6 py-2 rounded-lg text-sm font-bold hover:bg-[#15233D] transition-colors">
+                <h3 className="font-bold text-xl text-gray-900 group-hover:text-amber-600 transition-colors">{prod.name}</h3>
+                <p className="text-2xl font-black text-gray-900 mt-2">₹{prod.price}</p>
+                <button className="mt-5 bg-[#0A1628] text-white px-8 py-3 rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-amber-500 transition-all hover:scale-105 active:scale-95 shadow-lg shadow-gray-200">
                   Add to Cart
                 </button>
               </div>
-            </div>
+            </motion.div>
           ))}
         </div>
       </section>
 
-      {/* Agri Live Auctions Section */}
-      <section className="max-w-7xl mx-auto px-4 py-12">
-        <div className="bg-[#052E16] rounded-[32px] p-8 md:p-12 text-white relative overflow-hidden">
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-12 relative z-10">
+        {/* Agri Live Auctions Section */}
+      <section className="max-w-7xl mx-auto px-4 py-16">
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.98 }}
+          whileInView={{ opacity: 1, scale: 1 }}
+          viewport={{ once: true }}
+          className="bg-[#052E16] rounded-[48px] p-8 md:p-16 text-white relative overflow-hidden shadow-2xl shadow-green-900/20"
+        >
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-8 mb-16 relative z-10">
             <div>
-              <div className="flex items-center gap-2 mb-2">
-                <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
-                <span className="text-xs font-bold uppercase tracking-widest text-green-400">Live Auctions</span>
-              </div>
-              <h2 className="text-3xl font-bold">ZyLora Fresh Auctions</h2>
-              <p className="text-green-200 mt-2">Premium quality produce directly from organic certified farms.</p>
+              <motion.div 
+                initial={{ opacity: 0, x: -20 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                viewport={{ once: true }}
+                className="flex items-center gap-3 mb-4"
+              >
+                <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse shadow-lg shadow-red-500/50"></div>
+                <span className="text-xs font-black uppercase tracking-[0.2em] text-green-400">Live Auctions</span>
+              </motion.div>
+              <h2 className="text-4xl md:text-5xl font-bold leading-tight">ZyLora Fresh Auctions</h2>
+              <p className="text-green-200/70 mt-4 text-lg max-w-xl">Premium quality produce directly from organic certified farms. Bid now for direct-to-farm pricing.</p>
             </div>
-            <button className="bg-white text-[#052E16] px-6 py-3 rounded-full font-bold text-sm flex items-center gap-2 hover:bg-green-50 transition-colors">
-              View All Batches <ArrowRight size={18} />
-            </button>
+            <motion.button 
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              className="bg-white text-[#052E16] px-10 py-4 rounded-2xl font-black text-xs uppercase tracking-widest flex items-center gap-3 hover:bg-green-50 transition-all shadow-xl shadow-black/20"
+            >
+              View All Batches <ArrowRight size={20} />
+            </motion.button>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-8 relative z-10">
-            {[
-              { name: 'Lot #A24: Arabica Beans', price: '1,42,500', time: '02 : 15 : 49', img: 'https://images.unsplash.com/photo-1559056199-641a0ac8b55e?auto=format&fit=crop&q=80&w=400', bids: '12 Bids' }
-            ].map((auction, i) => (
-              <div key={i} className="bg-white/10 backdrop-blur-md rounded-2xl border border-white/10 p-4">
-                <div className="aspect-[4/3] rounded-xl overflow-hidden mb-4 relative">
-                  <img src={auction.img} alt={auction.name} className="w-full h-full object-cover" />
-                  <span className="absolute top-3 right-3 bg-green-500 text-white text-[10px] font-bold px-2 py-1 rounded">LIVE</span>
+          <div className="grid md:grid-cols-3 gap-10 relative z-10">
+            {liveAuctions.length === 0 ? (
+              <div className="md:col-span-3 text-center py-12 bg-white/5 rounded-[32px] border border-dashed border-white/20">
+                <p className="text-green-200/50 font-bold uppercase tracking-widest">No active auctions at the moment</p>
+              </div>
+            ) : liveAuctions.slice(0, 3).map((auction, i) => (
+              <motion.div 
+                key={auction._id} 
+                initial={{ opacity: 0, y: 40 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: i * 0.1 }}
+                onClick={() => navigate(`/agri-auctions`)}
+                className="bg-white/10 backdrop-blur-2xl rounded-[32px] border border-white/10 p-6 group hover:bg-white/15 transition-all duration-500 cursor-pointer"
+              >
+                <div className="aspect-[4/3] rounded-2xl overflow-hidden mb-6 relative">
+                  <img src={auction.product?.images?.[0] || 'https://via.placeholder.com/400'} alt={auction.product?.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
+                  <div className="absolute top-4 right-4 bg-red-500 text-white text-[10px] font-black px-4 py-1.5 rounded-full shadow-xl shadow-red-500/30 flex items-center gap-2">
+                    <div className="w-1.5 h-1.5 bg-white rounded-full animate-pulse"></div>
+                    LIVE
+                  </div>
                 </div>
-                <h3 className="font-bold text-lg">{auction.name}</h3>
-                <div className="flex justify-between items-center mt-4">
+                <h3 className="font-bold text-2xl group-hover:text-green-400 transition-colors line-clamp-1">{auction.product?.name}</h3>
+                <div className="flex justify-between items-center mt-8 p-4 bg-black/20 rounded-2xl">
                   <div>
-                    <span className="text-[10px] text-green-300 uppercase font-bold">Current Bid</span>
-                    <p className="text-xl font-bold">₹{auction.price}</p>
+                    <span className="text-[10px] text-green-300/60 uppercase font-black tracking-widest">Current Bid</span>
+                    <p className="text-2xl font-bold">₹{(auction.currentBid || auction.startingPrice).toLocaleString()}</p>
                   </div>
                   <div className="text-right">
-                    <span className="text-[10px] text-green-300 uppercase font-bold">Ends In</span>
-                    <p className="text-sm font-mono font-bold text-amber-400">{auction.time}</p>
+                    <span className="text-[10px] text-green-300/60 uppercase font-black tracking-widest">Ends In</span>
+                    <p className="text-sm font-mono font-bold text-amber-400">{timers[auction._id] || '-- : -- : --'}</p>
                   </div>
                 </div>
-                <button className="w-full bg-green-400 hover:bg-green-500 text-[#052E16] mt-6 py-3 rounded-xl font-bold transition-colors">
-                  Place Bid
+                <button className="w-full bg-green-400 hover:bg-green-500 text-[#052E16] mt-8 py-4 rounded-2xl font-black text-xs uppercase tracking-widest transition-all hover:scale-105 active:scale-95 shadow-xl shadow-green-400/20">
+                  Place Bid Now
                 </button>
-              </div>
+              </motion.div>
             ))}
           </div>
           
           {/* Background pattern */}
-          <div className="absolute top-0 right-0 w-96 h-96 bg-green-600/10 blur-[100px] rounded-full"></div>
-        </div>
+          <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-green-400/10 blur-[120px] rounded-full -translate-y-1/2 translate-x-1/2"></div>
+          <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-amber-400/5 blur-[120px] rounded-full translate-y-1/2 -translate-x-1/2"></div>
+        </motion.div>
       </section>
 
       {/* Trust Badges */}
-      <section className="max-w-7xl mx-auto px-4 py-16 border-b border-gray-200">
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
+      <section className="max-w-7xl mx-auto px-4 py-20 border-b border-gray-100">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-12">
           {[
-            { icon: <Truck size={24} className="text-amber-500" />, title: 'Swift Delivery', desc: 'Across 20,000+ pin codes' },
-            { icon: <ShieldCheck size={24} className="text-amber-500" />, title: 'Secure Payments', desc: '100% protected checkout' },
-            { icon: <RotateCcw size={24} className="text-amber-500" />, title: 'Easy Returns', desc: '7-day replacement policy' },
-            { icon: <Headset size={24} className="text-amber-500" />, title: '24/7 Assistance', desc: 'Expert support at your call' }
+            { icon: <Truck size={28} className="text-amber-500" />, title: 'Swift Delivery', desc: 'Across 20,000+ pin codes' },
+            { icon: <ShieldCheck size={28} className="text-amber-500" />, title: 'Secure Payments', desc: '100% protected checkout' },
+            { icon: <RotateCcw size={28} className="text-amber-500" />, title: 'Easy Returns', desc: '7-day replacement policy' },
+            { icon: <Headset size={28} className="text-amber-500" />, title: '24/7 Assistance', desc: 'Expert support at your call' }
           ].map((item, i) => (
-            <div key={i} className="flex gap-4 items-center">
-              <div className="bg-amber-500/10 p-3 rounded-xl">{item.icon}</div>
-              <div>
-                <h4 className="font-bold text-sm">{item.title}</h4>
-                <p className="text-[10px] text-gray-500 mt-1">{item.desc}</p>
+            <motion.div 
+              key={i} 
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: i * 0.1 }}
+              whileHover={{ y: -5 }}
+              className="flex gap-5 items-center group cursor-default"
+            >
+              <div className="bg-amber-500/10 p-4 rounded-2xl group-hover:bg-amber-500 group-hover:text-white transition-all duration-300">
+                {item.icon}
               </div>
-            </div>
+              <div>
+                <h4 className="font-bold text-gray-900 text-sm uppercase tracking-wider">{item.title}</h4>
+                <p className="text-xs text-gray-500 mt-1.5 font-medium">{item.desc}</p>
+              </div>
+            </motion.div>
           ))}
         </div>
       </section>

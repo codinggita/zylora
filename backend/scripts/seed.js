@@ -3,6 +3,7 @@ const dotenv = require('dotenv');
 const bcrypt = require('bcryptjs');
 const User = require('../models/User');
 const Product = require('../models/Product');
+const Auction = require('../models/Auction');
 
 dotenv.config();
 
@@ -113,6 +114,7 @@ const seedData = async () => {
     // Clear existing data
     await User.deleteMany();
     await Product.deleteMany();
+    await Auction.deleteMany();
     console.log('Cleared existing data.');
 
     // Create a seller
@@ -151,8 +153,86 @@ const seedData = async () => {
       seller: seller._id
     }));
 
-    await Product.insertMany(productsWithSeller);
-    console.log(`Seeded ${productsWithSeller.length} products.`);
+    const createdProducts = await Product.insertMany(productsWithSeller);
+    console.log(`Seeded ${createdProducts.length} products.`);
+
+    // Create test auctions
+    const now = new Date();
+    const endTime = new Date(now.getTime() + 24 * 60 * 60 * 1000); // 24 hours from now
+
+    const auctions = [
+      {
+        product: createdProducts[0]._id, // Basmati Rice Seeds
+        seller: seller._id,
+        basePrice: 1000,
+        currentBid: 1100,
+        highestBidder: buyer._id,
+        startTime: now,
+        endTime: endTime,
+        status: 'ACTIVE',
+        bids: [
+          {
+            user: buyer._id,
+            amount: 1100,
+            amountPaid: 1100,
+            isActive: true,
+            time: new Date(now.getTime() + 5 * 60 * 1000)
+          }
+        ],
+        userPayments: [
+          {
+            user: buyer._id,
+            totalPaid: 1100,
+            currentBid: 1100,
+            refundAmount: 0,
+            isRefunded: false
+          }
+        ]
+      },
+      {
+        product: createdProducts[7]._id, // Alphonso Mangoes
+        seller: seller._id,
+        basePrice: 1500,
+        currentBid: 1650,
+        highestBidder: buyer._id,
+        startTime: now,
+        endTime: endTime,
+        status: 'ACTIVE',
+        bids: [
+          {
+            user: buyer._id,
+            amount: 1650,
+            amountPaid: 1650,
+            isActive: true,
+            time: new Date(now.getTime() + 3 * 60 * 1000)
+          }
+        ],
+        userPayments: [
+          {
+            user: buyer._id,
+            totalPaid: 1650,
+            currentBid: 1650,
+            refundAmount: 0,
+            isRefunded: false
+          }
+        ]
+      },
+      {
+        product: createdProducts[4]._id, // Drip Irrigation Kit
+        seller: seller._id,
+        basePrice: 10000,
+        currentBid: 10500,
+        highestBidder: null,
+        startTime: now,
+        endTime: endTime,
+        status: 'ACTIVE',
+        bids: [],
+        userPayments: []
+      }
+    ];
+
+    await Auction.insertMany(auctions);
+    console.log(`Seeded ${auctions.length} auctions.`);
 
     console.log('Data seeding completed successfully!');
     process.exit();

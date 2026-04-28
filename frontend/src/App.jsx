@@ -16,6 +16,7 @@ import AgriAuctions from './pages/AgriAuctions/AgriAuctions';
 import SellerDashboard from './pages/SellerDashboard/SellerDashboard';
 import SellerNegotiations from './pages/SellerNegotiations/SellerNegotiations';
 import SellerOrders from './pages/SellerOrders/SellerOrders';
+import SellerAuctions from './pages/SellerAuctions/SellerAuctions';
 import ProtectedRoute from './components/ProtectedRoute';
 import './App.css';
 import { CartProvider } from './context/CartContext';
@@ -77,7 +78,7 @@ function App() {
           <Route 
           path="/cart" 
           element={
-            <ProtectedRoute buyerOnly>
+            <ProtectedRoute>
               <Cart />
             </ProtectedRoute>
           } 
@@ -85,7 +86,7 @@ function App() {
         <Route 
           path="/checkout" 
           element={
-            <ProtectedRoute buyerOnly>
+            <ProtectedRoute>
               <Checkout />
             </ProtectedRoute>
           } 
@@ -93,7 +94,7 @@ function App() {
         <Route 
           path="/order-success" 
           element={
-            <ProtectedRoute buyerOnly>
+            <ProtectedRoute>
               <OrderSuccess />
             </ProtectedRoute>
           } 
@@ -110,7 +111,7 @@ function App() {
         <Route 
           path="/my-orders" 
           element={
-            <ProtectedRoute buyerOnly>
+            <ProtectedRoute>
               <Profile />
             </ProtectedRoute>
           } 
@@ -118,7 +119,7 @@ function App() {
         <Route 
           path="/wishlist" 
           element={
-            <ProtectedRoute buyerOnly>
+            <ProtectedRoute>
               <Wishlist />
             </ProtectedRoute>
           } 
@@ -149,6 +150,14 @@ function App() {
             } 
           />
           <Route 
+            path="/seller-earnings" 
+            element={
+              <ProtectedRoute role="seller">
+                <SellerDashboard initialTab="Earnings" />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
             path="/seller-negotiations" 
             element={
               <ProtectedRoute role="seller">
@@ -161,6 +170,14 @@ function App() {
             element={
               <ProtectedRoute role="seller">
                 <SellerOrders />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/seller-auctions" 
+            element={
+              <ProtectedRoute role="seller">
+                <SellerAuctions />
               </ProtectedRoute>
             } 
           />
