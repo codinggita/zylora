@@ -654,12 +654,12 @@ const SellerDashboard = ({ initialTab = 'Dashboard' }) => {
                             style={{ height: `${Math.max((month.total / maxRevenue) * 100, 6)}%` }}
                           ></div>
                           <div className="absolute -top-12 left-1/2 -translate-x-1/2 bg-gray-900 text-white text-[10px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
-                            ₹{month.total.toLocaleString()} • {month.orderCount} orders
+                            &#8377;{month.total.toLocaleString()} • {month.orderCount} orders
                           </div>
                         </div>
                         <div className="text-center">
                           <span className="text-[10px] font-bold text-gray-400">{month.label}</span>
-                          <div className="text-[10px] font-bold text-gray-900 mt-1">₹{month.total.toLocaleString()}</div>
+                          <div className="text-[10px] font-bold text-gray-900 mt-1">&#8377;{month.total.toLocaleString()}</div>
                         </div>
                       </div>
                     ))}
@@ -847,7 +847,7 @@ const SellerDashboard = ({ initialTab = 'Dashboard' }) => {
                               <div className="text-sm font-bold text-gray-900">{neg.buyerName}</div>
                               <div className="text-[10px] font-medium text-gray-500">
                                 {neg.offerPrice
-                                  ? <>Offered: <span className="text-gray-900 font-bold">₹{neg.offerPrice.toLocaleString()}</span></>
+                                  ? <>Offered: <span className="text-gray-900 font-bold">&#8377;{neg.offerPrice.toLocaleString()}</span></>
                                   : <>Interested in <span className="text-gray-900 font-bold">{neg.product?.name}</span></>
                                 }
                               </div>

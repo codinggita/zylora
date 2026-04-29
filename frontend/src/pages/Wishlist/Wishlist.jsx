@@ -183,9 +183,9 @@ const Wishlist = () => {
                         <div className="flex items-center justify-between gap-4">
                           <div>
                             <div className="flex items-center gap-2">
-                              <span className="text-lg font-bold text-gray-900">?{item.price?.toLocaleString()}</span>
+                              <span className="text-lg font-bold text-gray-900">&#8377;{item.price?.toLocaleString()}</span>
                               {item.originalPrice && (
-                                <span className="text-xs text-gray-400 line-through">?{item.originalPrice?.toLocaleString()}</span>
+                                <span className="text-xs text-gray-400 line-through">&#8377;{item.originalPrice?.toLocaleString()}</span>
                               )}
                             </div>
                             <p className="text-[10px] text-green-600 font-bold mt-0.5">Free Delivery</p>

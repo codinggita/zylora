@@ -91,8 +91,8 @@ const ProductDetail = () => {
             },
             bulkDeals: [
               { range: '10-50 units', price: `\u20B9${(p.price * 0.9).toLocaleString()}`, savings: '10% OFF', highlight: false },
-              { range: '50-100 units', price: `₹${(p.price * 0.85).toLocaleString()}`, savings: '15% OFF', highlight: true },
-              { range: '100+ units', price: `₹${(p.price * 0.8).toLocaleString()}`, savings: '20% OFF', highlight: false }
+              { range: '50-100 units', price: `\u20B9${(p.price * 0.85).toLocaleString()}`, savings: '15% OFF', highlight: true },
+{ range: '100+ units', price: `\u20B9${(p.price * 0.8).toLocaleString()}`, savings: '20% OFF', highlight: false }
             ],
             frequentlyBought: [],
             similarModels: []

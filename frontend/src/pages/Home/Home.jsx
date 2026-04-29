@@ -106,7 +106,7 @@ const Home = () => {
     <div className="min-h-screen bg-[#F8F9FB] text-gray-900 font-sans">
       {/* Top Notification Bar */}
       <div className="bg-[#0A1628] text-white text-[10px] md:text-xs py-2 px-4 flex justify-center items-center gap-4">
-        <span>🚚 Free delivery on orders above ?1299</span>
+        <span>🚚 Free delivery on orders above &#8377;1299</span>
         <span className="hidden md:inline">|</span>
         <Link to="/agri-auctions" className="text-amber-500 font-semibold cursor-pointer">🌾 Agri Auctions Live Now →</Link>
       </div>
@@ -265,8 +265,8 @@ const Home = () => {
                   <span className="text-[10px] text-gray-400 font-bold ml-1">{prod.rating}</span>
                 </div>
                 <div className="flex items-center gap-3 mt-3">
-                  <span className="text-xl font-black text-gray-900">?{prod.price.toLocaleString()}</span>
-                  <span className="text-xs text-gray-400 line-through font-medium">?{prod.oldPrice.toLocaleString()}</span>
+                  <span className="text-xl font-black text-gray-900">&#8377;{prod.price.toLocaleString()}</span>
+                  <span className="text-xs text-gray-400 line-through font-medium">&#8377;{prod.oldPrice.toLocaleString()}</span>
                 </div>
               </motion.div>
             ))}
@@ -344,7 +344,7 @@ const Home = () => {
                   <CheckCircle2 size={12} /> {prod.tag}
                 </span>
                 <h3 className="font-bold text-xl text-gray-900 group-hover:text-amber-600 transition-colors">{prod.name}</h3>
-                <p className="text-2xl font-black text-gray-900 mt-2">?{prod.price}</p>
+                <p className="text-2xl font-black text-gray-900 mt-2">&#8377;{prod.price}</p>
                 <button className="mt-5 bg-[#0A1628] text-white px-8 py-3 rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-amber-500 transition-all hover:scale-105 active:scale-95 shadow-lg shadow-gray-200">
                   Add to Cart
                 </button>
@@ -411,7 +411,7 @@ const Home = () => {
                 <div className="flex justify-between items-center mt-8 p-4 bg-black/20 rounded-2xl">
                   <div>
                     <span className="text-[10px] text-green-300/60 uppercase font-black tracking-widest">Current Bid</span>
-                    <p className="text-2xl font-bold">?{(auction.currentBid || auction.startingPrice).toLocaleString()}</p>
+                    <p className="text-2xl font-bold">&#8377;{(auction.currentBid || auction.startingPrice).toLocaleString()}</p>
                   </div>
                   <div className="text-right">
                     <span className="text-[10px] text-green-300/60 uppercase font-black tracking-widest">Ends In</span>

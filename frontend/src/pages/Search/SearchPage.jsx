@@ -153,9 +153,9 @@ const SearchPage = () => {
                     {prod.name}
                   </h3>
                   <div className="flex items-baseline gap-2">
-                    <span className="text-lg font-black text-gray-900">?{prod.price?.toLocaleString()}</span>
+                    <span className="text-lg font-black text-gray-900">&#8377;{prod.price?.toLocaleString()}</span>
                     {prod.oldPrice && (
-                      <span className="text-xs text-gray-400 line-through">?{prod.oldPrice?.toLocaleString()}</span>
+                      <span className="text-xs text-gray-400 line-through">&#8377;{prod.oldPrice?.toLocaleString()}</span>
                     )}
                   </div>
                 </div>

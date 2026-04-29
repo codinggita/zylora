@@ -521,7 +521,7 @@ const Checkout = () => {
                       <div>
                         <h4 className="text-xs font-bold text-gray-900 line-clamp-1">{item.name}</h4>
                         <p className="text-[10px] text-gray-400 font-medium">Qty: {item.quantity}</p>
-                        <p className="text-sm font-black text-gray-900 mt-1">?{item.price.toLocaleString()}</p>
+                        <p className="text-sm font-black text-gray-900 mt-1">&#8377;{item.price.toLocaleString()}</p>
                       </div>
                     </div>
                   ))}
@@ -530,7 +530,7 @@ const Checkout = () => {
                 <div className="space-y-4 mb-8 pt-8 border-t border-gray-50">
                   <div className="flex justify-between text-sm">
                     <span className="text-gray-500 font-medium">Price ({checkoutItems.length} items)</span>
-                    <span className="text-gray-900 font-black">?{stats.subtotal.toLocaleString()}</span>
+                    <span className="text-gray-900 font-black">&#8377;{stats.subtotal.toLocaleString()}</span>
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-gray-500 font-medium">Delivery Charges</span>
@@ -538,20 +538,20 @@ const Checkout = () => {
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-gray-500 font-medium">Discount</span>
-                    <span className="text-green-600 font-black">- ?0</span>
+                    <span className="text-green-600 font-black">- &#8377;0</span>
                   </div>
                 </div>
 
                 <div className="flex justify-between items-baseline mb-8">
                   <span className="text-sm font-black text-gray-900 uppercase tracking-widest">Total Amount</span>
-                  <span className="text-2xl font-black text-gray-900">?{stats.total.toLocaleString()}</span>
+                  <span className="text-2xl font-black text-gray-900">&#8377;{stats.total.toLocaleString()}</span>
                 </div>
 
                 <button 
                   onClick={handlePlaceOrder}
                   className="w-full bg-orange-500 text-white py-4 rounded-xl font-black text-xs uppercase tracking-widest hover:bg-orange-600 transition-all shadow-xl shadow-orange-500/20 flex items-center justify-center gap-2"
                 >
-                  Place Order & Pay ?{stats.total.toLocaleString()} <ChevronRight size={16} />
+                  Place Order & Pay &#8377;{stats.total.toLocaleString()} <ChevronRight size={16} />
                 </button>
                 
                 <p className="text-[8px] text-gray-400 font-bold text-center mt-4 uppercase tracking-widest">

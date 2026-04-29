@@ -138,7 +138,7 @@ const AuctionOrderConfirmation = () => {
                 <div className="space-y-4 mb-8">
                   <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest text-gray-500">
                     <span>Winning Bid</span>
-                    <span className="text-white">?{winnerStatus?.winningBid?.toLocaleString()}</span>
+                    <span className="text-white">&#8377;{winnerStatus?.winningBid?.toLocaleString()}</span>
                   </div>
                   <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest text-gray-500">
                     <span>Platform Fee</span>
@@ -146,11 +146,11 @@ const AuctionOrderConfirmation = () => {
                   </div>
                   <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest text-gray-500">
                     <span>GST (Included)</span>
-                    <span className="text-white">?{(winnerStatus?.winningBid * 0.18).toFixed(2)}</span>
+                    <span className="text-white">&#8377;{(winnerStatus?.winningBid * 0.18).toFixed(2)}</span>
                   </div>
                   <div className="pt-6 border-t border-white/10 flex justify-between items-center">
                     <span className="text-xs font-black uppercase tracking-widest">Total Settle</span>
-                    <span className="text-3xl font-black text-green-400">?{winnerStatus?.winningBid?.toLocaleString()}</span>
+                    <span className="text-3xl font-black text-green-400">&#8377;{winnerStatus?.winningBid?.toLocaleString()}</span>
                   </div>
                 </div>
 

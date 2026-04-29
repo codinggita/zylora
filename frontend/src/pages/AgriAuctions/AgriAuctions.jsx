@@ -315,7 +315,7 @@ const AgriAuctions = () => {
                 <div className="flex-1">
                   <p className="font-bold text-gray-800">🎉 Congratulations! You won the auction!</p>
                   <p className="text-sm text-gray-600">
-                    <strong>{notification.product.name}</strong> - Winning bid: <strong>?{notification.winningBid}</strong>
+                    <strong>{notification.product.name}</strong> - Winning bid: <strong>&#8377;{notification.winningBid}</strong>
                   </p>
                   {notification.nextStep === 'SUBMIT_ADDRESS' && (
                     <p className="text-xs text-amber-700 mt-1">⚠️ Please submit your delivery address to complete the purchase</p>
@@ -434,7 +434,7 @@ const AgriAuctions = () => {
                     <div>
                       <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-1">Current Highest Bid</span>
                       <div className="flex items-baseline gap-1">
-                        <span className="text-4xl font-black text-green-600">?1,850</span>
+                        <span className="text-4xl font-black text-green-600">&#8377;1,850</span>
                         <span className="text-xs font-bold text-gray-400">/ Crate</span>
                       </div>
                     </div>
@@ -526,7 +526,7 @@ const AgriAuctions = () => {
                         <div>
                           <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest block mb-0.5">Current Bid</span>
                           <div className="flex items-baseline gap-0.5">
-                            <span className="text-xl font-black text-gray-900">?{item.currentBid.toLocaleString()}</span>
+                            <span className="text-xl font-black text-gray-900">&#8377;{item.currentBid.toLocaleString()}</span>
                             <span className="text-[10px] font-bold text-gray-400">/unit</span>
                           </div>
                         </div>
@@ -585,9 +585,9 @@ const AgriAuctions = () => {
                             <div className="text-[9px] font-medium text-gray-500 uppercase">{new Date(bid.time).toLocaleTimeString()}</div>
                           </div>
                           <div className="text-right">
-                            <div className="text-sm font-black text-amber-500">?{bid.amount.toLocaleString()}</div>
+                            <div className="text-sm font-black text-amber-500">&#8377;{bid.amount.toLocaleString()}</div>
                             {bid.amountPaid && bid.amountPaid > 0 && (
-                              <div className="text-[8px] text-gray-400 font-medium">Paid: ?{bid.amountPaid.toLocaleString()}</div>
+                              <div className="text-[8px] text-gray-400 font-medium">Paid: &#8377;{bid.amountPaid.toLocaleString()}</div>
                             )}
                           </div>
                         </motion.div>
@@ -651,7 +651,7 @@ const AgriAuctions = () => {
                     </td>
                     <td className="px-8 py-6 text-xs font-medium text-gray-500">{row.seller}</td>
                     <td className="px-8 py-6">
-                      <span className="text-sm font-black text-green-600">?{row.finalBid.toLocaleString()}</span>
+                      <span className="text-sm font-black text-green-600">&#8377;{row.finalBid.toLocaleString()}</span>
                     </td>
                     <td className="px-8 py-6 text-xs font-bold text-gray-900">{row.volume}</td>
                     <td className="px-8 py-6">
@@ -690,7 +690,7 @@ const AgriAuctions = () => {
                   <div className="bg-gray-50 rounded-2xl p-6 mb-8 flex justify-between items-center border border-gray-100">
                     <div>
                       <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-1">Current Highest Bid</span>
-                      <span className="text-2xl font-black text-gray-900">?{selectedAuction.currentBid.toLocaleString()}</span>
+                      <span className="text-2xl font-black text-gray-900">&#8377;{selectedAuction.currentBid.toLocaleString()}</span>
                     </div>
                     <div className="w-12 h-12 bg-green-50 rounded-xl flex items-center justify-center">
                       <TrendingUp className="text-green-600" size={24} />
@@ -700,8 +700,8 @@ const AgriAuctions = () => {
                   {userBidInfo && userBidInfo.hasBid && (
                     <div className="bg-blue-50 border border-blue-100 rounded-2xl p-4 mb-6">
                       <p className="text-[9px] text-blue-700 font-bold mb-2">Your Current Bid</p>
-                      <p className="text-lg font-black text-blue-900">?{userBidInfo.currentBid.toLocaleString()}</p>
-                      <p className="text-[8px] text-blue-600 mt-1">Total Paid: ?{userBidInfo.totalPaid.toLocaleString()}</p>
+                      <p className="text-lg font-black text-blue-900">&#8377;{userBidInfo.currentBid.toLocaleString()}</p>
+                      <p className="text-[8px] text-blue-600 mt-1">Total Paid: &#8377;{userBidInfo.totalPaid.toLocaleString()}</p>
                     </div>
                   )}
 
@@ -718,7 +718,7 @@ const AgriAuctions = () => {
                         className="w-full bg-gray-50 border border-gray-100 rounded-2xl px-6 py-4 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-green-500 focus:bg-white transition-all"
                       />
                       <p className="text-[9px] text-gray-400 font-medium mt-2 italic px-1">
-                        * Must be at least ?1 higher than the current bid.
+                        * Must be at least &#8377;1 higher than the current bid.
                       </p>
                     </div>
 
@@ -728,22 +728,22 @@ const AgriAuctions = () => {
                         <div className="space-y-2">
                           <div className="flex justify-between items-center text-[10px]">
                             <span className="text-gray-700 font-medium">Your Bid Amount:</span>
-                            <span className="font-black text-gray-900">?{paymentInfo.bidAmount.toLocaleString()}</span>
+                            <span className="font-black text-gray-900">&#8377;{paymentInfo.bidAmount.toLocaleString()}</span>
                           </div>
                           
                           {paymentInfo.isRebid && (
                             <>
                               <div className="flex justify-between items-center text-[10px] border-t border-green-200 pt-2">
                                 <span className="text-gray-700 font-medium">Previous Bid:</span>
-                                <span className="font-black text-gray-900">?{paymentInfo.previousBidAmount.toLocaleString()}</span>
+                                <span className="font-black text-gray-900">&#8377;{paymentInfo.previousBidAmount.toLocaleString()}</span>
                               </div>
                               <div className="flex justify-between items-center text-[10px]">
                                 <span className="text-green-700 font-black">Difference to Pay:</span>
-                                <span className="font-black text-green-600 text-sm">?{paymentInfo.amountToPay.toLocaleString()}</span>
+                                <span className="font-black text-green-600 text-sm">&#8377;{paymentInfo.amountToPay.toLocaleString()}</span>
                               </div>
                               <div className="flex justify-between items-center text-[10px] border-t border-green-300 pt-2 mt-1">
-                                <span className="text-green-900 font-black">Total (?{paymentInfo.previousBidAmount.toLocaleString()} + ?{paymentInfo.amountToPay.toLocaleString()}):</span>
-                                <span className="font-black text-green-900">?{paymentInfo.totalWillBePaid.toLocaleString()}</span>
+                                <span className="text-green-900 font-black">Total (&#8377;{paymentInfo.previousBidAmount.toLocaleString()} + &#8377;{paymentInfo.amountToPay.toLocaleString()}):</span>
+                                <span className="font-black text-green-900">&#8377;{paymentInfo.totalWillBePaid.toLocaleString()}</span>
                               </div>
                             </>
                           )}
@@ -751,7 +751,7 @@ const AgriAuctions = () => {
                           {!paymentInfo.isRebid && (
                             <div className="flex justify-between items-center text-[10px] border-t border-green-200 pt-2">
                               <span className="text-green-700 font-black">Amount to Pay:</span>
-                              <span className="font-black text-green-600 text-sm">?{paymentInfo.amountToPay.toLocaleString()}</span>
+                              <span className="font-black text-green-600 text-sm">&#8377;{paymentInfo.amountToPay.toLocaleString()}</span>
                             </div>
                           )}
                         </div>
