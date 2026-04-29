@@ -70,9 +70,10 @@ const Negotiation = () => {
       userRoleRef.current = 'buyer';
     }
 
-    const BACKEND_URL = window.location.hostname === 'localhost' 
-      ? 'http://localhost:5001' 
-      : 'https://zylora-e-commerce.onrender.com';
+    const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 
+      (window.location.hostname === 'localhost' 
+        ? 'http://localhost:5001' 
+        : 'https://zylora-e-commerce.onrender.com');
 
     const fetchProductAndChat = async () => {
       try {
@@ -255,14 +256,17 @@ const Negotiation = () => {
 
     setDealStatus(status);
     if (socket.current) {
+      const currentUserId = user?._id || user?.id;
+      const effectiveBuyerId = targetBuyerId || (userRole === 'buyer' ? currentUserId : null);
+
       socket.current.emit('deal_update', {
         productId: id,
         status: status,
         price: agreedPrice,
         sender: userRole,
         senderRole: userRole,
-        buyerId: targetBuyerId,
-        senderId: user?._id || user?.id
+        buyerId: effectiveBuyerId,
+        senderId: currentUserId
       });
     }
 

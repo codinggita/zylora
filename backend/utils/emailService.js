@@ -3,6 +3,7 @@ const nodemailer = require('nodemailer');
 // Create a transporter using Gmail (you can use any email service)
 const transporter = nodemailer.createTransport({
   service: 'gmail',
+  pool: true, // Use connection pool for efficiency
   auth: {
     user: process.env.EMAIL_USER || 'your-email@gmail.com',
     pass: process.env.EMAIL_PASSWORD || 'your-app-password'
