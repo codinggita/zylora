@@ -138,52 +138,53 @@ io.on('connection', (socket) => {
      }
    });
 
-   socket.on('deal_update', async (data) => {
-     try {
-       if (!data || !data.productId) {
-         console.log('Invalid deal update data:', data);
-         return;
-       }
+    socket.on('deal_update', async (data) => {
+      try {
+        if (!data || !data.productId) {
+          console.log('Invalid deal update data:', data);
+          return;
+        }
 
-       console.log('Deal update received:', data);
+        console.log('Deal update received:', data);
 
-       const product = await Product.findById(data.productId).select('seller');
-       if (product) {
-         const targetBuyerId = data.senderRole === 'buyer' ? data.senderId : data.buyerId;
+        const targetBuyerId = data.senderRole === 'buyer' ? data.senderId : data.buyerId;
 
-         if (targetBuyerId) {
-           await Negotiation.findOneAndUpdate(
-             {
-               productId: data.productId,
-               buyer: targetBuyerId,
-               seller: product.seller
-             },
-             {
-               $set: {
-                 status: data.status,
-                 agreedPrice: data.price || 0,
-                 lastMessage: `Deal status updated to ${data.status}`,
-                 lastMessageAt: new Date()
-               }
-             },
-             {
-               upsert: true,
-               new: true,
-               setDefaultsOnInsert: true
-             }
-           );
-         }
-       }
+        if (targetBuyerId) {
+          const product = await Product.findById(data.productId).select('seller');
+          if (product) {
+            await Negotiation.findOneAndUpdate(
+              {
+                productId: data.productId,
+                buyer: targetBuyerId,
+                seller: product.seller
+              },
+              {
+                $set: {
+                  status: data.status,
+                  agreedPrice: data.price || 0,
+                  lastMessage: `Deal status updated to ${data.status}`,
+                  lastMessageAt: new Date()
+                }
+              },
+              {
+                upsert: true,
+                new: true,
+                setDefaultsOnInsert: true
+              }
+            );
 
-       socket.to(`${data.productId}_${targetBuyerId}`).emit('deal_update', {
-         status: data.status,
-         price: data.price,
-         sender: data.sender
-       });
-     } catch (err) {
-       console.error('Socket deal_update error:', err);
-     }
-   });
+            // Emit to the specific negotiation room
+            io.to(`${data.productId}_${targetBuyerId}`).emit('deal_update', {
+              status: data.status,
+              price: data.price,
+              sender: data.sender
+            });
+          }
+        }
+      } catch (err) {
+        console.error('Socket deal_update error:', err);
+      }
+    });
 
   socket.on('join_auction', (auctionId) => {
     if (auctionId) {
