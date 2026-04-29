@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Package, MapPin, CreditCard, Settings, 
@@ -21,7 +21,7 @@ const Wishlist = () => {
 
   const BACKEND_URL = window.location.hostname === 'localhost' 
     ? 'http://localhost:5001' 
-    : 'https://zylora-3.onrender.com';
+    : 'https://zylora-e-commerce.onrender.com';
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -183,9 +183,9 @@ const Wishlist = () => {
                         <div className="flex items-center justify-between gap-4">
                           <div>
                             <div className="flex items-center gap-2">
-                              <span className="text-lg font-bold text-gray-900">₹{item.price?.toLocaleString()}</span>
+                              <span className="text-lg font-bold text-gray-900">?{item.price?.toLocaleString()}</span>
                               {item.originalPrice && (
-                                <span className="text-xs text-gray-400 line-through">₹{item.originalPrice?.toLocaleString()}</span>
+                                <span className="text-xs text-gray-400 line-through">?{item.originalPrice?.toLocaleString()}</span>
                               )}
                             </div>
                             <p className="text-[10px] text-green-600 font-bold mt-0.5">Free Delivery</p>
@@ -237,7 +237,7 @@ const Wishlist = () => {
 
           <div>
             <h3 className="text-amber-500 text-[10px] font-black uppercase tracking-[0.2em] mb-6">Legal</h3>
-            <p className="text-gray-500 text-[10px] font-medium">Â© 2024 Zylora. All rights reserved.</p>
+            <p className="text-gray-500 text-[10px] font-medium">© 2024 Zylora. All rights reserved.</p>
           </div>
         </div>
       </footer>

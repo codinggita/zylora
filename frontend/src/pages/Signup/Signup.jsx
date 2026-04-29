@@ -43,7 +43,7 @@ const Signup = () => {
       const apiUrl = import.meta.env.VITE_API_URL || 
         (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
           ? 'http://localhost:5001/api' 
-          : 'https://zylora-3.onrender.com/api');
+          : 'https://zylora-e-commerce.onrender.com/api');
       const res = await axios.post(`${apiUrl}/auth/signup`, formData);
       
       if (res.data.success) {

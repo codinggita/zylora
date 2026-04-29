@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   ChevronRight, Clock, Star, ShieldCheck, 
@@ -31,7 +31,7 @@ const AgriAuctions = () => {
 
   const BACKEND_URL = window.location.hostname === 'localhost' 
     ? 'http://localhost:5001' 
-    : 'https://zylora-3.onrender.com';
+    : 'https://zylora-e-commerce.onrender.com';
 
   const fetchAuctions = async () => {
     try {
@@ -188,7 +188,7 @@ const AgriAuctions = () => {
     const minBid = selectedAuction.currentBid + 1;
     
     if (newBidAmount < minBid) {
-      setError(`Bid must be at least ₹${minBid}`);
+      setError(`Bid must be at least ?${minBid}`);
       return null;
     }
 
@@ -234,7 +234,7 @@ const AgriAuctions = () => {
     }
 
     if (!bidAmount || parseFloat(bidAmount) <= selectedAuction.currentBid) {
-      setError(`Bid must be higher than ₹${selectedAuction.currentBid}`);
+      setError(`Bid must be higher than ?${selectedAuction.currentBid}`);
       return;
     }
 
@@ -313,12 +313,12 @@ const AgriAuctions = () => {
               <div className="flex items-center gap-4 flex-1">
                 <Award className="w-8 h-8 text-amber-600 flex-shrink-0" />
                 <div className="flex-1">
-                  <p className="font-bold text-gray-800">ðŸŽ‰ Congratulations! You won the auction!</p>
+                  <p className="font-bold text-gray-800">🎉 Congratulations! You won the auction!</p>
                   <p className="text-sm text-gray-600">
-                    <strong>{notification.product.name}</strong> - Winning bid: <strong>₹{notification.winningBid}</strong>
+                    <strong>{notification.product.name}</strong> - Winning bid: <strong>?{notification.winningBid}</strong>
                   </p>
                   {notification.nextStep === 'SUBMIT_ADDRESS' && (
-                    <p className="text-xs text-amber-700 mt-1">âš ï¸ Please submit your delivery address to complete the purchase</p>
+                    <p className="text-xs text-amber-700 mt-1">⚠️ Please submit your delivery address to complete the purchase</p>
                   )}
                 </div>
               </div>
@@ -332,7 +332,7 @@ const AgriAuctions = () => {
                 }}
                 className="bg-amber-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-amber-700 transition whitespace-nowrap ml-4"
               >
-                Complete Purchase â†’
+                Complete Purchase →
               </button>
             </motion.div>
           ))}
@@ -428,13 +428,13 @@ const AgriAuctions = () => {
                   </h2>
                   <div className="flex items-center gap-2 text-xs text-gray-500 font-medium">
                     <MapPin size={14} />
-                    <span>Ratnagiri, Maharashtra â€¢ 50 Crates</span>
+                    <span>Ratnagiri, Maharashtra • 50 Crates</span>
                   </div>
                   <div className="pt-6 border-t border-gray-50 flex items-end justify-between">
                     <div>
                       <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-1">Current Highest Bid</span>
                       <div className="flex items-baseline gap-1">
-                        <span className="text-4xl font-black text-green-600">₹1,850</span>
+                        <span className="text-4xl font-black text-green-600">?1,850</span>
                         <span className="text-xs font-bold text-gray-400">/ Crate</span>
                       </div>
                     </div>
@@ -460,10 +460,10 @@ const AgriAuctions = () => {
                 <span className="text-[10px] font-black uppercase tracking-widest">Ending in next hour</span>
               </div>
               <div className="flex gap-8 whitespace-nowrap text-[10px] font-bold uppercase tracking-widest animate-marquee">
-                <span>ðŸŒ¾ Basmati Paddy (200 Tons) â€¢ 04:12</span>
-                <span>ðŸ… Hybrid Tomatoes (50 Qntls) â€¢ 12:45</span>
-                <span>ðŸ  Organic Turmeric (10 Tons) â€¢ 32:10</span>
-                <span>ðŸ§… Red Onions (40 Tons) â€¢ 05:22</span>
+                <span>🌾 Basmati Paddy (200 Tons) • 04:12</span>
+                <span>🍅 Hybrid Tomatoes (50 Qntls) • 12:45</span>
+                <span>🍠 Organic Turmeric (10 Tons) • 32:10</span>
+                <span>🧅 Red Onions (40 Tons) • 05:22</span>
               </div>
             </div>
 
@@ -519,14 +519,14 @@ const AgriAuctions = () => {
                     <div>
                       <h3 className="font-serif font-black text-gray-900 mb-1">{item.product?.name}</h3>
                       <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mb-4">
-                        {item.product?.location || 'Direct from Farm'} â€¢ Stock: {item.product?.stock}
+                        {item.product?.location || 'Direct from Farm'} • Stock: {item.product?.stock}
                       </p>
                       
                       <div className="flex justify-between items-end mb-4">
                         <div>
                           <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest block mb-0.5">Current Bid</span>
                           <div className="flex items-baseline gap-0.5">
-                            <span className="text-xl font-black text-gray-900">₹{item.currentBid.toLocaleString()}</span>
+                            <span className="text-xl font-black text-gray-900">?{item.currentBid.toLocaleString()}</span>
                             <span className="text-[10px] font-bold text-gray-400">/unit</span>
                           </div>
                         </div>
@@ -585,9 +585,9 @@ const AgriAuctions = () => {
                             <div className="text-[9px] font-medium text-gray-500 uppercase">{new Date(bid.time).toLocaleTimeString()}</div>
                           </div>
                           <div className="text-right">
-                            <div className="text-sm font-black text-amber-500">₹{bid.amount.toLocaleString()}</div>
+                            <div className="text-sm font-black text-amber-500">?{bid.amount.toLocaleString()}</div>
                             {bid.amountPaid && bid.amountPaid > 0 && (
-                              <div className="text-[8px] text-gray-400 font-medium">Paid: ₹{bid.amountPaid.toLocaleString()}</div>
+                              <div className="text-[8px] text-gray-400 font-medium">Paid: ?{bid.amountPaid.toLocaleString()}</div>
                             )}
                           </div>
                         </motion.div>
@@ -651,7 +651,7 @@ const AgriAuctions = () => {
                     </td>
                     <td className="px-8 py-6 text-xs font-medium text-gray-500">{row.seller}</td>
                     <td className="px-8 py-6">
-                      <span className="text-sm font-black text-green-600">₹{row.finalBid.toLocaleString()}</span>
+                      <span className="text-sm font-black text-green-600">?{row.finalBid.toLocaleString()}</span>
                     </td>
                     <td className="px-8 py-6 text-xs font-bold text-gray-900">{row.volume}</td>
                     <td className="px-8 py-6">
@@ -684,13 +684,13 @@ const AgriAuctions = () => {
                       <h3 className="text-xl font-serif font-black text-gray-900 uppercase">Place Your Bid</h3>
                       <p className="text-xs text-gray-500 font-medium mt-1">{selectedAuction.product?.name}</p>
                     </div>
-                    <button onClick={() => setShowBidModal(false)} className="text-gray-400 hover:text-gray-900 font-bold">âœ•</button>
+                    <button onClick={() => setShowBidModal(false)} className="text-gray-400 hover:text-gray-900 font-bold">✕</button>
                   </div>
 
                   <div className="bg-gray-50 rounded-2xl p-6 mb-8 flex justify-between items-center border border-gray-100">
                     <div>
                       <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-1">Current Highest Bid</span>
-                      <span className="text-2xl font-black text-gray-900">₹{selectedAuction.currentBid.toLocaleString()}</span>
+                      <span className="text-2xl font-black text-gray-900">?{selectedAuction.currentBid.toLocaleString()}</span>
                     </div>
                     <div className="w-12 h-12 bg-green-50 rounded-xl flex items-center justify-center">
                       <TrendingUp className="text-green-600" size={24} />
@@ -700,25 +700,25 @@ const AgriAuctions = () => {
                   {userBidInfo && userBidInfo.hasBid && (
                     <div className="bg-blue-50 border border-blue-100 rounded-2xl p-4 mb-6">
                       <p className="text-[9px] text-blue-700 font-bold mb-2">Your Current Bid</p>
-                      <p className="text-lg font-black text-blue-900">₹{userBidInfo.currentBid.toLocaleString()}</p>
-                      <p className="text-[8px] text-blue-600 mt-1">Total Paid: ₹{userBidInfo.totalPaid.toLocaleString()}</p>
+                      <p className="text-lg font-black text-blue-900">?{userBidInfo.currentBid.toLocaleString()}</p>
+                      <p className="text-[8px] text-blue-600 mt-1">Total Paid: ?{userBidInfo.totalPaid.toLocaleString()}</p>
                     </div>
                   )}
 
                   <form onSubmit={handleBidSubmit} className="space-y-6">
                     <div>
-                      <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 block">Your Bid Amount (₹)</label>
+                      <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 block">Your Bid Amount (?)</label>
                       <input 
                         type="number"
                         required
                         min={selectedAuction.currentBid + 1}
                         value={bidAmount}
                         onChange={handleBidChange}
-                        placeholder={`Enter amount > ₹${selectedAuction.currentBid}`}
+                        placeholder={`Enter amount > ?${selectedAuction.currentBid}`}
                         className="w-full bg-gray-50 border border-gray-100 rounded-2xl px-6 py-4 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-green-500 focus:bg-white transition-all"
                       />
                       <p className="text-[9px] text-gray-400 font-medium mt-2 italic px-1">
-                        * Must be at least ₹1 higher than the current bid.
+                        * Must be at least ?1 higher than the current bid.
                       </p>
                     </div>
 
@@ -728,22 +728,22 @@ const AgriAuctions = () => {
                         <div className="space-y-2">
                           <div className="flex justify-between items-center text-[10px]">
                             <span className="text-gray-700 font-medium">Your Bid Amount:</span>
-                            <span className="font-black text-gray-900">₹{paymentInfo.bidAmount.toLocaleString()}</span>
+                            <span className="font-black text-gray-900">?{paymentInfo.bidAmount.toLocaleString()}</span>
                           </div>
                           
                           {paymentInfo.isRebid && (
                             <>
                               <div className="flex justify-between items-center text-[10px] border-t border-green-200 pt-2">
                                 <span className="text-gray-700 font-medium">Previous Bid:</span>
-                                <span className="font-black text-gray-900">₹{paymentInfo.previousBidAmount.toLocaleString()}</span>
+                                <span className="font-black text-gray-900">?{paymentInfo.previousBidAmount.toLocaleString()}</span>
                               </div>
                               <div className="flex justify-between items-center text-[10px]">
                                 <span className="text-green-700 font-black">Difference to Pay:</span>
-                                <span className="font-black text-green-600 text-sm">₹{paymentInfo.amountToPay.toLocaleString()}</span>
+                                <span className="font-black text-green-600 text-sm">?{paymentInfo.amountToPay.toLocaleString()}</span>
                               </div>
                               <div className="flex justify-between items-center text-[10px] border-t border-green-300 pt-2 mt-1">
-                                <span className="text-green-900 font-black">Total (₹{paymentInfo.previousBidAmount.toLocaleString()} + ₹{paymentInfo.amountToPay.toLocaleString()}):</span>
-                                <span className="font-black text-green-900">₹{paymentInfo.totalWillBePaid.toLocaleString()}</span>
+                                <span className="text-green-900 font-black">Total (?{paymentInfo.previousBidAmount.toLocaleString()} + ?{paymentInfo.amountToPay.toLocaleString()}):</span>
+                                <span className="font-black text-green-900">?{paymentInfo.totalWillBePaid.toLocaleString()}</span>
                               </div>
                             </>
                           )}
@@ -751,7 +751,7 @@ const AgriAuctions = () => {
                           {!paymentInfo.isRebid && (
                             <div className="flex justify-between items-center text-[10px] border-t border-green-200 pt-2">
                               <span className="text-green-700 font-black">Amount to Pay:</span>
-                              <span className="font-black text-green-600 text-sm">₹{paymentInfo.amountToPay.toLocaleString()}</span>
+                              <span className="font-black text-green-600 text-sm">?{paymentInfo.amountToPay.toLocaleString()}</span>
                             </div>
                           )}
                         </div>
@@ -811,7 +811,7 @@ const AgriAuctions = () => {
             <div className="flex gap-4">
               {/* Social icons */}
             </div>
-            <p className="text-[8px] text-gray-500 mt-12 uppercase tracking-widest font-black">Â© 2024 ZYLORA. EMPOWERING BHARAT'S AGRICULTURE.</p>
+            <p className="text-[8px] text-gray-500 mt-12 uppercase tracking-widest font-black">© 2024 ZYLORA. EMPOWERING BHARAT'S AGRICULTURE.</p>
           </div>
         </div>
       </footer>

@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
 import Header from '../../components/Header';
@@ -18,7 +18,7 @@ const SearchPage = () => {
 
   const BACKEND_URL = window.location.hostname === 'localhost' 
     ? 'http://localhost:5001' 
-    : 'https://zylora-3.onrender.com';
+    : 'https://zylora-e-commerce.onrender.com';
 
   useEffect(() => {
     const fetchSearchResults = async () => {
@@ -153,9 +153,9 @@ const SearchPage = () => {
                     {prod.name}
                   </h3>
                   <div className="flex items-baseline gap-2">
-                    <span className="text-lg font-black text-gray-900">₹{prod.price?.toLocaleString()}</span>
+                    <span className="text-lg font-black text-gray-900">?{prod.price?.toLocaleString()}</span>
                     {prod.oldPrice && (
-                      <span className="text-xs text-gray-400 line-through">₹{prod.oldPrice?.toLocaleString()}</span>
+                      <span className="text-xs text-gray-400 line-through">?{prod.oldPrice?.toLocaleString()}</span>
                     )}
                   </div>
                 </div>
@@ -168,7 +168,7 @@ const SearchPage = () => {
       {/* Simple Footer */}
       <footer className="max-w-7xl mx-auto px-4 py-12 border-t border-gray-100 text-center">
         <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
-          Â© 2026 ZYLORA PROFESSIONAL MARKETPLACE. ALL RIGHTS RESERVED.
+          © 2026 ZYLORA PROFESSIONAL MARKETPLACE. ALL RIGHTS RESERVED.
         </p>
       </footer>
     </div>
