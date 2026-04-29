@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   ChevronRight, Clock, Star, ShieldCheck, 
@@ -313,12 +313,12 @@ const AgriAuctions = () => {
               <div className="flex items-center gap-4 flex-1">
                 <Award className="w-8 h-8 text-amber-600 flex-shrink-0" />
                 <div className="flex-1">
-                  <p className="font-bold text-gray-800">🎉 Congratulations! You won the auction!</p>
+                  <p className="font-bold text-gray-800">ðŸŽ‰ Congratulations! You won the auction!</p>
                   <p className="text-sm text-gray-600">
                     <strong>{notification.product.name}</strong> - Winning bid: <strong>₹{notification.winningBid}</strong>
                   </p>
                   {notification.nextStep === 'SUBMIT_ADDRESS' && (
-                    <p className="text-xs text-amber-700 mt-1">⚠️ Please submit your delivery address to complete the purchase</p>
+                    <p className="text-xs text-amber-700 mt-1">âš ï¸ Please submit your delivery address to complete the purchase</p>
                   )}
                 </div>
               </div>
@@ -332,7 +332,7 @@ const AgriAuctions = () => {
                 }}
                 className="bg-amber-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-amber-700 transition whitespace-nowrap ml-4"
               >
-                Complete Purchase →
+                Complete Purchase â†’
               </button>
             </motion.div>
           ))}
@@ -428,7 +428,7 @@ const AgriAuctions = () => {
                   </h2>
                   <div className="flex items-center gap-2 text-xs text-gray-500 font-medium">
                     <MapPin size={14} />
-                    <span>Ratnagiri, Maharashtra • 50 Crates</span>
+                    <span>Ratnagiri, Maharashtra â€¢ 50 Crates</span>
                   </div>
                   <div className="pt-6 border-t border-gray-50 flex items-end justify-between">
                     <div>
@@ -460,10 +460,10 @@ const AgriAuctions = () => {
                 <span className="text-[10px] font-black uppercase tracking-widest">Ending in next hour</span>
               </div>
               <div className="flex gap-8 whitespace-nowrap text-[10px] font-bold uppercase tracking-widest animate-marquee">
-                <span>🌾 Basmati Paddy (200 Tons) • 04:12</span>
-                <span>🍅 Hybrid Tomatoes (50 Qntls) • 12:45</span>
-                <span>🍠 Organic Turmeric (10 Tons) • 32:10</span>
-                <span>🧅 Red Onions (40 Tons) • 05:22</span>
+                <span>ðŸŒ¾ Basmati Paddy (200 Tons) â€¢ 04:12</span>
+                <span>ðŸ… Hybrid Tomatoes (50 Qntls) â€¢ 12:45</span>
+                <span>ðŸ  Organic Turmeric (10 Tons) â€¢ 32:10</span>
+                <span>ðŸ§… Red Onions (40 Tons) â€¢ 05:22</span>
               </div>
             </div>
 
@@ -497,7 +497,7 @@ const AgriAuctions = () => {
                 >
                   <div className="relative aspect-[4/3] overflow-hidden">
                     <img 
-                      src={item.product?.images?.[0] || 'https://via.placeholder.com/300'} 
+                      src={item.product?.images?.[0] || 'https://placehold.co/300x300/f3f4f6/9ca3af'} 
                       alt={item.product?.name} 
                       className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" 
                     />
@@ -519,7 +519,7 @@ const AgriAuctions = () => {
                     <div>
                       <h3 className="font-serif font-black text-gray-900 mb-1">{item.product?.name}</h3>
                       <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mb-4">
-                        {item.product?.location || 'Direct from Farm'} • Stock: {item.product?.stock}
+                        {item.product?.location || 'Direct from Farm'} â€¢ Stock: {item.product?.stock}
                       </p>
                       
                       <div className="flex justify-between items-end mb-4">
@@ -684,7 +684,7 @@ const AgriAuctions = () => {
                       <h3 className="text-xl font-serif font-black text-gray-900 uppercase">Place Your Bid</h3>
                       <p className="text-xs text-gray-500 font-medium mt-1">{selectedAuction.product?.name}</p>
                     </div>
-                    <button onClick={() => setShowBidModal(false)} className="text-gray-400 hover:text-gray-900 font-bold">✕</button>
+                    <button onClick={() => setShowBidModal(false)} className="text-gray-400 hover:text-gray-900 font-bold">âœ•</button>
                   </div>
 
                   <div className="bg-gray-50 rounded-2xl p-6 mb-8 flex justify-between items-center border border-gray-100">
@@ -811,7 +811,7 @@ const AgriAuctions = () => {
             <div className="flex gap-4">
               {/* Social icons */}
             </div>
-            <p className="text-[8px] text-gray-500 mt-12 uppercase tracking-widest font-black">© 2024 ZYLORA. EMPOWERING BHARAT'S AGRICULTURE.</p>
+            <p className="text-[8px] text-gray-500 mt-12 uppercase tracking-widest font-black">Â© 2024 ZYLORA. EMPOWERING BHARAT'S AGRICULTURE.</p>
           </div>
         </div>
       </footer>
@@ -820,3 +820,4 @@ const AgriAuctions = () => {
 };
 
 export default AgriAuctions;
+

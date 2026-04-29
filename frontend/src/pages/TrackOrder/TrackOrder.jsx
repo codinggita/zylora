@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { 
   Package, MapPin, Truck, CheckCircle, Clock, 
@@ -87,28 +87,28 @@ const TrackOrder = () => {
     { 
       id: 1, 
       title: 'Order Placed', 
-      desc: `Confirmed on ${orderDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })} • ${orderDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`, 
+      desc: `Confirmed on ${orderDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })} â€¢ ${orderDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`, 
       status: 'completed',
       icon: CheckCircle
     },
     { 
       id: 2, 
       title: 'Payment Confirmed', 
-      desc: `Transaction ID: #TXN-${order._id.substring(order._id.length - 8).toUpperCase()} • ${orderDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`, 
+      desc: `Transaction ID: #TXN-${order._id.substring(order._id.length - 8).toUpperCase()} â€¢ ${orderDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`, 
       status: 'completed',
       icon: CheckCircle
     },
     { 
       id: 3, 
       title: 'Packed', 
-      desc: `Securely packaged at Central Warehouse • ${addDays(orderDate, 1).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`, 
+      desc: `Securely packaged at Central Warehouse â€¢ ${addDays(orderDate, 1).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`, 
       status: order.status === 'Processing' ? 'current' : 'completed',
       icon: Package
     },
     { 
       id: 4, 
       title: 'Shipped', 
-      desc: `In transit via DTDC Air Express • ${addDays(orderDate, 2).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`, 
+      desc: `In transit via DTDC Air Express â€¢ ${addDays(orderDate, 2).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`, 
       status: order.status === 'Shipped' ? 'current' : order.status === 'Delivered' ? 'completed' : 'pending',
       icon: Truck,
       trackingId: `8841${order._id.substring(order._id.length - 7)}`
@@ -123,7 +123,7 @@ const TrackOrder = () => {
     { 
       id: 6, 
       title: 'Delivered', 
-      desc: `Handed over to customer • ${addDays(orderDate, 4).toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}`, 
+      desc: `Handed over to customer â€¢ ${addDays(orderDate, 4).toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}`, 
       status: order.status === 'Delivered' ? 'completed' : 'pending',
       icon: CheckCircle
     }
@@ -183,7 +183,7 @@ const TrackOrder = () => {
                     <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Premium</p>
                     <h4 className="text-sm font-bold text-gray-900 mb-2">{item.name}</h4>
                     <div className="space-y-1">
-                      <p className="text-[10px] text-gray-500 font-medium">Batch: #AG-992 • 5KG Sack</p>
+                      <p className="text-[10px] text-gray-500 font-medium">Batch: #AG-992 â€¢ 5KG Sack</p>
                       {order.isNegotiated && (
                         <span className="inline-block bg-[#10B981] text-white text-[8px] font-black px-2 py-1 rounded uppercase tracking-widest">
                           Negotiated Price
@@ -210,7 +210,7 @@ const TrackOrder = () => {
               <div className="mt-8 bg-gray-50 rounded-xl p-6">
                 <div className="flex items-center justify-between mb-2">
                   <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Courier Partner</p>
-                  <img src="https://via.placeholder.com/60x20?text=DTDC" alt="DTDC" className="grayscale opacity-50" />
+                  <img src="https://placehold.co/300x300/f3f4f6/9ca3af" alt="DTDC" className="grayscale opacity-50" />
                 </div>
                 <p className="text-xs font-bold text-gray-900">DTDC Express</p>
               </div>
@@ -316,7 +316,7 @@ const TrackOrder = () => {
               <LogOut size={18} />
               <LogOut size={18} />
             </div>
-            <p className="text-gray-500 text-[10px] font-medium">© 2024 Zylora. All rights reserved.</p>
+            <p className="text-gray-500 text-[10px] font-medium">Â© 2024 Zylora. All rights reserved.</p>
           </div>
         </div>
       </footer>
@@ -325,3 +325,4 @@ const TrackOrder = () => {
 };
 
 export default TrackOrder;
+

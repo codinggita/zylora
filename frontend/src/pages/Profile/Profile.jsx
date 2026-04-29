@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   User, Package, MapPin, CreditCard, Settings, 
   ChevronRight, Clock, CheckCircle, Truck, AlertCircle, 
-  MessageSquare, Bell, HelpCircle, Heart, ShieldCheck, Store, RotateCcw
+  MessageSquare, Bell, HelpCircle, Heart, ShieldCheck, Store, RotateCcw, ArrowLeft
 } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';

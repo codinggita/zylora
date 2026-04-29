@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
 import Header from '../../components/Header';
@@ -119,7 +119,7 @@ const SearchPage = () => {
               >
                 <div className="aspect-square relative bg-gray-50 flex items-center justify-center p-8">
                   <img 
-                    src={prod.images && prod.images.length > 0 ? prod.images[0] : 'https://via.placeholder.com/300'} 
+                    src={prod.images && prod.images.length > 0 ? prod.images[0] : 'https://placehold.co/300x300/f3f4f6/9ca3af'} 
                     alt={prod.name} 
                     className="max-w-full max-h-full object-contain group-hover:scale-110 transition-transform duration-500" 
                   />
@@ -168,7 +168,7 @@ const SearchPage = () => {
       {/* Simple Footer */}
       <footer className="max-w-7xl mx-auto px-4 py-12 border-t border-gray-100 text-center">
         <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
-          © 2026 ZYLORA PROFESSIONAL MARKETPLACE. ALL RIGHTS RESERVED.
+          Â© 2026 ZYLORA PROFESSIONAL MARKETPLACE. ALL RIGHTS RESERVED.
         </p>
       </footer>
     </div>
@@ -176,3 +176,4 @@ const SearchPage = () => {
 };
 
 export default SearchPage;
+

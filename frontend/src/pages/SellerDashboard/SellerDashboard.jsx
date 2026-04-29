@@ -14,6 +14,11 @@ import EarningsAnalytics from '../../components/EarningsAnalytics';
 const SellerDashboard = ({ initialTab = 'Dashboard' }) => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState(initialTab);
+
+  useEffect(() => {
+    setActiveTab(initialTab);
+  }, [initialTab]);
+
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -87,7 +92,7 @@ const SellerDashboard = ({ initialTab = 'Dashboard' }) => {
         ...newProduct,
         price: Number(newProduct.price),
         stock: Number(newProduct.stock),
-        images: newProduct.image ? [newProduct.image] : ['https://via.placeholder.com/300']
+        images: newProduct.image ? [newProduct.image] : ['https://placehold.co/300x300/f3f4f6/9ca3af']
       };
 
       const res = await axios.post(`${BACKEND_URL}/api/products`, productData, getAuthConfig());
@@ -276,33 +281,23 @@ const SellerDashboard = ({ initialTab = 'Dashboard' }) => {
 
           <nav className="space-y-1 flex-1">
             {[
-              { name: 'Dashboard', icon: LayoutDashboard },
-              { name: 'My Products', icon: Package, path: '/seller-dashboard' },
+              { name: 'Dashboard', icon: LayoutDashboard, path: '/seller-dashboard' },
+              { name: 'My Products', icon: Package, tab: 'My Products', path: '/seller-dashboard' },
               { name: 'Orders', icon: ShoppingCart, path: '/seller-orders' },
               { name: 'Negotiations', icon: MessageSquare, path: '/seller-negotiations' },
               { name: 'Auction Manager', icon: Gavel, path: '/seller-auctions' },
-              { name: 'Earnings', icon: Wallet },
+              { name: 'Earnings', icon: Wallet, path: '/seller-earnings' },
               { name: 'Returns', icon: RotateCcw, path: '/seller-orders?filter=Returns' }
             ].map((item) => {
-              const isActive = item.path ? false : activeTab === item.name;
+              const isActive = item.tab 
+                ? activeTab === item.tab 
+                : (item.path === window.location.pathname + window.location.search) && activeTab === (item.name === 'Dashboard' ? 'Dashboard' : activeTab);
               
-              if (item.path) {
-                return (
-                  <Link
-                    key={item.name}
-                    to={item.path}
-                    className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium text-gray-500 hover:bg-gray-50 hover:text-gray-900 transition-colors"
-                  >
-                    <item.icon size={18} />
-                    {item.name}
-                  </Link>
-                );
-              }
-
               return (
-                <button
+                <Link
                   key={item.name}
-                  onClick={() => setActiveTab(item.name)}
+                  to={item.path}
+                  onClick={() => item.tab && setActiveTab(item.tab)}
                   className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
                     isActive
                       ? 'bg-blue-50 text-blue-600'
@@ -311,7 +306,7 @@ const SellerDashboard = ({ initialTab = 'Dashboard' }) => {
                 >
                   <item.icon size={18} />
                   {item.name}
-                </button>
+                </Link>
               );
             })}
           </nav>
@@ -681,6 +676,79 @@ const SellerDashboard = ({ initialTab = 'Dashboard' }) => {
                 )}
               </div>
             </div>
+          ) : activeTab === 'My Products' ? (
+            <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
+              <div className="p-6 border-b border-gray-50 flex items-center justify-between">
+                <h3 className="font-bold text-gray-900">All Listed Products</h3>
+                <button
+                  onClick={() => setShowAddModal(true)}
+                  className="bg-black text-white px-4 py-2 rounded-lg text-xs font-bold flex items-center gap-2"
+                >
+                  <Plus size={16} />
+                  Add Product
+                </button>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-left">
+                  <thead className="bg-gray-50 text-[10px] font-black text-gray-400 uppercase tracking-widest">
+                    <tr>
+                      <th className="px-6 py-4">Product</th>
+                      <th className="px-6 py-4">Price</th>
+                      <th className="px-6 py-4">Stock</th>
+                      <th className="px-6 py-4">Negotiate</th>
+                      <th className="px-6 py-4">Status</th>
+                      <th className="px-6 py-4 text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-50">
+                    {sellerProducts.length > 0 ? sellerProducts.map((product) => (
+                      <tr key={product._id} className="hover:bg-gray-50 transition-colors">
+                        <td className="px-6 py-4">
+                          <div className="flex items-center gap-3">
+                            <img src={product.images?.[0] || 'https://placehold.co/300x300/f3f4f6/9ca3af'} alt="" className="w-10 h-10 rounded-lg object-cover" />
+                            <span className="text-sm font-bold text-gray-900">{product.name}</span>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 text-sm font-medium text-gray-600">₹{product.price.toLocaleString()}</td>
+                        <td className="px-6 py-4 text-sm font-medium text-gray-600">{product.stock}</td>
+                        <td className="px-6 py-4">
+                          <span className={`text-[10px] font-bold px-2 py-1 rounded ${product.negotiable ? 'bg-blue-50 text-blue-600' : 'bg-gray-50 text-gray-400'}`}>
+                            {product.negotiable ? 'ENABLED' : 'DISABLED'}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4">
+                          <span className="text-[10px] font-bold text-green-600 bg-green-50 px-2 py-1 rounded">ACTIVE</span>
+                        </td>
+                        <td className="px-6 py-4 text-right">
+                          <div className="flex items-center justify-end gap-2">
+                            <button
+                              onClick={() => openEditModal(product)}
+                              className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                              title="Edit Product"
+                            >
+                              <Edit size={16} />
+                            </button>
+                            <button
+                              onClick={() => handleDeleteProduct(product._id)}
+                              className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                              title="Delete Product"
+                            >
+                              <Trash2 size={16} />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    )) : (
+                      <tr>
+                        <td colSpan="6" className="px-6 py-12 text-center text-gray-500 text-sm">
+                          No products found. Start by adding your first product!
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
           ) : (
             <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 mb-8">
@@ -709,8 +777,13 @@ const SellerDashboard = ({ initialTab = 'Dashboard' }) => {
                 <div className="xl:col-span-8 space-y-8">
                   <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
                     <div className="p-6 border-b border-gray-50 flex items-center justify-between">
-                      <h3 className="font-bold text-gray-900">My Products</h3>
-                      <button className="text-blue-600 text-sm font-bold hover:underline">View All</button>
+                      <h3 className="font-bold text-gray-900">Recent Products</h3>
+                      <button 
+                        onClick={() => setActiveTab('My Products')}
+                        className="text-blue-600 text-sm font-bold hover:underline"
+                      >
+                        View All
+                      </button>
                     </div>
                     <div className="overflow-x-auto">
                       <table className="w-full text-left">
@@ -719,53 +792,33 @@ const SellerDashboard = ({ initialTab = 'Dashboard' }) => {
                             <th className="px-6 py-4">Product</th>
                             <th className="px-6 py-4">Price</th>
                             <th className="px-6 py-4">Stock</th>
-                            <th className="px-6 py-4">Negotiate</th>
-                            <th className="px-6 py-4">Status</th>
                             <th className="px-6 py-4 text-right">Actions</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-50">
-                          {sellerProducts.length > 0 ? sellerProducts.map((product) => (
+                          {sellerProducts.slice(0, 5).length > 0 ? sellerProducts.slice(0, 5).map((product) => (
                             <tr key={product._id} className="hover:bg-gray-50 transition-colors">
                               <td className="px-6 py-4">
                                 <div className="flex items-center gap-3">
-                                  <img src={product.images?.[0] || 'https://via.placeholder.com/300'} alt="" className="w-10 h-10 rounded-lg object-cover" />
+                                  <img src={product.images?.[0] || 'https://placehold.co/300x300/f3f4f6/9ca3af'} alt="" className="w-10 h-10 rounded-lg object-cover" />
                                   <span className="text-sm font-bold text-gray-900">{product.name}</span>
                                 </div>
                               </td>
                               <td className="px-6 py-4 text-sm font-medium text-gray-600">₹{product.price.toLocaleString()}</td>
                               <td className="px-6 py-4 text-sm font-medium text-gray-600">{product.stock}</td>
-                              <td className="px-6 py-4">
-                                <span className={`text-[10px] font-bold px-2 py-1 rounded ${product.negotiable ? 'bg-blue-50 text-blue-600' : 'bg-gray-50 text-gray-400'}`}>
-                                  {product.negotiable ? 'ENABLED' : 'DISABLED'}
-                                </span>
-                              </td>
-                              <td className="px-6 py-4">
-                                <span className="text-[10px] font-bold text-green-600 bg-green-50 px-2 py-1 rounded">ACTIVE</span>
-                              </td>
                               <td className="px-6 py-4 text-right">
-                                <div className="flex items-center justify-end gap-2">
-                                  <button
-                                    onClick={() => openEditModal(product)}
-                                    className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                                    title="Edit Product"
-                                  >
-                                    <Edit size={16} />
-                                  </button>
-                                  <button
-                                    onClick={() => handleDeleteProduct(product._id)}
-                                    className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                                    title="Delete Product"
-                                  >
-                                    <Trash2 size={16} />
-                                  </button>
-                                </div>
+                                <button
+                                  onClick={() => openEditModal(product)}
+                                  className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                >
+                                  <Edit size={16} />
+                                </button>
                               </td>
                             </tr>
                           )) : (
                             <tr>
-                              <td colSpan="6" className="px-6 py-12 text-center text-gray-500 text-sm">
-                                No products found. Start by adding your first product!
+                              <td colSpan="4" className="px-6 py-12 text-center text-gray-500 text-sm">
+                                No products found.
                               </td>
                             </tr>
                           )}
@@ -838,7 +891,7 @@ const SellerDashboard = ({ initialTab = 'Dashboard' }) => {
                             <div>
                               <div className="text-sm font-bold text-gray-900">Order #{order._id.slice(-8).toUpperCase()}</div>
                               <div className="text-[10px] text-gray-500 font-medium mt-0.5">
-                                {order.sellerItemCount} items • {order.paymentMethod}
+                                {order.sellerItemCount} items â€¢ {order.paymentMethod}
                               </div>
                             </div>
                           </div>
@@ -904,7 +957,7 @@ const SellerDashboard = ({ initialTab = 'Dashboard' }) => {
           </div>
         </div>
         <div className="max-w-[1600px] mx-auto pt-8 border-t border-gray-800 text-center text-[10px] font-medium text-gray-600">
-          © 2024 ZyLora. All rights reserved.
+          Â© 2024 ZyLora. All rights reserved.
         </div>
       </footer>
     </div>
@@ -912,3 +965,4 @@ const SellerDashboard = ({ initialTab = 'Dashboard' }) => {
 };
 
 export default SellerDashboard;
+

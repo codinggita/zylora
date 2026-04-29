@@ -95,25 +95,29 @@ const SellerOrders = () => {
             {[
               { name: 'Dashboard', icon: LayoutDashboard, path: '/seller-dashboard' },
               { name: 'My Products', icon: Package, path: '/seller-dashboard' },
-              { name: 'Orders', icon: ShoppingCart, active: filter !== 'Returns', path: '/seller-orders' },
+              { name: 'Orders', icon: ShoppingCart, path: '/seller-orders' },
               { name: 'Negotiations', icon: MessageSquare, path: '/seller-negotiations' },
               { name: 'Auction Manager', icon: Gavel, path: '/seller-auctions' },
               { name: 'Earnings', icon: Wallet, path: '/seller-earnings' },
-              { name: 'Returns', icon: RotateCcw, active: filter === 'Returns', path: '/seller-orders?filter=Returns' }
-            ].map((item) => (
-              <Link
-                key={item.name}
-                to={item.path}
-                className={`flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
-                  item.active
-                    ? 'bg-blue-50 text-blue-600'
-                    : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'
-                }`}
-              >
-                <item.icon size={18} />
-                {item.name}
-              </Link>
-            ))}
+              { name: 'Returns', icon: RotateCcw, path: '/seller-orders?filter=Returns' }
+            ].map((item) => {
+              const isActive = item.path === window.location.pathname + window.location.search;
+              
+              return (
+                <Link
+                  key={item.name}
+                  to={item.path}
+                  className={`flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
+                    isActive
+                      ? 'bg-blue-50 text-blue-600'
+                      : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'
+                  }`}
+                >
+                  <item.icon size={18} />
+                  {item.name}
+                </Link>
+              );
+            })}
           </nav>
         </aside>
 

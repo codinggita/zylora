@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
 import { 
@@ -350,7 +350,7 @@ const SubmitAuctionAddress = () => {
               <div className="flex gap-4 mb-8">
                 <div className="w-20 h-20 bg-gray-50 rounded-2xl overflow-hidden border border-gray-100 shrink-0">
                   <img 
-                    src={winnerStatus?.product?.images?.[0] || 'https://via.placeholder.com/150'} 
+                    src={winnerStatus?.product?.images?.[0] || 'https://placehold.co/300x300/f3f4f6/9ca3af'} 
                     alt="Product" 
                     className="w-full h-full object-cover"
                   />
@@ -404,3 +404,4 @@ const SubmitAuctionAddress = () => {
 };
 
 export default SubmitAuctionAddress;
+

@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+﻿import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 
 const CartContext = createContext();
@@ -35,7 +35,7 @@ export const CartProvider = ({ children }) => {
           name: item.product.name,
           price: item.product.price,
           oldPrice: item.product.oldPrice || item.product.price * 1.2,
-          image: item.product.images ? item.product.images[0] : 'https://via.placeholder.com/150',
+          image: item.product.images ? item.product.images[0] : 'https://placehold.co/300x300/f3f4f6/9ca3af',
           quantity: item.quantity,
           category: item.product.category
         }));
@@ -95,15 +95,24 @@ export const CartProvider = ({ children }) => {
         return;
       }
 
+      const productId = product.id || product._id;
+
+      // Check if product is a static/demo product (non-MongoDB ID)
+      const isValidMongoId = /^[a-f\d]{24}$/i.test(String(productId));
+      if (!isValidMongoId) {
+        alert('This is a demo product and cannot be added to cart. Browse our live products to add items!');
+        return;
+      }
+
       const config = {
         headers: { Authorization: `Bearer ${token}` }
       };
 
-      await axios.post(`${BACKEND_URL}/api/cart/${product.id || product._id}`, { quantity }, config);
+      await axios.post(`${BACKEND_URL}/api/cart/${productId}`, { quantity }, config);
       await fetchCart();
     } catch (error) {
       console.error('Error adding to cart:', error);
-      alert('Failed to add to cart');
+      alert(error.response?.data?.error || 'Failed to add to cart');
     }
   };
 
@@ -189,3 +198,4 @@ export const CartProvider = ({ children }) => {
     </CartContext.Provider>
   );
 };
+

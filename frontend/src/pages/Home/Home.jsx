@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import Header from '../../components/Header';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
@@ -26,34 +26,43 @@ const Home = () => {
     const socket = io(BACKEND_URL);
 
     const fetchHomeData = async () => {
+      // Fetch products independently so auction failures don't block products
       try {
-        const [prodRes, auctionRes] = await Promise.all([
-          axios.get(`${BACKEND_URL}/api/products`),
-          axios.get(`${BACKEND_URL}/api/auctions/active`)
-        ]);
-
+        const prodRes = await axios.get(`${BACKEND_URL}/api/products`);
         if (prodRes.data.success) {
           const dynamicProducts = prodRes.data.data.map(p => ({
             id: p._id,
             name: p.name,
             price: p.price,
             oldPrice: p.price * 1.2,
-            images: p.images,
+            images: p.images && p.images.length > 0 ? p.images : ['https://placehold.co/300x300/f3f4f6/9ca3af'],
             rating: 4.5,
             discount: '15% OFF',
             isDynamic: true
           }));
-          setProducts([...dynamicProducts, ...staticProducts]);
-        }
-
-        if (auctionRes.data.success) {
-          setLiveAuctions(auctionRes.data.data);
+          setProducts(dynamicProducts.length > 0 ? dynamicProducts : staticProducts);
+        } else {
+          setProducts(staticProducts);
         }
       } catch (err) {
-        console.error('Error fetching home data:', err);
+        console.error('Error fetching products:', err);
         setProducts(staticProducts);
       } finally {
         setLoading(false);
+      }
+
+      // Fetch auctions separately â€” failure won't affect products
+      try {
+        const auctionRes = await axios.get(`${BACKEND_URL}/api/auctions`);
+        if (auctionRes.data.success) {
+          // Filter to only active (not ended) auctions
+          const activeAuctions = auctionRes.data.data.filter(
+            a => a.status === 'active' || new Date(a.endTime) > new Date()
+          );
+          setLiveAuctions(activeAuctions);
+        }
+      } catch (err) {
+        console.error('Error fetching auctions:', err);
       }
     };
 
@@ -97,9 +106,9 @@ const Home = () => {
     <div className="min-h-screen bg-[#F8F9FB] text-gray-900 font-sans">
       {/* Top Notification Bar */}
       <div className="bg-[#0A1628] text-white text-[10px] md:text-xs py-2 px-4 flex justify-center items-center gap-4">
-        <span>🚚 Free delivery on orders above ₹1299</span>
+        <span>ðŸšš Free delivery on orders above ₹1299</span>
         <span className="hidden md:inline">|</span>
-        <Link to="/agri-auctions" className="text-amber-500 font-semibold cursor-pointer">🌾 Agri Auctions Live Now →</Link>
+        <Link to="/agri-auctions" className="text-amber-500 font-semibold cursor-pointer">ðŸŒ¾ Agri Auctions Live Now â†’</Link>
       </div>
 
       <Header />
@@ -238,7 +247,7 @@ const Home = () => {
                 onClick={() => navigate(`/product/${prod.id}`)}
               >
                 <div className="relative aspect-square bg-[#F3F4F6] rounded-2xl overflow-hidden mb-4 shadow-sm group-hover:shadow-xl transition-all duration-500">
-                  <img src={prod.images?.[0] || 'https://via.placeholder.com/300'} alt={prod.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
+                  <img src={prod.images?.[0] || 'https://placehold.co/300x300/f3f4f6/9ca3af'} alt={prod.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
                   <span className="absolute top-3 left-3 bg-amber-500 text-white text-[10px] font-black px-3 py-1.5 rounded-full shadow-lg shadow-amber-500/30">{prod.discount}</span>
                   <button 
                     className="absolute bottom-4 right-4 bg-white p-3 rounded-full shadow-xl opacity-0 group-hover:opacity-100 transition-all translate-y-4 group-hover:translate-y-0 duration-500 hover:bg-amber-500 hover:text-white"
@@ -392,7 +401,7 @@ const Home = () => {
                 className="bg-white/10 backdrop-blur-2xl rounded-[32px] border border-white/10 p-6 group hover:bg-white/15 transition-all duration-500 cursor-pointer"
               >
                 <div className="aspect-[4/3] rounded-2xl overflow-hidden mb-6 relative">
-                  <img src={auction.product?.images?.[0] || 'https://via.placeholder.com/400'} alt={auction.product?.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
+                  <img src={auction.product?.images?.[0] || 'https://placehold.co/300x300/f3f4f6/9ca3af'} alt={auction.product?.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
                   <div className="absolute top-4 right-4 bg-red-500 text-white text-[10px] font-black px-4 py-1.5 rounded-full shadow-xl shadow-red-500/30 flex items-center gap-2">
                     <div className="w-1.5 h-1.5 bg-white rounded-full animate-pulse"></div>
                     LIVE
@@ -501,7 +510,7 @@ const Home = () => {
         </div>
 
         <div className="max-w-7xl mx-auto px-4 mt-20 pt-8 border-t border-white/5 flex flex-col md:flex-row justify-between items-center gap-4">
-          <p className="text-[10px] text-gray-500">© 2024 ZyLora. All rights reserved.</p>
+          <p className="text-[10px] text-gray-500">Â© 2024 ZyLora. All rights reserved.</p>
           <div className="flex gap-6 text-[10px] text-gray-500">
             <span className="hover:text-white cursor-pointer">Privacy Policy</span>
             <span className="hover:text-white cursor-pointer">Terms of Service</span>
@@ -514,3 +523,4 @@ const Home = () => {
 };
 
 export default Home;
+

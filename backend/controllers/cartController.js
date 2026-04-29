@@ -24,6 +24,21 @@ exports.addToCart = async (req, res) => {
     const { quantity } = req.body;
     const productId = req.params.productId;
 
+    // Validate MongoDB ObjectId format
+    const mongoose = require('mongoose');
+    if (!mongoose.Types.ObjectId.isValid(productId)) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Invalid product ID. Only database products can be added to cart.' 
+      });
+    }
+
+    // Verify the product exists
+    const product = await Product.findById(productId);
+    if (!product) {
+      return res.status(404).json({ success: false, error: 'Product not found' });
+    }
+
     const user = await User.findById(req.user.id);
     const cartItemIndex = user.cart.findIndex(item => item.product.toString() === productId);
 

@@ -88,7 +88,7 @@ const Negotiation = () => {
             id: p._id,
             name: p.name,
             price: p.price,
-            images: p.images || ['https://via.placeholder.com/300'],
+            images: p.images || ['https://placehold.co/300x300/f3f4f6/9ca3af'],
             seller: p.seller || { name: 'Verified Seller' },
             brand: p.brand || 'Premium'
           };

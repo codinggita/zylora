@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
 import { motion } from 'framer-motion';
@@ -87,7 +87,7 @@ const AuctionOrderConfirmation = () => {
                   <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-4">Order Details</h3>
                   <div className="flex gap-4 p-4 bg-gray-50 rounded-2xl border border-gray-100">
                     <div className="w-16 h-16 bg-white rounded-xl overflow-hidden border border-gray-100 shrink-0">
-                      <img src={winnerStatus?.product?.images?.[0] || 'https://via.placeholder.com/150'} alt="" className="w-full h-full object-cover" />
+                      <img src={winnerStatus?.product?.images?.[0] || 'https://placehold.co/300x300/f3f4f6/9ca3af'} alt="" className="w-full h-full object-cover" />
                     </div>
                     <div className="flex flex-col justify-center">
                       <p className="font-bold text-gray-900 text-sm">{winnerStatus?.product?.name}</p>
@@ -107,7 +107,7 @@ const AuctionOrderConfirmation = () => {
                       <p className="text-xs text-gray-500 font-medium mt-1 leading-relaxed">
                         {winnerStatus?.address?.address}, {winnerStatus?.address?.city}, {winnerStatus?.address?.state} {winnerStatus?.address?.postalCode}
                       </p>
-                      <p className="text-xs text-gray-900 font-bold mt-2">📱 {winnerStatus?.address?.mobile}</p>
+                      <p className="text-xs text-gray-900 font-bold mt-2">ðŸ“± {winnerStatus?.address?.mobile}</p>
                     </div>
                   </div>
                 </div>
@@ -197,3 +197,4 @@ const AuctionOrderConfirmation = () => {
 };
 
 export default AuctionOrderConfirmation;
+

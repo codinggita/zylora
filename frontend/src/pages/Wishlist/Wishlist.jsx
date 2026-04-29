@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Package, MapPin, CreditCard, Settings, 
@@ -152,7 +152,7 @@ const Wishlist = () => {
                     >
                       <div className="relative aspect-square bg-gray-50 p-6 flex items-center justify-center overflow-hidden">
                         <img 
-                          src={item.image || item.images?.[0] || 'https://via.placeholder.com/150x150?text=Product'} 
+                          src={item.image || item.images?.[0] || 'https://placehold.co/300x300/f3f4f6/9ca3af'} 
                           alt={item.name} 
                           className="max-w-full max-h-full object-contain group-hover:scale-110 transition-transform duration-500"
                         />
@@ -237,7 +237,7 @@ const Wishlist = () => {
 
           <div>
             <h3 className="text-amber-500 text-[10px] font-black uppercase tracking-[0.2em] mb-6">Legal</h3>
-            <p className="text-gray-500 text-[10px] font-medium">© 2024 Zylora. All rights reserved.</p>
+            <p className="text-gray-500 text-[10px] font-medium">Â© 2024 Zylora. All rights reserved.</p>
           </div>
         </div>
       </footer>
@@ -246,3 +246,4 @@ const Wishlist = () => {
 };
 
 export default Wishlist;
+

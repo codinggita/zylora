@@ -223,6 +223,7 @@ const wishlist = require('./routes/wishlistRoutes');
 const cart = require('./routes/cartRoutes');
 const negotiation = require('./routes/negotiationRoutes');
 const auctions = require('./routes/auctionRoutes');
+const payments = require('./routes/paymentRoutes');
 
 // Mount routers
 app.use('/api/auth', auth);
@@ -232,6 +233,7 @@ app.use('/api/wishlist', wishlist);
 app.use('/api/cart', cart);
 app.use('/api/negotiation', negotiation);
 app.use('/api/auctions', auctions);
+app.use('/api/payments', payments);
 
 const PORT = process.env.PORT || 5000;
 

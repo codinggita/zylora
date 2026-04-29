@@ -90,26 +90,30 @@ const SellerAuctions = () => {
           <nav className="space-y-1 flex-1">
             {[
               { name: 'Dashboard', icon: LayoutDashboard, path: '/seller-dashboard' },
-              { name: 'My Products', icon: Package, path: '#' },
+              { name: 'My Products', icon: Package, path: '/seller-dashboard' },
               { name: 'Orders', icon: ShoppingCart, path: '/seller-orders' },
               { name: 'Negotiations', icon: MessageSquare, path: '/seller-negotiations' },
-              { name: 'Auction Manager', icon: Gavel, active: true, path: '/seller-auctions' },
-              { name: 'Earnings', icon: Wallet, path: '#' },
-              { name: 'Returns', icon: RotateCcw, path: '#' }
-            ].map((item) => (
-              <Link
-                key={item.name}
-                to={item.path}
-                className={`flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
-                  item.active
-                    ? 'bg-blue-50 text-blue-600'
-                    : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'
-                }`}
-              >
-                <item.icon size={18} />
-                {item.name}
-              </Link>
-            ))}
+              { name: 'Auction Manager', icon: Gavel, path: '/seller-auctions' },
+              { name: 'Earnings', icon: Wallet, path: '/seller-earnings' },
+              { name: 'Returns', icon: RotateCcw, path: '/seller-orders?filter=Returns' }
+            ].map((item) => {
+              const isActive = item.path === window.location.pathname + window.location.search;
+              
+              return (
+                <Link
+                  key={item.name}
+                  to={item.path}
+                  className={`flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
+                    isActive
+                      ? 'bg-blue-50 text-blue-600'
+                      : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'
+                  }`}
+                >
+                  <item.icon size={18} />
+                  {item.name}
+                </Link>
+              );
+            })}
           </nav>
         </aside>
 
@@ -155,7 +159,7 @@ const SellerAuctions = () => {
                   <div className="flex items-start justify-between mb-4">
                     <div className="w-16 h-16 bg-gray-50 rounded-xl flex items-center justify-center p-2 border border-gray-100">
                       <img
-                        src={auction.product?.images?.[0] || 'https://via.placeholder.com/150'}
+                        src={auction.product?.images?.[0] || 'https://placehold.co/300x300/f3f4f6/9ca3af'}
                         alt={auction.product?.name}
                         className="max-w-full max-h-full object-contain"
                       />
@@ -207,7 +211,7 @@ const SellerAuctions = () => {
           >
             <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50">
               <h2 className="text-lg font-bold text-gray-900">Start New Auction</h2>
-              <button onClick={() => setShowCreateModal(false)} className="text-gray-400 hover:text-gray-600">✕</button>
+              <button onClick={() => setShowCreateModal(false)} className="text-gray-400 hover:text-gray-600">âœ•</button>
             </div>
             
             <form onSubmit={handleCreateAuction} className="p-6 space-y-4">
@@ -296,3 +300,4 @@ const SellerAuctions = () => {
 };
 
 export default SellerAuctions;
+
