@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { CheckCircle2, Mail, Lock, User, ArrowRight } from 'lucide-react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import { motion } from 'framer-motion';
 import { useCart } from '../../context/CartContext';
@@ -23,6 +23,7 @@ const Signup = () => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
 
   const onChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -49,12 +50,9 @@ const Signup = () => {
         sessionStorage.setItem('token', res.data.token);
         sessionStorage.setItem('user', JSON.stringify(res.data.user));
         
-        // Redirect immediately based on role
-        if (res.data.user.role === 'seller') {
-          navigate('/seller-dashboard');
-        } else {
-          navigate('/');
-        }
+        // Redirect to intended destination or default based on role
+        const from = location.state?.from?.pathname || (res.data.user.role === 'seller' ? '/seller-dashboard' : '/');
+        navigate(from, { replace: true });
 
         // Refresh cart and wishlist data in background
         Promise.all([

@@ -17,7 +17,8 @@ const SellerAuctions = () => {
   const [formData, setFormData] = useState({
     productId: '',
     basePrice: '',
-    durationHours: '24'
+    duration: '24',
+    durationUnit: 'hours'
   });
 
   const BACKEND_URL = window.location.hostname === 'localhost'
@@ -62,14 +63,15 @@ const SellerAuctions = () => {
       const res = await axios.post(`${BACKEND_URL}/api/auctions`, {
         productId: formData.productId,
         basePrice: Number(formData.basePrice),
-        durationHours: Number(formData.durationHours)
+        duration: Number(formData.duration),
+        durationUnit: formData.durationUnit
       }, {
         headers: { Authorization: `Bearer ${token}` }
       });
 
       if (res.data.success) {
         setShowCreateModal(false);
-        setFormData({ productId: '', basePrice: '', durationHours: '24' });
+        setFormData({ productId: '', basePrice: '', duration: '24', durationUnit: 'hours' });
         fetchData(); // Refresh list
       }
     } catch (err) {
@@ -239,17 +241,28 @@ const SellerAuctions = () => {
 
               <div>
                 <label className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-2 block">Duration</label>
-                <select 
-                  value={formData.durationHours}
-                  onChange={(e) => setFormData({...formData, durationHours: e.target.value})}
-                  className="w-full border border-gray-200 rounded-xl p-3 text-sm focus:ring-2 focus:ring-blue-600 outline-none"
-                >
-                  <option value="12">12 Hours</option>
-                  <option value="24">24 Hours (1 Day)</option>
-                  <option value="48">48 Hours (2 Days)</option>
-                  <option value="72">72 Hours (3 Days)</option>
-                  <option value="168">1 Week</option>
-                </select>
+                <div className="flex gap-2">
+                  <input 
+                    type="number" 
+                    required
+                    min="1"
+                    value={formData.duration}
+                    onChange={(e) => setFormData({...formData, duration: e.target.value})}
+                    placeholder="Value"
+                    className="flex-1 border border-gray-200 rounded-xl p-3 text-sm focus:ring-2 focus:ring-blue-600 outline-none"
+                  />
+                  <select 
+                    value={formData.durationUnit}
+                    onChange={(e) => setFormData({...formData, durationUnit: e.target.value})}
+                    className="w-32 border border-gray-200 rounded-xl p-3 text-sm focus:ring-2 focus:ring-blue-600 outline-none bg-gray-50 font-bold"
+                  >
+                    <option value="hours">Hours</option>
+                    <option value="minutes">Minutes</option>
+                  </select>
+                </div>
+                <p className="text-[10px] text-gray-400 mt-1.5 ml-1">
+                  Example: 15 minutes or 24 hours.
+                </p>
               </div>
 
               <div className="bg-amber-50 p-4 rounded-xl flex gap-3 items-start mt-6">

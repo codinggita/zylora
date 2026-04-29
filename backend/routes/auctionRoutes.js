@@ -8,7 +8,10 @@ const {
   placeBid,
   getUserBidInfo,
   getAuctionDetails,
-  processRefunds
+  processRefunds,
+  submitWinnerAddress,
+  createAuctionOrder,
+  getWinnerStatus
 } = require('../controllers/auctionController');
 
 router.get('/', getAuctions);
@@ -18,5 +21,8 @@ router.post('/:id/bid', protect, placeBid);
 router.get('/:id/my-bid', protect, getUserBidInfo);
 router.get('/:id/details', protect, getAuctionDetails);
 router.post('/:id/process-refunds', protect, processRefunds);
+router.post('/:id/submit-address', protect, submitWinnerAddress);
+router.post('/:id/create-order', protect, createAuctionOrder);
+router.get('/:id/winner-status', protect, getWinnerStatus);
 
 module.exports = router;

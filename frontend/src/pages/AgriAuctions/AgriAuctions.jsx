@@ -3,7 +3,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   ChevronRight, Clock, Star, ShieldCheck, 
   Truck, RotateCcw, Headset, ArrowRight,
-  Gavel, Info, Filter, ArrowUpRight, CheckCircle2, MapPin, TrendingUp
+  Gavel, Info, Filter, ArrowUpRight, CheckCircle2, MapPin, TrendingUp,
+  Bell, Award, X
 } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
@@ -24,6 +25,9 @@ const AgriAuctions = () => {
   const [userBidInfo, setUserBidInfo] = useState(null);
   const [paymentInfo, setPaymentInfo] = useState(null);
   const [error, setError] = useState('');
+  const [winnerNotifications, setWinnerNotifications] = useState([]);
+  const [promotedProducts, setPromotedProducts] = useState([]);
+  const socketRef = React.useRef(null);
 
   const BACKEND_URL = window.location.hostname === 'localhost' 
     ? 'http://localhost:5001' 
@@ -48,6 +52,41 @@ const AgriAuctions = () => {
     }
   };
 
+  // Check if user has won any auctions
+  useEffect(() => {
+    const checkWinnerStatus = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        if (!token) return;
+
+        // Check each auction for winner status
+        const completedAuctions = auctions.filter(a => a.status === 'COMPLETED' || a.endTime < new Date());
+        
+        const notifications = await Promise.all(
+          completedAuctions.map(async (auction) => {
+            try {
+              const res = await axios.get(
+                `${BACKEND_URL}/api/auctions/${auction._id}/winner-status`,
+                { headers: { Authorization: `Bearer ${token}` } }
+              );
+              return res.data.data;
+            } catch (e) {
+              return null;
+            }
+          })
+        );
+
+        setWinnerNotifications(notifications.filter(n => n && n.isWinner && !n.orderCreated));
+      } catch (err) {
+        console.error('Error checking winner status:', err);
+      }
+    };
+
+    if (auctions.length > 0) {
+      checkWinnerStatus();
+    }
+  }, [auctions, BACKEND_URL]);
+
   useEffect(() => {
     fetchAuctions();
 
@@ -56,22 +95,19 @@ const AgriAuctions = () => {
       fetchAuctions();
     }, 5000);
 
+    // Initialize socket
     const socket = io(BACKEND_URL, {
       reconnection: true,
       reconnectionDelay: 1000,
       reconnectionDelayMax: 5000,
-      reconnectionAttempts: 5
+      reconnectionAttempts: 5,
+      transports: ['websocket', 'polling']
     });
+    
+    socketRef.current = socket;
 
     socket.on('connect', () => {
       console.log('Connected to auction socket');
-      // Join all auction rooms on reconnect
-      if (auctions.length > 0) {
-        auctions.forEach(auction => {
-          socket.emit('join_auction', auction._id);
-          console.log(`Joined room: auction_${auction._id}`);
-        });
-      }
     });
 
     socket.on('disconnect', () => {
@@ -105,47 +141,46 @@ const AgriAuctions = () => {
 
     return () => {
       clearInterval(pollInterval);
-      socket.disconnect();
+      if (socketRef.current) {
+        socketRef.current.disconnect();
+        socketRef.current = null;
+      }
     };
   }, []);
+
+  // Manage room joins separately
+  useEffect(() => {
+    const socket = socketRef.current;
+    if (!socket || auctions.length === 0) return;
+
+    const joinRooms = () => {
+      auctions.forEach(auction => {
+        socket.emit('join_auction', auction._id);
+        console.log(`Joined room: auction_${auction._id}`);
+      });
+    };
+
+    if (socket.connected) {
+      joinRooms();
+    } else {
+      socket.on('connect', joinRooms);
+    }
+
+    return () => {
+      if (socket) {
+        auctions.forEach(auction => {
+          socket.emit('leave_auction', auction._id);
+        });
+        socket.off('connect', joinRooms);
+      }
+    };
+  }, [auctions.length]); // Only re-run when the number of auctions changes
 
   // Update 'now' every second for countdowns
   useEffect(() => {
     const timer = setInterval(() => setNow(new Date()), 1000);
     return () => clearInterval(timer);
   }, []);
-
-  // Join rooms whenever auctions list changes
-  useEffect(() => {
-    if (auctions.length > 0) {
-      const socket = io(BACKEND_URL, {
-        reconnection: true,
-        reconnectionDelay: 1000,
-        reconnectionDelayMax: 5000,
-        reconnectionAttempts: 5,
-        transports: ['websocket', 'polling']
-      });
-      
-      socket.on('connect', () => {
-        console.log('Socket connected for auction rooms');
-        auctions.forEach(auction => {
-          socket.emit('join_auction', auction._id);
-          console.log(`Emitted join_auction for: ${auction._id}`);
-        });
-      });
-
-      socket.on('connect_error', (error) => {
-        console.error('Socket connection error:', error);
-      });
-      
-      return () => {
-        auctions.forEach(auction => {
-          socket.emit('leave_auction', auction._id);
-        });
-        socket.disconnect();
-      };
-    }
-  }, [auctions.length, BACKEND_URL, auctions]);
 
   const calculatePayment = (newBidAmount) => {
     if (!selectedAuction) return null;
@@ -264,6 +299,44 @@ const AgriAuctions = () => {
           <ChevronRight size={10} />
           <span className="text-gray-900">Agri Auctions</span>
         </div>
+
+        {/* Winner Notifications */}
+        <AnimatePresence>
+          {winnerNotifications.map((notification, idx) => (
+            <motion.div
+              key={notification.product.name}
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              className="mb-6 bg-gradient-to-r from-yellow-50 to-amber-50 border border-amber-200 rounded-2xl p-6 flex items-center justify-between shadow-lg"
+            >
+              <div className="flex items-center gap-4 flex-1">
+                <Award className="w-8 h-8 text-amber-600 flex-shrink-0" />
+                <div className="flex-1">
+                  <p className="font-bold text-gray-800">🎉 Congratulations! You won the auction!</p>
+                  <p className="text-sm text-gray-600">
+                    <strong>{notification.product.name}</strong> - Winning bid: <strong>₹{notification.winningBid}</strong>
+                  </p>
+                  {notification.nextStep === 'SUBMIT_ADDRESS' && (
+                    <p className="text-xs text-amber-700 mt-1">⚠️ Please submit your delivery address to complete the purchase</p>
+                  )}
+                </div>
+              </div>
+              <button
+                onClick={() => {
+                  if (notification.nextStep === 'SUBMIT_ADDRESS') {
+                    navigate(`/auction/${notification.product._id || Object.keys(auctions)[0]}/submit-address`);
+                  } else if (notification.nextStep === 'CREATE_ORDER') {
+                    navigate(`/auction/${notification.product._id || Object.keys(auctions)[0]}/confirm-order`);
+                  }
+                }}
+                className="bg-amber-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-amber-700 transition whitespace-nowrap ml-4"
+              >
+                Complete Purchase →
+              </button>
+            </motion.div>
+          ))}
+        </AnimatePresence>
 
         {/* Hero Banner */}
         <motion.div 

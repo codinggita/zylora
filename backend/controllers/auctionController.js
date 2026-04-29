@@ -6,9 +6,9 @@ const Product = require('../models/Product');
 // @access  Private/Seller
 exports.createAuction = async (req, res) => {
   try {
-    const { productId, basePrice, durationHours } = req.body;
+    const { productId, basePrice, duration, durationUnit } = req.body;
 
-    if (!productId || !basePrice || !durationHours) {
+    if (!productId || !basePrice || !duration) {
       return res.status(400).json({ success: false, message: 'Please provide all required fields' });
     }
 
@@ -19,7 +19,13 @@ exports.createAuction = async (req, res) => {
     }
 
     const startTime = new Date();
-    const endTime = new Date(startTime.getTime() + durationHours * 60 * 60 * 1000);
+    
+    // Calculate duration in milliseconds
+    const durationMs = durationUnit === 'minutes' 
+      ? duration * 60 * 1000 
+      : duration * 60 * 60 * 1000;
+
+    const endTime = new Date(startTime.getTime() + durationMs);
 
     const auction = await Auction.create({
       product: productId,
@@ -142,7 +148,7 @@ exports.placeBid = async (req, res) => {
       
       if (previousBidderRecord && !previousBidderRecord.isRefunded) {
         previousBidderRecord.refundAmount = previousBidderRecord.totalPaid;
-        previousBidderRecord.isRefunded = true;
+        previousBidderRecord.isRefunded = false; // Mark as pending refund
       }
     }
 
@@ -323,6 +329,7 @@ exports.processRefunds = async (req, res) => {
         // Here you would integrate with payment gateway to process actual refund
         // For now, we're marking it as refunded in the system
         payment.isRefunded = true;
+        payment.refundedAt = new Date();
         
         refundedUsers.push({
           userId: payment.user,
@@ -341,6 +348,225 @@ exports.processRefunds = async (req, res) => {
         refundedUsers,
         highestBidder: auction.highestBidder,
         finalBidAmount: auction.currentBid
+      }
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+};
+
+// @desc    Submit winner's delivery address
+// @route   POST /api/auctions/:id/submit-address
+// @access  Private (Only winner can submit)
+exports.submitWinnerAddress = async (req, res) => {
+  try {
+    const { name, mobile, address, city, state, postalCode } = req.body;
+    const userId = req.user._id;
+    const auctionId = req.params.id;
+
+    // Validate required fields
+    if (!name || !mobile || !address || !city || !state || !postalCode) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Please provide all address details' 
+      });
+    }
+
+    const auction = await Auction.findById(auctionId)
+      .populate('product')
+      .populate('seller')
+      .populate('highestBidder');
+
+    if (!auction) {
+      return res.status(404).json({ success: false, message: 'Auction not found' });
+    }
+
+    // Check if user is the winner
+    if (auction.highestBidder._id.toString() !== userId.toString()) {
+      return res.status(403).json({ 
+        success: false, 
+        message: 'Only the auction winner can submit address' 
+      });
+    }
+
+    // Check if auction has ended
+    if (auction.status !== 'COMPLETED' && auction.endTime > new Date()) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Auction has not ended yet' 
+      });
+    }
+
+    // Update address in auction
+    auction.winnerAddress = {
+      name,
+      mobile,
+      address,
+      city,
+      state,
+      postalCode,
+      submittedAt: new Date()
+    };
+    auction.winnerAddressSubmitted = true;
+
+    await auction.save();
+
+    res.status(200).json({
+      success: true,
+      message: 'Address submitted successfully',
+      data: {
+        auction,
+        addressSubmitted: true
+      }
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+};
+
+// @desc    Create order from auction (for winner)
+// @route   POST /api/auctions/:id/create-order
+// @access  Private (Only winner can create)
+exports.createAuctionOrder = async (req, res) => {
+  try {
+    const userId = req.user._id;
+    const auctionId = req.params.id;
+    const Order = require('../models/Order');
+    const { sendOrderConfirmationEmail } = require('../utils/emailService');
+
+    const auction = await Auction.findById(auctionId)
+      .populate('product')
+      .populate('seller')
+      .populate('highestBidder');
+
+    if (!auction) {
+      return res.status(404).json({ success: false, message: 'Auction not found' });
+    }
+
+    // Check if user is the winner
+    if (auction.highestBidder._id.toString() !== userId.toString()) {
+      return res.status(403).json({ 
+        success: false, 
+        message: 'Only the auction winner can create an order' 
+      });
+    }
+
+    // Check if address has been submitted
+    if (!auction.winnerAddressSubmitted || !auction.winnerAddress) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Please submit your delivery address first' 
+      });
+    }
+
+    // Check if order already exists
+    if (auction.winnerOrder) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Order already created for this auction' 
+      });
+    }
+
+    // Create order
+    const order = await Order.create({
+      user: userId,
+      orderItems: [
+        {
+          name: auction.product.name,
+          quantity: 1,
+          image: auction.product.images ? auction.product.images[0] : '',
+          price: auction.currentBid,
+          product: auction.product._id
+        }
+      ],
+      shippingAddress: {
+        name: auction.winnerAddress.name,
+        mobile: auction.winnerAddress.mobile,
+        address: `${auction.winnerAddress.address}, ${auction.winnerAddress.city}, ${auction.winnerAddress.state} ${auction.winnerAddress.postalCode}`
+      },
+      totalPrice: auction.currentBid,
+      paymentMethod: 'Auction',
+      status: 'Processing'
+    });
+
+    // Link order to auction
+    auction.winnerOrder = order._id;
+    auction.orderCreatedAt = new Date();
+    await auction.save();
+
+    // Send order confirmation email
+    await sendOrderConfirmationEmail(
+      auction.highestBidder.email,
+      auction.highestBidder.name,
+      auction,
+      auction.winnerAddress
+    );
+
+    // Emit socket event for real-time update
+    const io = req.app.get('io');
+    if (io) {
+      io.to(`auction_${auction._id}`).emit('auction_order_created', {
+        auctionId: auction._id,
+        orderId: order._id,
+        orderStatus: order.status,
+        message: 'Order created successfully!'
+      });
+    }
+
+    res.status(201).json({
+      success: true,
+      message: 'Order created successfully!',
+      data: {
+        order,
+        auction
+      }
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+};
+
+// @desc    Get auction winner status (for winner to check if they can submit address)
+// @route   GET /api/auctions/:id/winner-status
+// @access  Private
+exports.getWinnerStatus = async (req, res) => {
+  try {
+    const userId = req.user._id;
+    const auctionId = req.params.id;
+
+    const auction = await Auction.findById(auctionId)
+      .populate('product', 'name')
+      .populate('highestBidder', 'name email');
+
+    if (!auction) {
+      return res.status(404).json({ success: false, message: 'Auction not found' });
+    }
+
+    const isWinner = auction.highestBidder && auction.highestBidder._id.toString() === userId.toString();
+    const auctionEnded = auction.endTime < new Date();
+
+    res.status(200).json({
+      success: true,
+      data: {
+        isWinner,
+        auctionEnded,
+        status: auction.status,
+        addressSubmitted: auction.winnerAddressSubmitted,
+        orderCreated: !!auction.winnerOrder,
+        winnerName: isWinner ? auction.highestBidder.name : null,
+        winningBid: auction.currentBid,
+        notificationSent: auction.winnerNotificationSent,
+        product: {
+          name: auction.product.name
+        },
+        address: auction.winnerAddressSubmitted ? auction.winnerAddress : null,
+        nextStep: isWinner && auctionEnded && !auction.winnerAddressSubmitted 
+          ? 'SUBMIT_ADDRESS'
+          : isWinner && auction.winnerAddressSubmitted && !auction.winnerOrder
+            ? 'CREATE_ORDER'
+            : isWinner && auction.winnerOrder
+              ? 'ORDER_CREATED'
+              : 'NOT_WINNER'
       }
     });
   } catch (err) {

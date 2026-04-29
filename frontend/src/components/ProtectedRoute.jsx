@@ -1,13 +1,14 @@
 import React from 'react';
-import { Navigate } from 'react-router-dom';
+import { Navigate, useLocation } from 'react-router-dom';
 
 const ProtectedRoute = ({ children, role, buyerOnly }) => {
   const token = sessionStorage.getItem('token');
   const user = JSON.parse(sessionStorage.getItem('user'));
+  const location = useLocation();
 
   if (!token) {
-    // Redirect to login if there is no token
-    return <Navigate to="/login" replace />;
+    // Redirect to login if there is no token, passing current location in state
+    return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
   if (role && (!user || user.role !== role)) {

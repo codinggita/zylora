@@ -3,9 +3,9 @@
  * Analyzes seller data and provides AI-powered recommendations
  */
 
-const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY || 'YOUR_GEMINI_API_KEY_HERE';
-const API_VERSIONS = ['v1beta', 'v1'];
-const MODELS = ['gemini-flash-latest', 'gemini-2.5-flash'];
+const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
+const API_VERSIONS = ['v1beta'];
+const MODELS = ['gemini-2.5-flash', 'gemini-2.5-pro'];
 
 /**
  * Cache key format: seller_id_week_number or seller_id_day_number

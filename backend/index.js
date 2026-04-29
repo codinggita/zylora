@@ -1,15 +1,15 @@
+const dotenv = require('dotenv');
+dotenv.config();
+
 const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
-const dotenv = require('dotenv');
 const cors = require('cors');
 const connectDB = require('./config/db');
 const Message = require('./models/Message');
 const Product = require('./models/Product');
 const Negotiation = require('./models/Negotiation');
-
-// Load env vars
-dotenv.config();
+const { startAuctionCompletionHandler } = require('./utils/auctionCompletionHandler');
 
 // Connect to database
 connectDB();
@@ -192,12 +192,22 @@ io.on('connection', (socket) => {
     }
   });
 
+  socket.on('leave_auction', (auctionId) => {
+    if (auctionId) {
+      socket.leave(`auction_${auctionId}`);
+      console.log(`User ${socket.id} left auction room: auction_${auctionId}`);
+    }
+  });
+
   socket.on('disconnect', () => {
     console.log('User disconnected:', socket.id);
   });
 });
 
 app.set('io', io);
+
+// Start auction completion handler
+startAuctionCompletionHandler(io);
 
 // Body parser
 app.use(express.json());

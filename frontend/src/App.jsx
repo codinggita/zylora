@@ -17,6 +17,8 @@ import SellerDashboard from './pages/SellerDashboard/SellerDashboard';
 import SellerNegotiations from './pages/SellerNegotiations/SellerNegotiations';
 import SellerOrders from './pages/SellerOrders/SellerOrders';
 import SellerAuctions from './pages/SellerAuctions/SellerAuctions';
+import SubmitAuctionAddress from './pages/AuctionWinner/SubmitAuctionAddress';
+import AuctionOrderConfirmation from './pages/AuctionWinner/AuctionOrderConfirmation';
 import ProtectedRoute from './components/ProtectedRoute';
 import './App.css';
 import { CartProvider } from './context/CartContext';
@@ -138,6 +140,23 @@ function App() {
           element={
             <ProtectedRoute>
               <AgriAuctions />
+            </ProtectedRoute>
+          } 
+        />
+        {/* Auction Winner Routes */}
+        <Route 
+          path="/auction/:auctionId/submit-address" 
+          element={
+            <ProtectedRoute>
+              <SubmitAuctionAddress />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/auction/:auctionId/confirm-order" 
+          element={
+            <ProtectedRoute>
+              <AuctionOrderConfirmation />
             </ProtectedRoute>
           } 
         />

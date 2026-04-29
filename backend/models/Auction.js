@@ -72,7 +72,8 @@ const auctionSchema = new mongoose.Schema({
     isRefunded: {
       type: Boolean,
       default: false
-    }
+    },
+    refundedAt: Date
   }],
   status: {
     type: String,
@@ -87,6 +88,29 @@ const auctionSchema = new mongoose.Schema({
     type: Date,
     required: [true, 'Please add an end time']
   },
+  winnerNotificationSent: {
+    type: Boolean,
+    default: false
+  },
+  winnerAddressSubmitted: {
+    type: Boolean,
+    default: false
+  },
+  winnerAddress: {
+    name: String,
+    mobile: String,
+    address: String,
+    city: String,
+    state: String,
+    postalCode: String,
+    submittedAt: Date
+  },
+  winnerOrder: {
+    type: mongoose.Schema.ObjectId,
+    ref: 'Order',
+    default: null
+  },
+  orderCreatedAt: Date,
   createdAt: {
     type: Date,
     default: Date.now
