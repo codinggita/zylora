@@ -11,10 +11,12 @@ const {
   processRefunds,
   submitWinnerAddress,
   createAuctionOrder,
-  getWinnerStatus
+  getWinnerStatus,
+  getClosedAuctions
 } = require('../controllers/auctionController');
 
 router.get('/', getAuctions);
+router.get('/closed', getClosedAuctions);
 router.post('/', protect, createAuction);
 router.get('/seller', protect, getSellerAuctions);
 router.post('/:id/bid', protect, placeBid);

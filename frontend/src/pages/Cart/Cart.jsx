@@ -131,18 +131,18 @@ const Cart = () => {
             )}
 
             {/* Coupon Section */}
-            <div className="bg-white rounded-2xl border border-dashed border-orange-200 p-6 flex items-center justify-between gap-4">
-               <div className="flex items-center gap-4">
-                 <div className="bg-orange-50 p-3 rounded-xl">
+            <div className="bg-white rounded-2xl border border-dashed border-orange-200 p-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+               <div className="flex items-center gap-4 text-center sm:text-left">
+                 <div className="bg-orange-50 p-3 rounded-xl hidden xs:block">
                    <Ticket className="text-orange-500" size={24} />
                  </div>
                  <div>
                    <h4 className="font-bold text-gray-900 text-sm">Apply Coupon</h4>
-                   <p className="text-xs text-gray-500">Use ZYLORA10 for 10% off on first agricultural purchase</p>
+                   <p className="text-xs text-gray-500">Use ZYLORA10 for 10% off</p>
                  </div>
                </div>
-               <div className="flex items-center bg-gray-50 rounded-xl border border-gray-200 overflow-hidden">
-                 <div className="px-4 py-2 text-xs font-black text-orange-600 uppercase tracking-widest border-r border-gray-200">ZYLORA10</div>
+               <div className="flex items-center bg-gray-50 rounded-xl border border-gray-200 overflow-hidden w-full sm:w-auto">
+                 <div className="flex-1 sm:flex-none px-4 py-2 text-xs font-black text-orange-600 uppercase tracking-widest border-r border-gray-200 text-center">ZYLORA10</div>
                  <button className="px-4 py-2 text-xs font-bold text-blue-600 hover:bg-white transition-colors">Apply</button>
                </div>
             </div>

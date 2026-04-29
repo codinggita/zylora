@@ -838,7 +838,7 @@ const SellerDashboard = ({ initialTab = 'Dashboard' }) => {
                     </div>
                     <div className="space-y-4">
                       {negotiationSummary.conversations.length > 0 ? negotiationSummary.conversations.map((neg, i) => (
-                        <div key={neg.id} className="p-4 bg-gray-50 rounded-xl border border-gray-100">
+                        <div key={neg.id} className="p-4 bg-gray-50 border border-gray-100 rounded-xl transition-all">
                           <div className="flex items-center gap-3 mb-3">
                             <div className={`w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-bold text-white ${i === 0 ? 'bg-gray-900' : 'bg-blue-600'}`}>
                               {neg.buyerInitial}
@@ -854,21 +854,51 @@ const SellerDashboard = ({ initialTab = 'Dashboard' }) => {
                             </div>
                           </div>
                           {neg.lastMessage && (
-                            <p className="text-xs text-gray-500 italic mb-4 leading-relaxed">"{neg.lastMessage}"</p>
+                            <p className="text-xs text-gray-500 italic mb-4 leading-relaxed line-clamp-1">"{neg.lastMessage}"</p>
                           )}
+                          
                           <div className="flex gap-2">
-                            <button
-                              onClick={() => navigate(`/negotiate/${neg.product.id}?buyerId=${neg.id.split(':')[1]}`)}
-                              className="flex-1 bg-black text-white py-2 rounded-lg text-xs font-bold hover:bg-gray-800 transition-colors"
-                            >
-                              Open Chat
-                            </button>
-                            <button
-                              onClick={() => navigate('/seller-negotiations')}
-                              className="flex-1 bg-white border border-gray-200 text-gray-900 py-2 rounded-lg text-xs font-bold hover:bg-gray-50 transition-colors"
-                            >
-                              View All
-                            </button>
+                            {neg.status === 'ACCEPTED' ? (
+                              <button
+                                onClick={() => navigate(`/negotiate/${neg.product.id}?buyerId=${neg.id.split(':')[1]}`)}
+                                className="w-full bg-green-600 text-white py-2 rounded-lg text-xs font-bold hover:bg-green-700 transition-colors flex items-center justify-center gap-2"
+                              >
+                                Continue Chat <ArrowUpRight size={14} />
+                              </button>
+                            ) : (
+                              <>
+                                <button
+                                  onClick={async () => {
+                                    if (neg.negotiationId) {
+                                      try {
+                                        await axios.put(`${BACKEND_URL}/api/negotiation/${neg.negotiationId}/status`, { status: 'ACCEPTED' }, getAuthConfig());
+                                        fetchDashboardData();
+                                      } catch (err) { alert('Failed to accept'); }
+                                    } else {
+                                      navigate(`/negotiate/${neg.product.id}?buyerId=${neg.id.split(':')[1]}`);
+                                    }
+                                  }}
+                                  className="flex-1 bg-blue-600 text-white py-2 rounded-lg text-xs font-bold hover:bg-blue-700 transition-colors shadow-lg shadow-blue-200"
+                                >
+                                  Accept
+                                </button>
+                                <button
+                                  onClick={async () => {
+                                    if (neg.negotiationId) {
+                                      try {
+                                        await axios.put(`${BACKEND_URL}/api/negotiation/${neg.negotiationId}/status`, { status: 'DECLINED' }, getAuthConfig());
+                                        fetchDashboardData();
+                                      } catch (err) { alert('Failed to decline'); }
+                                    } else {
+                                      alert('Cannot decline a legacy message. Please open chat to manage.');
+                                    }
+                                  }}
+                                  className="flex-1 bg-white border border-red-100 text-red-500 py-2 rounded-lg text-xs font-bold hover:bg-red-50 transition-colors"
+                                >
+                                  Decline
+                                </button>
+                              </>
+                            )}
                           </div>
                         </div>
                       )) : (

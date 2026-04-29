@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
 import { 
   ChevronRight, Star, Clock, ShieldCheck, 
   Truck, RotateCcw, MessageSquare, Info,
@@ -11,6 +12,7 @@ import { products as staticProducts } from '../../data/products';
 import { useCart } from '../../context/CartContext';
 import { useWishlist } from '../../context/WishlistContext';
 import Header from '../../components/Header';
+import Footer from '../../components/Footer';
 
 const ProductDetail = () => {
   const { id } = useParams();
@@ -33,6 +35,15 @@ const ProductDetail = () => {
     ? 'http://localhost:5001' 
     : 'https://zylora-e-commerce.onrender.com';
 
+  const getBulkDeals = (basePrice, existingDeals) => {
+    if (existingDeals && existingDeals.length > 0) return existingDeals;
+    return [
+      { range: '10-50 units', price: `\u20B9${Math.floor(basePrice * 0.9).toLocaleString()}`, savings: '10% OFF', highlight: false },
+      { range: '50-100 units', price: `\u20B9${Math.floor(basePrice * 0.85).toLocaleString()}`, savings: '15% OFF', highlight: true },
+      { range: '100+ units', price: `\u20B9${Math.floor(basePrice * 0.8).toLocaleString()}`, savings: '20% OFF', highlight: false }
+    ];
+  };
+
   useEffect(() => {
     const fetchProductAndAuction = async () => {
       try {
@@ -46,9 +57,13 @@ const ProductDetail = () => {
         // Try to find in static products first (numeric IDs)
         const staticProd = staticProducts.find(p => p.id === parseInt(id));
         if (staticProd) {
-          setProduct(staticProd);
-          setSelectedColor(staticProd.colors?.[0]?.name || 'Default');
-          setSelectedStorage(staticProd.storageOptions?.[0] || 'Standard');
+          const formattedStatic = {
+            ...staticProd,
+            bulkDeals: getBulkDeals(staticProd.price, staticProd.bulkDeals)
+          };
+          setProduct(formattedStatic);
+          setSelectedColor(formattedStatic.colors?.[0]?.name || 'Default');
+          setSelectedStorage(formattedStatic.storageOptions?.[0] || 'Standard');
           setLoading(false);
           return;
         }
@@ -57,43 +72,77 @@ const ProductDetail = () => {
         const res = await axios.get(`${BACKEND_URL}/api/products/${id}`);
         if (res.data.success) {
           const p = res.data.data;
+          
+          // Smart feature generator based on category
+          const getSmartDetails = (category, name) => {
+            const cat = category?.toLowerCase() || '';
+            const highlights = ['Premium Quality', 'Verified Seller'];
+            const features = [];
+            const specs = [
+              { label: 'Category', value: category },
+              { label: 'Condition', value: 'Brand New' },
+              { label: 'Seller', value: p.seller?.name || p.seller?.storeName || 'ZyLora Verified' }
+            ];
+
+            if (cat === 'agri' || cat === 'grocery') {
+              highlights.push('100% Organic', 'Farm Fresh');
+              features.push(
+                { title: 'Direct from Farm', desc: 'Sourced directly from certified farmers to ensure maximum freshness.' },
+                { title: 'Quality Tested', desc: 'Each batch undergoes rigorous quality checks for moisture and purity.' }
+              );
+              specs.push({ label: 'Origin', value: 'Local Produce' }, { label: 'Shelf Life', value: '6-12 Months' });
+            } else if (cat === 'electronics') {
+              highlights.push('Brand Warranty', 'Next-Day Delivery');
+              features.push(
+                { title: 'Genuine Product', desc: '100% authentic item with full manufacturer warranty support.' },
+                { title: 'High Performance', desc: 'Engineered for durability and peak efficiency in its class.' }
+              );
+              specs.push({ label: 'Warranty', value: '1 Year Brand Warranty' }, { label: 'Box Contents', value: 'Main Unit, User Manual, Accessories' });
+            } else if (cat === 'fashion') {
+              highlights.push('Easy Returns', 'Premium Fabric');
+              features.push(
+                { title: 'Modern Design', desc: 'Crafted following the latest trends for the modern professional.' },
+                { title: 'Comfort First', desc: 'Breathable materials designed for all-day wearability.' }
+              );
+              specs.push({ label: 'Material', value: 'Premium Grade' }, { label: 'Care', value: 'Machine Washable' });
+            } else {
+              highlights.push('Secure Shipping', 'Best Price');
+              features.push(
+                { title: 'Premium Choice', desc: 'Carefully curated selection meeting ZyLora high standards.' },
+                { title: 'Customer Favorite', desc: 'One of our most requested items with high satisfaction ratings.' }
+              );
+            }
+
+            return { highlights, features, specs };
+          };
+
+          const smartDetails = getSmartDetails(p.category, p.name);
+
           const formattedProd = {
             id: p._id,
             name: p.name,
             price: p.price,
-            oldPrice: p.price * 1.2,
+            oldPrice: Math.floor(p.price * (1.1 + Math.random() * 0.3)),
             images: p.images,
-            description: p.description,
+            description: p.description || `This high-quality ${p.name} is carefully selected for the ZyLora marketplace. It represents the best in its class, offering exceptional value and reliability for our customers.`,
             category: p.category,
             stock: p.stock,
-            rating: 4.5,
-            reviewsCount: 128,
-            totalReviews: 85,
-            discount: '15% OFF',
-            colors: [{ name: 'Default', class: 'bg-black' }],
-            storageOptions: ['Standard'],
-            highlights: ['Premium Quality', 'Verified Seller', 'Secure Payment'],
-            features: [
-              { title: 'Premium Quality', desc: 'Sourced from verified sellers with quality assurance.' },
-              { title: 'Secure Transaction', desc: '100% protected payments and reliable delivery.' }
-            ],
-            specs: [
-              { label: 'Category', value: p.category },
-              { label: 'Condition', value: 'New' },
-              { label: 'Seller', value: p.seller?.storeName || 'Verified Seller' },
-              { label: 'Stock', value: p.stock > 0 ? 'In Stock' : 'Out of Stock' }
-            ],
+            rating: (4 + Math.random()).toFixed(1),
+            reviewsCount: Math.floor(Math.random() * 500) + 50,
+            totalReviews: Math.floor(Math.random() * 2000) + 100,
+            discount: `${Math.floor(15 + Math.random() * 20)}% OFF`,
+            colors: p.colors || [{ name: 'Default', class: 'bg-black' }],
+            storageOptions: p.variants || ['Standard'],
+            highlights: smartDetails.highlights,
+            features: smartDetails.features,
+            specs: smartDetails.specs,
             seller: {
-              name: p.seller?.storeName || 'Verified Seller',
-              initials: (p.seller?.storeName || 'VS').substring(0, 2).toUpperCase(),
+              name: p.seller?.name || p.seller?.storeName || 'Verified Seller',
+              initials: (p.seller?.name || p.seller?.storeName || 'VS').substring(0, 2).toUpperCase(),
               isCertified: true,
               platformRating: '4.8'
             },
-            bulkDeals: [
-              { range: '10-50 units', price: `\u20B9${(p.price * 0.9).toLocaleString()}`, savings: '10% OFF', highlight: false },
-              { range: '50-100 units', price: `\u20B9${(p.price * 0.85).toLocaleString()}`, savings: '15% OFF', highlight: true },
-{ range: '100+ units', price: `\u20B9${(p.price * 0.8).toLocaleString()}`, savings: '20% OFF', highlight: false }
-            ],
+            bulkDeals: getBulkDeals(p.price),
             frequentlyBought: [],
             similarModels: []
           };
@@ -134,6 +183,16 @@ const ProductDetail = () => {
 
   const handleAddToCart = () => {
     addToCart(product, quantity);
+  };
+
+  const handleBuyNow = () => {
+    navigate('/checkout', { 
+      state: { 
+        product: product,
+        price: product.price,
+        quantity: quantity
+      } 
+    });
   };
 
   const handleNegotiationNavigation = () => {
@@ -196,7 +255,7 @@ const ProductDetail = () => {
         {/* Right: Product Info */}
         <div className="lg:col-span-6">
           <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider text-blue-600 mb-2">
-            <span className="bg-blue-50 px-2 py-0.5 rounded">Samsung</span>
+            <span className="bg-blue-50 px-2 py-0.5 rounded">{product.brand || 'Premium'}</span>
             <span className="bg-blue-600 text-white px-2 py-0.5 rounded">Verified Seller</span>
           </div>
           <h1 className="text-2xl md:text-3xl font-bold text-gray-900 leading-tight">
@@ -227,23 +286,34 @@ const ProductDetail = () => {
 
           {/* Selection */}
           <div className="py-6 space-y-6">
-            <div>
-              <span className="text-xs font-bold text-gray-400 uppercase tracking-widest">Color</span>
-              <div className="flex gap-3 mt-3">
-                {product.colors?.map((color, i) => (
-                  <button 
-                    key={i}
-                    onClick={() => setSelectedColor(color.name)}
-                    className={`w-8 h-8 rounded-full border-2 p-0.5 transition-all ${selectedColor === color.name ? 'border-blue-600 scale-110' : 'border-transparent'}`}
-                  >
-                    <div className={`w-full h-full rounded-full ${color.class}`}></div>
-                  </button>
-                ))}
+            {product.category?.toLowerCase() !== 'books' && product.category?.toLowerCase() !== 'agri' && product.category?.toLowerCase() !== 'grocery' && (
+              <div>
+                <span className="text-xs font-bold text-gray-400 uppercase tracking-widest">Color</span>
+                <div className="flex gap-3 mt-3">
+                  {product.colors?.map((color, i) => (
+                    <button 
+                      key={i}
+                      onClick={() => setSelectedColor(color.name)}
+                      className={`w-8 h-8 rounded-full border-2 p-0.5 transition-all ${selectedColor === color.name ? 'border-blue-600 scale-110' : 'border-transparent'}`}
+                    >
+                      <div className={`w-full h-full rounded-full ${color.class}`}></div>
+                    </button>
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
 
             <div>
-              <span className="text-xs font-bold text-gray-400 uppercase tracking-widest">Storage / RAM</span>
+              <span className="text-xs font-bold text-gray-400 uppercase tracking-widest">
+                {(() => {
+                  const cat = product.category?.toLowerCase();
+                  if (cat === 'books') return 'Format / Edition';
+                  if (cat === 'fashion' || cat === 'sports') return 'Size Selection';
+                  if (cat === 'agri') return 'Quantity / Weight';
+                  if (cat === 'furniture' || cat === 'home') return 'Configuration';
+                  return 'Storage / RAM';
+                })()}
+              </span>
               <div className="flex gap-3 mt-3">
                 {product.storageOptions?.map((opt, i) => (
                   <button 
@@ -319,7 +389,10 @@ const ProductDetail = () => {
                 >
                   <ShoppingCart size={18} /> ADD TO CART
                 </button>
-                <button className="bg-orange-500 text-white py-4 rounded-xl font-bold hover:bg-orange-600 transition-colors">
+                <button 
+                  onClick={handleBuyNow}
+                  className="bg-orange-500 text-white py-4 rounded-xl font-bold hover:bg-orange-600 transition-colors"
+                >
                   BUY NOW
                 </button>
               </div>
@@ -336,40 +409,42 @@ const ProductDetail = () => {
           )}
 
           {/* Bulk Pricing Card */}
-          <div className="mt-8 bg-[#F0FDF4] border border-[#DCFCE7] rounded-2xl p-6 relative overflow-hidden">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-2">
-                <div className="bg-green-100 p-1.5 rounded-lg">
-                  <Truck className="text-green-600" size={18} />
+          <div className="mt-8 bg-[#F0FDF4] border border-[#DCFCE7] rounded-[32px] p-6 relative overflow-hidden shadow-sm">
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-3">
+                <div className="bg-[#DCFCE7] p-2 rounded-xl">
+                  <Truck className="text-[#166534]" size={20} />
                 </div>
-                <h3 className="font-bold text-green-900">Bulk Pricing Deals</h3>
+                <h3 className="font-bold text-[#166534] text-xl">Bulk Pricing Deals</h3>
               </div>
-              <Info size={16} className="text-green-600 cursor-pointer" />
+              <div className="p-1.5 hover:bg-green-100 rounded-full transition-colors cursor-pointer">
+                <Info size={20} className="text-[#166534]" />
+              </div>
             </div>
             
-            <div className="space-y-1">
-              <div className="grid grid-cols-3 text-[10px] font-bold text-green-700/60 uppercase tracking-widest pb-2 px-2">
+            <div className="space-y-2">
+              <div className="grid grid-cols-3 text-[10px] font-black text-[#166534]/60 uppercase tracking-[0.2em] pb-3 px-3">
                 <span>Quantity</span>
-                <span>Price / Unit</span>
+                <span className="text-center">Price / Unit</span>
                 <span className="text-right">Savings</span>
               </div>
               {product.bulkDeals?.map((deal, i) => (
                 <div 
                   key={i} 
-                  className={`grid grid-cols-3 text-sm py-2 px-3 rounded-lg font-medium ${deal.highlight ? 'bg-white shadow-sm text-blue-600 border border-blue-100' : 'text-green-800'}`}
+                  className={`grid grid-cols-3 text-sm py-4 px-4 rounded-2xl font-bold transition-all duration-300 ${deal.highlight ? 'bg-white shadow-xl shadow-green-900/5 text-blue-600 border-2 border-blue-50 scale-[1.02]' : 'text-[#166534]'}`}
                 >
                   <span>{deal.range}</span>
-                  <span className="font-bold">{deal.price}</span>
-                  <span className={`text-right font-bold ${deal.savings.includes('%') ? 'text-green-600' : 'text-gray-400'}`}>
+                  <span className="text-center">{deal.price}</span>
+                  <span className={`text-right ${deal.savings.includes('%') ? 'text-[#16A34A]' : 'text-[#166534]/50'}`}>
                     {deal.savings}
                   </span>
                 </div>
               ))}
             </div>
-
+            
             <button 
               onClick={handleNegotiationNavigation}
-              className="w-full mt-6 bg-[#0D9488] text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-[#0F766E] transition-colors shadow-lg shadow-teal-500/20"
+              className="w-full mt-8 bg-[#0D9488] text-white py-4 rounded-2xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-3 hover:bg-[#0F766E] transition-all shadow-xl shadow-teal-500/20 active:scale-95"
             >
               <MessageSquare size={18} /> {isSeller ? 'View Bulk Negotiations' : 'Make Bulk Offer'}
             </button>
@@ -380,13 +455,18 @@ const ProductDetail = () => {
       {/* Tabs & Additional Info */}
       <section className="max-w-7xl mx-auto px-4 mt-16">
         <div className="flex border-b border-gray-200">
-          {['Description', 'Specifications', 'Reviews (1,200)', 'Seller Information'].map((tab) => (
+          {[
+            { id: 'description', label: 'Description' },
+            { id: 'specifications', label: 'Specifications' },
+            { id: 'reviews', label: `Reviews (${product.reviewsCount || 0})` },
+            { id: 'seller', label: 'Seller Information' }
+          ].map((tab) => (
             <button 
-              key={tab}
-              onClick={() => setActiveTab(tab.toLowerCase())}
-              className={`px-8 py-4 text-sm font-bold border-b-2 transition-colors ${activeTab === tab.toLowerCase() ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-400 hover:text-gray-600'}`}
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`px-8 py-4 text-sm font-bold border-b-2 transition-colors ${activeTab === tab.id ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-400 hover:text-gray-600'}`}
             >
-              {tab}
+              {tab.label}
             </button>
           ))}
         </div>
@@ -394,40 +474,99 @@ const ProductDetail = () => {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 py-8">
           {/* Main Tab Content */}
           <div className="lg:col-span-8">
-            <h2 className="text-2xl font-bold mb-6">Experience Super AMOLED</h2>
-            <p className="text-gray-600 leading-relaxed">
-              The Samsung Galaxy M34 5G features a stunning 6.5-inch Super AMOLED display with a 120Hz refresh rate, bringing every frame to life with vibrant colors and fluid motion. Whether you're streaming professional agriculture training videos or managing your auction listings, the Vision Booster ensures visibility even under direct sunlight.
-            </p>
+            {activeTab === 'description' && (
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+                <h2 className="text-2xl font-bold mb-6">Product Overview</h2>
+                <p className="text-gray-600 leading-relaxed whitespace-pre-line">
+                  {product.description}
+                </p>
 
-            <div className="grid md:grid-cols-2 gap-6 mt-12">
-              {product.features?.map((feature, i) => (
-                <div key={i} className="bg-gray-50 p-6 rounded-2xl flex gap-4">
-                  <div className="bg-white p-3 rounded-xl shadow-sm h-fit">
-                    {i === 0 ? <Clock className="text-blue-600" size={24} /> : <Star className="text-blue-600" size={24} />}
+                <div className="grid md:grid-cols-2 gap-6 mt-12">
+                  {product.features?.map((feature, i) => (
+                    <div key={i} className="bg-gray-50 p-6 rounded-2xl flex gap-4">
+                      <div className="bg-white p-3 rounded-xl shadow-sm h-fit">
+                        {i === 0 ? <Clock className="text-blue-600" size={24} /> : <Star className="text-blue-600" size={24} />}
+                      </div>
+                      <div>
+                        <h4 className="font-bold text-gray-900">{feature.title}</h4>
+                        <p className="text-xs text-gray-500 mt-1">{feature.desc}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </motion.div>
+            )}
+
+            {activeTab === 'specifications' && (
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+                <h3 className="text-xl font-bold mb-6">Technical Specifications</h3>
+                <div className="border border-gray-100 rounded-2xl overflow-hidden">
+                  <table className="w-full text-sm">
+                    <tbody>
+                      {product.specs?.map((spec, i) => (
+                        <tr key={i} className={i % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                          <td className="px-6 py-4 font-bold text-gray-500 w-1/3 border-r border-gray-100">{spec.label}</td>
+                          <td className="px-6 py-4 text-gray-900">{spec.value}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </motion.div>
+            )}
+
+            {activeTab === 'reviews' && (
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="py-12 text-center">
+                <div className="bg-blue-50 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Star className="text-blue-600" size={32} />
+                </div>
+                <h3 className="text-xl font-bold text-gray-900">Customer Reviews</h3>
+                <p className="text-gray-500 mt-2">Showing {product.reviewsCount} verified ratings</p>
+                <div className="mt-8 space-y-4 max-w-lg mx-auto">
+                   {[5, 4, 3, 2, 1].map(star => (
+                     <div key={star} className="flex items-center gap-4">
+                       <span className="text-xs font-bold text-gray-600 w-4">{star}</span>
+                       <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
+                         <div className="h-full bg-amber-400" style={{ width: `${star === 5 ? 85 : star === 4 ? 12 : 1}%` }}></div>
+                       </div>
+                       <span className="text-[10px] font-bold text-gray-400 w-10">{star === 5 ? '85%' : star === 4 ? '12%' : '1%'}</span>
+                     </div>
+                   ))}
+                </div>
+              </motion.div>
+            )}
+
+            {activeTab === 'seller' && (
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+                <div className="bg-gray-900 rounded-3xl p-8 text-white">
+                  <div className="flex items-center gap-6 mb-8">
+                    <div className="w-20 h-20 bg-white/10 rounded-2xl flex items-center justify-center text-3xl font-black backdrop-blur-xl">
+                      {product.seller?.initials || 'VS'}
+                    </div>
+                    <div>
+                      <h3 className="text-2xl font-bold">{product.seller?.name || 'Verified Seller'}</h3>
+                      <p className="text-blue-400 text-sm font-bold uppercase tracking-widest mt-1">
+                        {product.seller?.isCertified ? 'Platinum Certified Partner' : 'Identity Verified Seller'}
+                      </p>
+                    </div>
                   </div>
-                  <div>
-                    <h4 className="font-bold text-gray-900">{feature.title}</h4>
-                    <p className="text-xs text-gray-500 mt-1">{feature.desc}</p>
+                  <div className="grid grid-cols-3 gap-6 pt-8 border-t border-white/10">
+                    <div>
+                      <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">Success Rate</p>
+                      <p className="text-xl font-bold">99.8%</p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">On-time Delivery</p>
+                      <p className="text-xl font-bold">100%</p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">Platform Rating</p>
+                      <p className="text-xl font-bold">{product.seller?.platformRating || '4.5'}/5.0</p>
+                    </div>
                   </div>
                 </div>
-              ))}
-            </div>
-
-            <div className="mt-12">
-              <h3 className="text-xl font-bold mb-6">Technical Specifications</h3>
-              <div className="border border-gray-100 rounded-2xl overflow-hidden">
-                <table className="w-full text-sm">
-                  <tbody>
-                    {product.specs?.map((spec, i) => (
-                      <tr key={i} className={i % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                        <td className="px-6 py-4 font-bold text-gray-500 w-1/3 border-r border-gray-100">{spec.label}</td>
-                        <td className="px-6 py-4 text-gray-900">{spec.value}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
+              </motion.div>
+            )}
           </div>
 
           {/* Sidebar Info */}
@@ -487,8 +626,11 @@ const ProductDetail = () => {
             <h2 className="text-2xl font-bold">Explore Similar Models</h2>
             <p className="text-sm text-gray-500 mt-1">Based on your browsing history</p>
           </div>
-          <button className="text-blue-600 text-sm font-bold flex items-center gap-1 hover:underline">
-            View All Mobiles <ChevronRight size={16} />
+          <button 
+            onClick={() => navigate(`/category/${product.category}`)}
+            className="text-blue-600 text-sm font-bold flex items-center gap-1 hover:underline"
+          >
+            View All {product.category} <ChevronRight size={16} />
           </button>
         </div>
 
@@ -516,62 +658,8 @@ const ProductDetail = () => {
         </div>
       </section>
 
-      {/* Footer (Simplified from image) */}
-      <footer className="bg-[#0A1628] text-white mt-24 pt-16 pb-8">
-        <div className="max-w-7xl mx-auto px-4 grid grid-cols-1 md:grid-cols-4 gap-12 border-b border-gray-800 pb-12">
-          <div className="space-y-6">
-            <h2 className="text-2xl font-bold">ZyLora</h2>
-            <p className="text-gray-400 text-sm leading-relaxed">
-              The premium professional marketplace for consumer electronics and agricultural utility devices. Bridging the gap with curated bulk deals and verified quality.
-            </p>
-            <div className="flex gap-4">
-              <div className="w-8 h-8 rounded-full bg-gray-800 flex items-center justify-center cursor-pointer hover:bg-gray-700">
-                <Share2 size={16} />
-              </div>
-              <div className="w-8 h-8 rounded-full bg-gray-800 flex items-center justify-center cursor-pointer hover:bg-gray-700">
-                <MessageSquare size={16} />
-              </div>
-              <div className="w-8 h-8 rounded-full bg-gray-800 flex items-center justify-center cursor-pointer hover:bg-gray-700">
-                <Store size={16} />
-              </div>
-            </div>
-          </div>
-          <div>
-            <h4 className="font-bold mb-6 text-sm uppercase tracking-widest">Platform</h4>
-            <ul className="space-y-4 text-gray-400 text-sm">
-              <li className="hover:text-amber-500 cursor-pointer">About Zylora</li>
-              <li className="hover:text-amber-500 cursor-pointer">Shipping Policy</li>
-              <li className="hover:text-amber-500 cursor-pointer">Bulk Discounts</li>
-              <li className="hover:text-amber-500 cursor-pointer">Help Center</li>
-            </ul>
-          </div>
-          <div>
-            <h4 className="font-bold mb-6 text-sm uppercase tracking-widest">Categories</h4>
-            <ul className="space-y-4 text-gray-400 text-sm">
-              <li className="hover:text-amber-500 cursor-pointer">Mobile Devices</li>
-              <li className="hover:text-amber-500 cursor-pointer">Agri-Tech Tools</li>
-              <li className="hover:text-amber-500 cursor-pointer">Bulk Stock</li>
-              <li className="hover:text-amber-500 cursor-pointer">Live Auctions</li>
-            </ul>
-          </div>
-          <div>
-            <h4 className="font-bold mb-6 text-sm uppercase tracking-widest">Market Insight</h4>
-            <p className="text-xs text-gray-500 mb-6">Reliable, professional, and precise. ZyLora is the bridge we needed for our corporate bulk procurement.</p>
-            <div className="bg-gray-900 p-1 rounded-lg flex border border-gray-800">
-              <input type="email" placeholder="Email for Deal Alerts" className="bg-transparent text-xs px-4 py-2 outline-none flex-1" />
-              <button className="bg-amber-500 text-white px-4 py-2 rounded-md font-bold text-xs hover:bg-amber-600">Join</button>
-            </div>
-          </div>
-        </div>
-        <div className="max-w-7xl mx-auto px-4 mt-8 flex flex-col md:flex-row justify-between items-center gap-4 text-[10px] text-gray-500 font-bold uppercase tracking-widest">
-          <p>© 2026 ZYLORA PROFESSIONAL MARKETPLACE & AGRICULTURAL EXCHANGE. ALL RIGHTS RESERVED.</p>
-          <div className="flex gap-8">
-            <span className="hover:text-white cursor-pointer">Privacy</span>
-            <span className="hover:text-white cursor-pointer">Terms</span>
-            <span className="hover:text-white cursor-pointer">Compliance</span>
-          </div>
-        </div>
-      </footer>
+
+      <Footer />
     </div>
   );
 };

@@ -6,6 +6,7 @@ import {
   ChevronRight, Star, ArrowLeft, Filter, SlidersHorizontal, Loader2, Search as SearchIcon,
   ShoppingCart
 } from 'lucide-react';
+import { products as staticProducts } from '../../data/products';
 
 const SearchPage = () => {
   const [searchParams] = useSearchParams();
@@ -31,8 +32,16 @@ const SearchPage = () => {
       try {
         setLoading(true);
         const res = await axios.get(`${BACKEND_URL}/api/products?keyword=${encodeURIComponent(query)}`);
-        if (res.data.success) {
+        if (res.data.success && res.data.data.length > 0) {
           setProducts(res.data.data);
+        } else {
+          // Fallback to static products search
+          const filtered = staticProducts.filter(p => 
+            p.name.toLowerCase().includes(query.toLowerCase()) || 
+            p.category.toLowerCase().includes(query.toLowerCase()) ||
+            (p.brand && p.brand.toLowerCase().includes(query.toLowerCase()))
+          );
+          setProducts(filtered);
         }
       } catch (err) {
         console.error('Error fetching search results:', err);

@@ -92,6 +92,32 @@ exports.getAuctions = async (req, res) => {
   }
 };
 
+// @desc    Get recently closed auctions
+// @route   GET /api/auctions/closed
+// @access  Public
+exports.getClosedAuctions = async (req, res) => {
+  try {
+    const auctions = await Auction.find({ 
+      $or: [
+        { status: 'COMPLETED' },
+        { endTime: { $lte: new Date() } }
+      ]
+    })
+      .populate('product', 'name images price stock category location')
+      .populate('seller', 'name storeName')
+      .populate('highestBidder', 'name')
+      .sort('-endTime')
+      .limit(10);
+
+    res.status(200).json({
+      success: true,
+      data: auctions
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+};
+
 // @desc    Place a bid on an auction
 // @route   POST /api/auctions/:id/bid
 // @access  Private
