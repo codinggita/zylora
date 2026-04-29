@@ -27,6 +27,7 @@ const AgriAuctions = () => {
   const [error, setError] = useState('');
   const [winnerNotifications, setWinnerNotifications] = useState([]);
   const [promotedProducts, setPromotedProducts] = useState([]);
+  const [closedAuctionsData, setClosedAuctionsData] = useState([]);
   const socketRef = React.useRef(null);
 
   const BACKEND_URL = window.location.hostname === 'localhost' 
@@ -49,6 +50,17 @@ const AgriAuctions = () => {
       setError(`Failed to fetch auctions: ${err.message}`);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchClosedAuctions = async () => {
+    try {
+      const res = await axios.get(`${BACKEND_URL}/api/auctions/closed`);
+      if (res.data.success) {
+        setClosedAuctionsData(res.data.data);
+      }
+    } catch (err) {
+      console.error('Error fetching closed auctions:', err);
     }
   };
 
@@ -89,10 +101,12 @@ const AgriAuctions = () => {
 
   useEffect(() => {
     fetchAuctions();
+    fetchClosedAuctions();
 
     // Poll for updates every 5 seconds
     const pollInterval = setInterval(() => {
       fetchAuctions();
+      fetchClosedAuctions();
     }, 5000);
 
     // Initialize socket
@@ -629,8 +643,8 @@ const AgriAuctions = () => {
               View Archive <ArrowUpRight size={14} />
             </button>
           </div>
-          <div className="bg-white rounded-3xl border border-gray-100 overflow-hidden shadow-sm">
-            <table className="w-full">
+          <div className="bg-white rounded-3xl border border-gray-100 overflow-x-auto shadow-sm">
+            <table className="w-full min-w-[600px]">
               <thead className="bg-gray-50 border-b border-gray-100">
                 <tr>
                   {['Commodity', 'Seller', 'Final Bid', 'Volume', 'Status'].map((header) => (
@@ -641,28 +655,36 @@ const AgriAuctions = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
-                {closedAuctions.map((row, i) => (
-                  <tr key={i} className="hover:bg-gray-50/50 transition-colors">
-                    <td className="px-8 py-6">
-                      <div className="flex items-center gap-3">
-                        <div className="w-2 h-2 rounded-full bg-red-400"></div>
-                        <span className="text-sm font-bold text-gray-900">{row.commodity}</span>
-                      </div>
-                    </td>
-                    <td className="px-8 py-6 text-xs font-medium text-gray-500">{row.seller}</td>
-                    <td className="px-8 py-6">
-                      <span className="text-sm font-black text-green-600">&#8377;{row.finalBid.toLocaleString()}</span>
-                    </td>
-                    <td className="px-8 py-6 text-xs font-bold text-gray-900">{row.volume}</td>
-                    <td className="px-8 py-6">
-                      <span className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border ${
-                        row.status === 'SOLD' ? 'bg-green-50 text-green-600 border-green-100' : 'bg-gray-50 text-gray-400 border-gray-100'
-                      }`}>
-                        {row.status}
-                      </span>
+                {closedAuctionsData.length > 0 ? (
+                  closedAuctionsData.map((row, i) => (
+                    <tr key={i} className="hover:bg-gray-50/50 transition-colors">
+                      <td className="px-8 py-6">
+                        <div className="flex items-center gap-3">
+                          <div className={`w-2 h-2 rounded-full ${row.highestBidder ? 'bg-green-400' : 'bg-red-400'}`}></div>
+                          <span className="text-sm font-bold text-gray-900">{row.product?.name || 'Bulk Commodity'}</span>
+                        </div>
+                      </td>
+                      <td className="px-8 py-6 text-xs font-medium text-gray-500">{row.seller?.storeName || row.seller?.name || 'Verified Farmer'}</td>
+                      <td className="px-8 py-6">
+                        <span className="text-sm font-black text-green-600">&#8377;{row.currentBid.toLocaleString()}</span>
+                      </td>
+                      <td className="px-8 py-6 text-xs font-bold text-gray-900">{row.product?.stock || 'Wholesale'}</td>
+                      <td className="px-8 py-6">
+                        <span className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border ${
+                          row.highestBidder ? 'bg-green-50 text-green-600 border-green-100' : 'bg-gray-50 text-gray-400 border-gray-100'
+                        }`}>
+                          {row.highestBidder ? 'SOLD' : 'UNSOLD'}
+                        </span>
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan="5" className="px-8 py-10 text-center text-xs font-black text-gray-400 uppercase tracking-widest">
+                      No recently closed auctions records
                     </td>
                   </tr>
-                ))}
+                )}
               </tbody>
             </table>
           </div>

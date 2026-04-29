@@ -184,7 +184,9 @@ const Header = ({ placeholder = "Search for premium goods..." }) => {
               >
                 <ShoppingCart size={20} className="text-gray-300 hover:text-amber-500" />
                 {cartCount > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-amber-500 text-[10px] text-white font-bold rounded-full w-5 h-5 flex items-center justify-center">{cartCount}</span>
+                  <span className="absolute -top-1 -right-1 bg-amber-500 text-[10px] text-white font-black rounded-full min-w-[18px] h-[18px] px-1 flex items-center justify-center shadow-lg border border-[#0A1628]">
+                    {cartCount > 99 ? '99+' : cartCount}
+                  </span>
                 )}
               </button>
             )}

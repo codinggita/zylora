@@ -10,6 +10,7 @@ import axios from 'axios';
 import { useCart } from '../../context/CartContext';
 import { useWishlist } from '../../context/WishlistContext';
 import Header from '../../components/Header';
+import Footer from '../../components/Footer';
 
 const Profile = () => {
   const navigate = useNavigate();
@@ -527,39 +528,7 @@ const Profile = () => {
       </main>
 
       {/* Footer */}
-      <footer className="bg-[#0A1628] text-white mt-24 py-20 border-t border-gray-800">
-        <div className="max-w-[1600px] mx-auto px-6 grid grid-cols-1 md:grid-cols-4 gap-12">
-          <div className="col-span-1 md:col-span-1">
-            <h2 className="text-3xl font-bold tracking-tight mb-6">ZyLora</h2>
-            <p className="text-gray-400 text-xs leading-relaxed max-w-xs font-medium">
-              Premium agricultural and retail marketplace for professionals.
-            </p>
-          </div>
-          
-          <div>
-            <h3 className="text-amber-500 text-[10px] font-black uppercase tracking-[0.2em] mb-6">Platform</h3>
-            <ul className="space-y-4 text-xs font-medium text-gray-400">
-              <li className="hover:text-white cursor-pointer transition-colors">About Zylora</li>
-              <li className="hover:text-white cursor-pointer transition-colors">Agri Auctions</li>
-              <li className="hover:text-white cursor-pointer transition-colors">Bulk Discounts</li>
-            </ul>
-          </div>
-
-          <div>
-            <h3 className="text-amber-500 text-[10px] font-black uppercase tracking-[0.2em] mb-6">Support</h3>
-            <ul className="space-y-4 text-xs font-medium text-gray-400">
-              <li className="hover:text-white cursor-pointer transition-colors">Help Center</li>
-              <li className="hover:text-white cursor-pointer transition-colors">Shipping Policy</li>
-              <li className="hover:text-white cursor-pointer transition-colors">Returns</li>
-            </ul>
-          </div>
-
-          <div>
-            <h3 className="text-amber-500 text-[10px] font-black uppercase tracking-[0.2em] mb-6">Legal</h3>
-            <p className="text-gray-500 text-[10px] font-medium">© 2024 Zylora. All rights reserved.</p>
-          </div>
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 };

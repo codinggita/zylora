@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import Header from '../../components/Header';
+import Footer from '../../components/Footer';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   ChevronRight, Clock, Star, ShieldCheck, 
   Truck, RotateCcw, Headset, ArrowRight, CheckCircle2,
-  ShoppingCart
+  ShoppingCart, TrendingUp, Store
 } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
@@ -17,6 +18,40 @@ const Home = () => {
   const [loading, setLoading] = useState(true);
   const [liveAuctions, setLiveAuctions] = useState([]);
   const [timers, setTimers] = useState({});
+  const [currentSlide, setCurrentSlide] = useState(0);
+
+  const heroSlides = [
+    {
+      image: "https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&q=80&w=2000",
+      tag: "Limited Period Live",
+      title: <>Sustainable Farming,<br /> <span className="text-amber-500">Global Reach.</span></>,
+      description: "Participate in live auctions for premium organic grains and artisanal produce directly from verified farmers.",
+      buttonText: "Enter Auction",
+      color: "amber",
+      accentClass: "bg-amber-500",
+      shadowClass: "shadow-amber-500/40"
+    },
+    {
+      image: "https://images.unsplash.com/photo-1498049794561-7780e7231661?auto=format&fit=crop&q=80&w=2000",
+      tag: "Exclusive Tech Deals",
+      title: <>Next-Gen Tech,<br /> <span className="text-blue-500">Unbeatable Prices.</span></>,
+      description: "Upgrade your professional setup with up to 40% off on premium laptops, tablets, and smart devices.",
+      buttonText: "Shop Electronics",
+      color: "blue",
+      accentClass: "bg-blue-500",
+      shadowClass: "shadow-blue-500/40"
+    },
+    {
+      image: "https://images.unsplash.com/photo-1441986300917-64674bd600d8?auto=format&fit=crop&q=80&w=2000",
+      tag: "Summer Collection '24",
+      title: <>Modern Style,<br /> <span className="text-rose-500">Professional Edge.</span></>,
+      description: "Discover the new season's curated collection designed for the modern professional lifestyle.",
+      buttonText: "Explore Fashion",
+      color: "rose",
+      accentClass: "bg-rose-500",
+      shadowClass: "shadow-rose-500/40"
+    }
+  ];
 
   const BACKEND_URL = window.location.hostname === 'localhost' 
     ? 'http://localhost:5001' 
@@ -96,11 +131,16 @@ const Home = () => {
       });
     }, 1000);
 
+    const slideInterval = setInterval(() => {
+      setCurrentSlide(prev => (prev + 1) % heroSlides.length);
+    }, 8000);
+
     return () => {
       socket.disconnect();
       clearInterval(interval);
+      clearInterval(slideInterval);
     };
-  }, [BACKEND_URL]);
+  }, [BACKEND_URL, heroSlides.length]);
 
   return (
     <div className="min-h-screen bg-[#F8F9FB] text-gray-900 font-sans">
@@ -114,69 +154,105 @@ const Home = () => {
       <Header />
 
       {/* Hero Section */}
-      <section className="relative h-[350px] md:h-[600px] bg-gray-900 overflow-hidden">
-        <motion.img 
-          initial={{ scale: 1.1, opacity: 0 }}
-          animate={{ scale: 1, opacity: 0.6 }}
-          transition={{ duration: 1.5, ease: "easeOut" }}
-          src="https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&q=80&w=2000" 
-          alt="Agri Field" 
-          className="w-full h-full object-cover"
-        />
-        <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/40 to-transparent flex items-center">
-          <div className="max-w-7xl mx-auto px-8 w-full">
-            <motion.div 
-              initial={{ x: -50, opacity: 0 }}
-              animate={{ x: 0, opacity: 1 }}
-              transition={{ delay: 0.5, duration: 0.8 }}
-              className="max-w-xl"
-            >
-              <motion.span 
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.8 }}
-                className="bg-amber-500 text-white text-[10px] font-bold px-3 py-1.5 rounded-full uppercase tracking-widest shadow-lg shadow-amber-500/20"
-              >
-                Limited Period Live
-              </motion.span>
-              <motion.h1 
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 1 }}
-                className="text-4xl md:text-7xl font-bold text-white mt-6 leading-[1.1] font-serif"
-              >
-                Sustainable Farming,<br /> <span className="text-amber-500">Global Reach.</span>
-              </motion.h1>
-              <motion.p 
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 1.2 }}
-                className="text-gray-300 mt-6 text-sm md:text-xl leading-relaxed max-w-lg"
-              >
-                Participate in live auctions for premium organic grains and artisanal produce directly from verified farmers.
-              </motion.p>
-              <motion.div 
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 1.4 }}
-                className="flex flex-wrap gap-4 mt-10"
-              >
-                <button className="bg-amber-500 hover:bg-amber-600 text-white px-10 py-4 rounded-xl font-bold transition-all hover:scale-105 active:scale-95 shadow-xl shadow-amber-500/30">
-                  Enter Auction
-                </button>
-                <button className="bg-white/10 hover:bg-white/20 text-white backdrop-blur-xl px-10 py-4 rounded-xl font-bold border border-white/20 transition-all hover:scale-105 active:scale-95">
-                  Learn More
-                </button>
-              </motion.div>
-            </motion.div>
-          </div>
-        </div>
+      <section className="relative h-[450px] md:h-[700px] bg-gray-950 overflow-hidden">
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={currentSlide}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 1 }}
+            className="absolute inset-0"
+          >
+            <motion.img 
+              initial={{ scale: 1.2 }}
+              animate={{ scale: 1 }}
+              transition={{ duration: 6, ease: "linear" }}
+              src={heroSlides[currentSlide].image} 
+              alt="Promo" 
+              className="w-full h-full object-cover opacity-50"
+            />
+            <div className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/40 to-transparent flex items-center">
+              <div className="max-w-7xl mx-auto px-8 w-full">
+                <motion.div 
+                  initial={{ x: -100, opacity: 0 }}
+                  animate={{ x: 0, opacity: 1 }}
+                  transition={{ delay: 0.3, duration: 0.8, type: "spring" }}
+                  className="max-w-2xl"
+                >
+                  <motion.span 
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.5 }}
+                    className={`${heroSlides[currentSlide].accentClass} text-white text-[10px] font-black px-4 py-2 rounded-full uppercase tracking-[0.2em] shadow-2xl ${heroSlides[currentSlide].shadowClass}`}
+                  >
+                    {heroSlides[currentSlide].tag}
+                  </motion.span>
+                  <motion.h1 
+                    initial={{ opacity: 0, y: 30 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.7 }}
+                    className="text-4xl sm:text-5xl md:text-8xl font-black text-white mt-8 leading-[1.1] md:leading-[1] font-serif tracking-tight"
+                  >
+                    {heroSlides[currentSlide].title}
+                  </motion.h1>
+                  <motion.p 
+                    initial={{ opacity: 0, y: 30 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.9 }}
+                    className="text-gray-300 mt-8 text-base md:text-2xl leading-relaxed max-w-xl font-medium"
+                  >
+                    {heroSlides[currentSlide].description}
+                  </motion.p>
+                  <motion.div 
+                    initial={{ opacity: 0, y: 30 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 1.1 }}
+                    className="flex flex-wrap gap-6 mt-12"
+                  >
+                    <button 
+                      className={`${heroSlides[currentSlide].accentClass} hover:opacity-90 text-white px-12 py-5 rounded-2xl font-black text-xs uppercase tracking-widest transition-all hover:scale-105 active:scale-95 shadow-2xl ${heroSlides[currentSlide].shadowClass}`}
+                    >
+                      {heroSlides[currentSlide].buttonText}
+                    </button>
+                    <button className="bg-white/5 hover:bg-white/10 text-white backdrop-blur-3xl px-12 py-5 rounded-2xl font-black text-xs uppercase tracking-widest border border-white/10 transition-all hover:scale-105 active:scale-95">
+                      Learn More
+                    </button>
+                  </motion.div>
+                </motion.div>
+              </div>
+            </div>
+          </motion.div>
+        </AnimatePresence>
+
         {/* Carousel Indicators */}
-        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-2">
-          <div className="w-8 h-1 bg-white rounded-full"></div>
-          <div className="w-8 h-1 bg-white/30 rounded-full"></div>
-          <div className="w-8 h-1 bg-white/30 rounded-full"></div>
+        <div className="absolute bottom-10 left-1/2 -translate-x-1/2 flex gap-4 z-20">
+          {heroSlides.map((_, i) => (
+            <button
+              key={i}
+              onClick={() => setCurrentSlide(i)}
+              className={`h-1.5 rounded-full transition-all duration-500 ${
+                currentSlide === i 
+                  ? `w-12 ${heroSlides[i].accentClass} shadow-lg ${heroSlides[i].shadowClass}` 
+                  : "w-6 bg-white/20 hover:bg-white/40"
+              }`}
+            />
+          ))}
         </div>
+
+        {/* Navigation Arrows */}
+        <button 
+          onClick={() => setCurrentSlide(prev => (prev - 1 + heroSlides.length) % heroSlides.length)}
+          className="absolute left-8 top-1/2 -translate-y-1/2 w-14 h-14 rounded-full bg-white/5 hover:bg-white/10 backdrop-blur-xl border border-white/10 flex items-center justify-center text-white transition-all opacity-0 hover:opacity-100 group"
+        >
+          <ArrowRight size={24} className="rotate-180 group-hover:-translate-x-1 transition-transform" />
+        </button>
+        <button 
+          onClick={() => setCurrentSlide(prev => (prev + 1) % heroSlides.length)}
+          className="absolute right-8 top-1/2 -translate-y-1/2 w-14 h-14 rounded-full bg-white/5 hover:bg-white/10 backdrop-blur-xl border border-white/10 flex items-center justify-center text-white transition-all opacity-0 hover:opacity-100 group"
+        >
+          <ArrowRight size={24} className="group-hover:translate-x-1 transition-transform" />
+        </button>
       </section>
 
       {/* Categories Section */}
@@ -194,16 +270,16 @@ const Home = () => {
           className="flex overflow-x-auto pb-6 pt-2 gap-6 md:gap-8 justify-start lg:justify-between snap-x no-scrollbar"
         >
             {[
-              { name: 'Electronics', image: 'https://images.unsplash.com/photo-1498049794561-7780e7231661?auto=format&fit=crop&q=80&w=200' },
-              { name: 'Fashion', image: 'https://images.unsplash.com/photo-1445205170230-053b83016050?auto=format&fit=crop&q=80&w=200' },
-              { name: 'Agri', image: 'https://images.unsplash.com/photo-1592982537447-6f2334cb4908?auto=format&fit=crop&q=80&w=200' },
-              { name: 'Home', image: 'https://images.unsplash.com/photo-1513694203232-719a280e022f?auto=format&fit=crop&q=80&w=200' },
-              { name: 'Furniture', image: 'https://images.unsplash.com/photo-1505693314120-0d443867891c?auto=format&fit=crop&q=80&w=200' },
-              { name: 'Sports', image: 'https://images.unsplash.com/photo-1461896836934-ffe607ba8211?auto=format&fit=crop&q=80&w=200' },
-              { name: 'Beauty', image: 'https://images.unsplash.com/photo-1596462502278-27bf85033e5a?auto=format&fit=crop&q=80&w=200' },
-              { name: 'Toys', image: 'https://images.unsplash.com/photo-1566576912321-d58ddd7a6088?auto=format&fit=crop&q=80&w=200' },
-              { name: 'Books', image: 'https://images.unsplash.com/photo-1495446815901-a7297e633e8d?auto=format&fit=crop&q=80&w=200' },
-              { name: 'Grocery', image: 'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&q=80&w=200' },
+              { name: 'Electronics', image: 'https://images.unsplash.com/photo-1498049794561-7780e7231661?auto=format&fit=crop&q=80&w=300' },
+              { name: 'Fashion', image: 'https://images.unsplash.com/photo-1445205170230-053b83016050?auto=format&fit=crop&q=80&w=300' },
+              { name: 'Agri', image: 'https://images.unsplash.com/photo-1523348837708-15d4a09cfac2?auto=format&fit=crop&q=80&w=300' },
+              { name: 'Home', image: 'https://images.unsplash.com/photo-1513694203232-719a280e022f?auto=format&fit=crop&q=80&w=300' },
+              { name: 'Furniture', image: 'https://images.unsplash.com/photo-1505693314120-0d443867891c?auto=format&fit=crop&q=80&w=300' },
+              { name: 'Sports', image: 'https://images.unsplash.com/photo-1461896836934-ffe607ba8211?auto=format&fit=crop&q=80&w=300' },
+              { name: 'Beauty', image: 'https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?auto=format&fit=crop&q=80&w=300' },
+              { name: 'Toys', image: 'https://images.unsplash.com/photo-1566576912321-d58ddd7a6088?auto=format&fit=crop&q=80&w=300' },
+              { name: 'Books', image: 'https://images.unsplash.com/photo-1495446815901-a7297e633e8d?auto=format&fit=crop&q=80&w=300' },
+              { name: 'Grocery', image: 'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&q=80&w=300' },
             ].map((cat, i) => (
               <motion.div 
                 key={i} 
@@ -323,10 +399,14 @@ const Home = () => {
           </div>
           <h2 className="text-2xl font-bold text-gray-900">Top-Rated Selection</h2>
         </motion.div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {[
             { name: 'Nike Pegasus 40', price: '11,995', img: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&q=80&w=400', tag: 'TRUSTED SELLER' },
-            { name: 'Prestige Pressure Cooker', price: '1,795', img: 'https://images.unsplash.com/photo-1584990344610-b2b12f4d2bca?auto=format&fit=crop&q=80&w=400', tag: 'PREMIUM QUALITY' }
+            { name: 'Prestige Pressure Cooker', price: '1,795', img: 'https://images.unsplash.com/photo-1584990344610-b2b12f4d2bca?auto=format&fit=crop&q=80&w=400', tag: 'PREMIUM QUALITY' },
+            { name: 'Sony WH-1000XM5', price: '29,990', img: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&q=80&w=400', tag: 'BEST IN TECH' },
+            { name: 'Apple iPad Air', price: '54,900', img: 'https://images.unsplash.com/photo-1544244015-0df4b3ffc6b0?auto=format&fit=crop&q=80&w=400', tag: 'LIMITED STOCK' },
+            { name: 'Organic Honey Batch #42', price: '850', img: 'https://images.unsplash.com/photo-1587049352846-4a222e784d38?auto=format&fit=crop&q=80&w=400', tag: 'DIRECT FROM FARM' },
+            { name: 'Premium Leather Sofa', price: '45,999', img: 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?auto=format&fit=crop&q=80&w=400', tag: 'LUXURY SELECTION' }
           ].map((prod, i) => (
             <motion.div 
               key={i} 
@@ -385,44 +465,92 @@ const Home = () => {
             </motion.button>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-10 relative z-10">
+          <div className="grid lg:grid-cols-3 gap-10 relative z-10">
             {liveAuctions.length === 0 ? (
-              <div className="md:col-span-3 text-center py-12 bg-white/5 rounded-[32px] border border-dashed border-white/20">
-                <p className="text-green-200/50 font-bold uppercase tracking-widest">No active auctions at the moment</p>
+              <div className="lg:col-span-3 text-center py-20 bg-white/5 rounded-[48px] border border-dashed border-white/20">
+                <p className="text-green-200/50 font-black uppercase tracking-[0.3em] text-sm">No active auctions at the moment</p>
+                <button className="mt-8 text-green-400 font-bold hover:underline">Get Notified for Next Batch</button>
               </div>
-            ) : liveAuctions.slice(0, 3).map((auction, i) => (
-              <motion.div 
-                key={auction._id} 
-                initial={{ opacity: 0, y: 40 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: i * 0.1 }}
-                onClick={() => navigate(`/agri-auctions`)}
-                className="bg-white/10 backdrop-blur-2xl rounded-[32px] border border-white/10 p-6 group hover:bg-white/15 transition-all duration-500 cursor-pointer"
-              >
-                <div className="aspect-[4/3] rounded-2xl overflow-hidden mb-6 relative">
-                  <img src={auction.product?.images?.[0] || 'https://placehold.co/300x300/f3f4f6/9ca3af'} alt={auction.product?.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
-                  <div className="absolute top-4 right-4 bg-red-500 text-white text-[10px] font-black px-4 py-1.5 rounded-full shadow-xl shadow-red-500/30 flex items-center gap-2">
-                    <div className="w-1.5 h-1.5 bg-white rounded-full animate-pulse"></div>
-                    LIVE
+            ) : (
+              <>
+                <div className="lg:col-span-1">
+                  {liveAuctions.slice(0, 1).map((auction, i) => (
+                    <motion.div 
+                      key={auction._id} 
+                      initial={{ opacity: 0, y: 40 }}
+                      whileInView={{ opacity: 1, y: 0 }}
+                      viewport={{ once: true }}
+                      onClick={() => navigate(`/agri-auctions`)}
+                      className="bg-white/10 backdrop-blur-2xl rounded-[32px] border border-white/10 p-6 group hover:bg-white/15 transition-all duration-500 cursor-pointer h-full"
+                    >
+                      <div className="aspect-[4/3] rounded-2xl overflow-hidden mb-6 relative">
+                        <img src={auction.product?.images?.[0] || 'https://placehold.co/300x300/f3f4f6/9ca3af'} alt={auction.product?.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
+                        <div className="absolute top-4 right-4 bg-red-500 text-white text-[10px] font-black px-4 py-1.5 rounded-full shadow-xl shadow-red-500/30 flex items-center gap-2">
+                          <div className="w-1.5 h-1.5 bg-white rounded-full animate-pulse"></div>
+                          LIVE
+                        </div>
+                      </div>
+                      <h3 className="font-bold text-2xl group-hover:text-green-400 transition-colors line-clamp-1">{auction.product?.name}</h3>
+                      <div className="flex justify-between items-center mt-8 p-4 bg-black/20 rounded-2xl">
+                        <div>
+                          <span className="text-[10px] text-green-300/60 uppercase font-black tracking-widest">Current Bid</span>
+                          <p className="text-2xl font-bold">&#8377;{(auction.currentBid || auction.startingPrice).toLocaleString()}</p>
+                        </div>
+                        <div className="text-right">
+                          <span className="text-[10px] text-green-300/60 uppercase font-black tracking-widest">Ends In</span>
+                          <p className="text-sm font-mono font-bold text-amber-400">{timers[auction._id] || '-- : -- : --'}</p>
+                        </div>
+                      </div>
+                      <button className="w-full bg-green-400 hover:bg-green-500 text-[#052E16] mt-8 py-4 rounded-2xl font-black text-xs uppercase tracking-widest transition-all hover:scale-105 active:scale-95 shadow-xl shadow-green-400/20">
+                        Place Bid Now
+                      </button>
+                    </motion.div>
+                  ))}
+                </div>
+
+                <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Promo Box 1: Why Auctions? */}
+                  <div className="bg-white/5 border border-white/10 rounded-[32px] p-8 flex flex-col justify-between hover:bg-white/10 transition-all group">
+                    <div>
+                      <div className="w-12 h-12 bg-amber-500/20 rounded-xl flex items-center justify-center mb-6 text-amber-500">
+                        <TrendingUp size={24} />
+                      </div>
+                      <h4 className="text-xl font-bold mb-3">Why Buy via Auctions?</h4>
+                      <p className="text-green-200/50 text-sm leading-relaxed">
+                        Skip the middleman and get transparent, market-driven prices directly from verified farms across India.
+                      </p>
+                    </div>
+                    <ul className="mt-8 space-y-3">
+                      {['Real-time Price Discovery', 'Verified Quality Reports', 'Direct Farm-to-Enterprise'].map((item, idx) => (
+                        <li key={idx} className="flex items-center gap-3 text-xs font-bold text-green-300/80 uppercase tracking-wider">
+                          <div className="w-1.5 h-1.5 bg-green-500 rounded-full"></div>
+                          {item}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+
+                  {/* Promo Box 2: Farmer Trust */}
+                  <div className="bg-gradient-to-br from-green-500/10 to-amber-500/5 border border-white/10 rounded-[32px] p-8 relative overflow-hidden group">
+                    <div className="relative z-10">
+                      <div className="w-12 h-12 bg-green-500/20 rounded-xl flex items-center justify-center mb-6 text-green-400">
+                        <ShieldCheck size={24} />
+                      </div>
+                      <h4 className="text-xl font-bold mb-3">Verified Sellers</h4>
+                      <p className="text-green-200/50 text-sm leading-relaxed mb-6">
+                        Every listing is authenticated with soil health cards and batch quality certificates.
+                      </p>
+                      <button className="text-xs font-black uppercase tracking-widest bg-white/10 px-6 py-3 rounded-xl hover:bg-white/20 transition-all">
+                        Learn Verification Process
+                      </button>
+                    </div>
+                    <div className="absolute -bottom-10 -right-10 opacity-10 group-hover:opacity-20 transition-opacity">
+                      <Store size={150} />
+                    </div>
                   </div>
                 </div>
-                <h3 className="font-bold text-2xl group-hover:text-green-400 transition-colors line-clamp-1">{auction.product?.name}</h3>
-                <div className="flex justify-between items-center mt-8 p-4 bg-black/20 rounded-2xl">
-                  <div>
-                    <span className="text-[10px] text-green-300/60 uppercase font-black tracking-widest">Current Bid</span>
-                    <p className="text-2xl font-bold">&#8377;{(auction.currentBid || auction.startingPrice).toLocaleString()}</p>
-                  </div>
-                  <div className="text-right">
-                    <span className="text-[10px] text-green-300/60 uppercase font-black tracking-widest">Ends In</span>
-                    <p className="text-sm font-mono font-bold text-amber-400">{timers[auction._id] || '-- : -- : --'}</p>
-                  </div>
-                </div>
-                <button className="w-full bg-green-400 hover:bg-green-500 text-[#052E16] mt-8 py-4 rounded-2xl font-black text-xs uppercase tracking-widest transition-all hover:scale-105 active:scale-95 shadow-xl shadow-green-400/20">
-                  Place Bid Now
-                </button>
-              </motion.div>
-            ))}
+              </>
+            )}
           </div>
           
           {/* Background pattern */}
@@ -462,65 +590,9 @@ const Home = () => {
       </section>
 
       {/* Footer */}
-      <footer className="bg-[#0A1628] text-white pt-20 pb-10">
-        <div className="max-w-7xl mx-auto px-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12">
-          <div className="lg:col-span-1">
-            <h2 className="text-2xl font-bold mb-6">ZyLora</h2>
-            <p className="text-gray-400 text-sm leading-relaxed max-w-xs">
-              The premium marketplace bridging the gap between direct agri-auctions and modern retail experience. Curated quality at scale.
-            </p>
-            <div className="flex gap-4 mt-8">
-              <div className="w-8 h-8 bg-white/5 rounded-full flex items-center justify-center hover:bg-white/10 cursor-pointer transition-colors">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 4s-.7 2.1-2 3.4c1.6 10-9.4 17.3-18 11.6 2.2.1 4.4-.6 6-2C3 15.5.5 9.6 3 5c2.2 2.6 5.6 4.1 9 4-.9-4.2 4-6.6 7-3.8 1.1 0 3-1.2 3-1.2z"/></svg>
-              </div>
-              <div className="w-8 h-8 bg-white/5 rounded-full flex items-center justify-center hover:bg-white/10 cursor-pointer transition-colors">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="20" height="20" x="2" y="2" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>
-              </div>
-            </div>
-          </div>
-          
-          <div>
-            <h4 className="font-bold text-sm mb-6 text-amber-500 uppercase tracking-widest">Company</h4>
-            <ul className="space-y-4 text-sm text-gray-400">
-              <li className="hover:text-white cursor-pointer transition-colors">About Zylora</li>
-              <li className="hover:text-white cursor-pointer transition-colors">Agri-Auctions</li>
-              <li className="hover:text-white cursor-pointer transition-colors">Become a Seller</li>
-              <li className="hover:text-white cursor-pointer transition-colors">Sustainability</li>
-            </ul>
-          </div>
-
-          <div>
-            <h4 className="font-bold text-sm mb-6 text-amber-500 uppercase tracking-widest">Help Center</h4>
-            <ul className="space-y-4 text-sm text-gray-400">
-              <li className="hover:text-white cursor-pointer transition-colors">Shipping Policy</li>
-              <li className="hover:text-white cursor-pointer transition-colors">Bulk Discounts</li>
-              <li className="hover:text-white cursor-pointer transition-colors">Returns & Refunds</li>
-              <li className="hover:text-white cursor-pointer transition-colors">FAQs</li>
-            </ul>
-          </div>
-
-          <div>
-            <h4 className="font-bold text-sm mb-6 text-amber-500 uppercase tracking-widest">Newsletter</h4>
-            <p className="text-gray-400 text-sm mb-4">Get updates on new auction lots and seasonal sales.</p>
-            <div className="flex gap-2 bg-white/5 p-1 rounded-lg border border-white/10">
-              <input type="email" placeholder="Your email" className="bg-transparent border-none focus:ring-0 text-sm flex-1 px-3" />
-              <button className="bg-amber-500 text-white px-4 py-2 rounded-md text-xs font-bold hover:bg-amber-600 transition-colors">Join</button>
-            </div>
-          </div>
-        </div>
-
-        <div className="max-w-7xl mx-auto px-4 mt-20 pt-8 border-t border-white/5 flex flex-col md:flex-row justify-between items-center gap-4">
-          <p className="text-[10px] text-gray-500">© 2024 ZyLora. All rights reserved.</p>
-          <div className="flex gap-6 text-[10px] text-gray-500">
-            <span className="hover:text-white cursor-pointer">Privacy Policy</span>
-            <span className="hover:text-white cursor-pointer">Terms of Service</span>
-            <span className="hover:text-white cursor-pointer">Cookie Settings</span>
-          </div>
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 };
 
 export default Home;
-

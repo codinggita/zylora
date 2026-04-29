@@ -347,5 +347,243 @@ export const products = [
     similarModels: [
       { id: 1, name: "Samsung Galaxy M34 5G", price: "18,999", discount: "24% OFF", img: "https://images.unsplash.com/photo-1610945265064-0e34e5519bbf?auto=format&fit=crop&q=80&w=400" }
     ]
+  },
+  {
+    id: 51,
+    name: "Organic Basmati Rice (Premium Export Quality)",
+    brand: "ZyLora Fresh",
+    category: "Agri",
+    rating: 4.9,
+    reviewsCount: 850,
+    totalReviews: 120,
+    price: 1450,
+    oldPrice: 1800,
+    discount: "19% OFF",
+    stockStatus: "Direct from Farm",
+    deliveryInfo: "3-5 business days",
+    pincode: "400001",
+    images: ["https://images.unsplash.com/photo-1586201375761-83865001e31c?auto=format&fit=crop&q=80&w=800"],
+    colors: [],
+    storageOptions: ["5kg", "10kg", "25kg"],
+    bulkDeals: [
+      { range: "1-10 Bags", price: "\u20B91,450", savings: "Retail" },
+      { range: "11-50 Bags", price: "\u20B91,300", savings: "10% OFF", highlight: true }
+    ],
+    description: "Long-grain, aromatic organic Basmati rice sourced directly from certified organic farms in the Himalayan foothills.",
+    features: [
+      { title: "100% Organic", desc: "No chemical fertilizers used." },
+      { title: "Aged 2 Years", desc: "For maximum aroma and non-sticky texture." }
+    ],
+    specs: [
+      { label: "Origin", value: "Uttarakhand, India" },
+      { label: "Grain Length", value: "8.4mm" }
+    ],
+    seller: { name: "Himalayan Farms", initials: "HF", isCertified: true, platformRating: 4.9 },
+    frequentlyBought: [],
+    similarModels: []
+  },
+  {
+    id: 61,
+    name: "Ergonomic Office Chair",
+    brand: "ComfortPlus",
+    category: "Furniture",
+    rating: 4.6,
+    reviewsCount: 1200,
+    totalReviews: 150,
+    price: 8999,
+    oldPrice: 12999,
+    discount: "30% OFF",
+    stockStatus: "In Stock",
+    deliveryInfo: "2-4 business days",
+    pincode: "400001",
+    images: ["https://images.unsplash.com/photo-1505797149-43b0ad766207?auto=format&fit=crop&q=80&w=800"],
+    colors: [{ name: "Black", class: "bg-black" }],
+    storageOptions: ["Standard"],
+    bulkDeals: [
+      { range: "1-5 Units", price: "\u20B98,999", savings: "Retail" },
+      { range: "6-20 Units", price: "\u20B97,999", savings: "11% OFF", highlight: true }
+    ],
+    description: "High-back ergonomic chair with lumbar support and breathable mesh for long work hours.",
+    features: [
+      { title: "Adjustable Lumbar", desc: "Supports your spine's natural curve." },
+      { title: "Mesh Back", desc: "Provides optimal air circulation." }
+    ],
+    specs: [
+      { label: "Material", value: "Mesh & Steel" },
+      { label: "Weight Capacity", value: "120kg" }
+    ],
+    seller: { name: "Office Express", initials: "OX", isCertified: true, platformRating: 4.5 },
+    frequentlyBought: [],
+    similarModels: []
+  },
+  {
+    id: 71,
+    name: "Yoga Mat (Non-Slip, 6mm)",
+    brand: "FitSoul",
+    category: "Sports",
+    rating: 4.8,
+    reviewsCount: 5600,
+    totalReviews: 800,
+    price: 1299,
+    oldPrice: 1999,
+    discount: "35% OFF",
+    stockStatus: "Available",
+    deliveryInfo: "2-3 days",
+    pincode: "400001",
+    images: ["https://images.unsplash.com/photo-1544126592-807daa2b565b?auto=format&fit=crop&q=80&w=800"],
+    colors: [{ name: "Blue", class: "bg-blue-500" }, { name: "Purple", class: "bg-purple-500" }],
+    storageOptions: ["6mm", "8mm"],
+    bulkDeals: [
+      { range: "1-10 Units", price: "\u20B91,299", savings: "Retail" },
+      { range: "11+ Units", price: "\u20B91,100", savings: "15% OFF", highlight: true }
+    ],
+    description: "Eco-friendly, non-slip yoga mat with excellent cushioning for joints during intense workouts.",
+    features: [
+      { title: "Eco-Friendly TPE", desc: "No harmful chemicals or odors." },
+      { title: "Carry Strap Included", desc: "Easy to transport to the gym." }
+    ],
+    specs: [
+      { label: "Dimensions", value: "183cm x 61cm" },
+      { label: "Material", value: "TPE" }
+    ],
+    seller: { name: "Wellness Store", initials: "WS", isCertified: true, platformRating: 4.7 },
+    frequentlyBought: [],
+    similarModels: []
+  },
+  {
+    id: 81,
+    name: "Hydrating Face Serum",
+    brand: "GlowEssence",
+    category: "Beauty",
+    rating: 4.5,
+    reviewsCount: 3400,
+    totalReviews: 420,
+    price: 799,
+    oldPrice: 1299,
+    discount: "38% OFF",
+    stockStatus: "Fast Selling",
+    deliveryInfo: "Tomorrow",
+    pincode: "400001",
+    images: ["https://images.unsplash.com/photo-1570172619644-dfd03ed5d881?auto=format&fit=crop&q=80&w=800"],
+    colors: [],
+    storageOptions: ["30ml", "50ml"],
+    bulkDeals: [
+      { range: "1-12 Units", price: "\u20B9799", savings: "Retail" },
+      { range: "13+ Units", price: "\u20B9699", savings: "12% OFF", highlight: true }
+    ],
+    description: "Deeply hydrating face serum with Hyaluronic Acid and Vitamin C for a radiant glow.",
+    features: [
+      { title: "Dermatologically Tested", desc: "Safe for all skin types." },
+      { title: "Cruelty Free", desc: "Not tested on animals." }
+    ],
+    specs: [
+      { label: "Volume", value: "30ml" },
+      { label: "Skin Type", value: "All" }
+    ],
+    seller: { name: "Pure Beauty", initials: "PB", isCertified: true, platformRating: 4.6 },
+    frequentlyBought: [],
+    similarModels: []
+  },
+  {
+    id: 91,
+    name: "Educational Building Blocks",
+    brand: "ToyJoy",
+    category: "Toys",
+    rating: 4.7,
+    reviewsCount: 1500,
+    totalReviews: 200,
+    price: 1499,
+    oldPrice: 2499,
+    discount: "40% OFF",
+    stockStatus: "In Stock",
+    deliveryInfo: "3-4 days",
+    pincode: "400001",
+    images: ["https://images.unsplash.com/photo-1566576912321-d58ddd7a6088?auto=format&fit=crop&q=80&w=800"],
+    colors: [{ name: "Multicolor", class: "bg-gradient-to-r from-red-500 via-green-500 to-blue-500" }],
+    storageOptions: ["100 Pcs", "250 Pcs"],
+    bulkDeals: [
+      { range: "1-5 Sets", price: "\u20B91,499", savings: "Retail" },
+      { range: "6-20 Sets", price: "\u20B91,250", savings: "16% OFF", highlight: true }
+    ],
+    description: "Inspire creativity with this 100-piece building block set. Made from safe, non-toxic BPA-free plastic.",
+    features: [
+      { title: "Stem Learning", desc: "Develops motor skills and spatial reasoning." },
+      { title: "BPA Free", desc: "Completely safe for children." }
+    ],
+    specs: [
+      { label: "Age Group", value: "3+ Years" },
+      { label: "Piece Count", value: "100" }
+    ],
+    seller: { name: "KidZone", initials: "KZ", isCertified: true, platformRating: 4.8 },
+    frequentlyBought: [],
+    similarModels: []
+  },
+  {
+    id: 101,
+    name: "Classic Literature Collection",
+    brand: "Penguin",
+    category: "Books",
+    rating: 4.9,
+    reviewsCount: 8900,
+    totalReviews: 1200,
+    price: 499,
+    oldPrice: 999,
+    discount: "50% OFF",
+    stockStatus: "Limited Edition",
+    deliveryInfo: "2 days",
+    pincode: "400001",
+    images: ["https://images.unsplash.com/photo-1495446815901-a7297e633e8d?auto=format&fit=crop&q=80&w=800"],
+    colors: [],
+    storageOptions: ["Hardcover", "Paperback"],
+    bulkDeals: [
+      { range: "1-10 Units", price: "\u20B9499", savings: "Retail" },
+      { range: "11+ Units", price: "\u20B9400", savings: "20% OFF", highlight: true }
+    ],
+    description: "A beautifully bound collection of timeless literary classics for every book lover's library.",
+    features: [
+      { title: "Premium Binding", desc: "Designed to last a lifetime." },
+      { title: "Annotated Edition", desc: "Includes historical context and notes." }
+    ],
+    specs: [
+      { label: "Genre", value: "Classics" },
+      { label: "Language", value: "English" }
+    ],
+    seller: { name: "Book Hub", initials: "BH", isCertified: true, platformRating: 4.9 },
+    frequentlyBought: [],
+    similarModels: []
+  },
+  {
+    id: 111,
+    name: "Extra Virgin Olive Oil (1L)",
+    brand: "TerraDelyssa",
+    category: "Grocery",
+    rating: 4.8,
+    reviewsCount: 2100,
+    totalReviews: 300,
+    price: 1850,
+    oldPrice: 2200,
+    discount: "16% OFF",
+    stockStatus: "Available",
+    deliveryInfo: "Tomorrow",
+    pincode: "400001",
+    images: ["https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?auto=format&fit=crop&q=80&w=800"],
+    colors: [],
+    storageOptions: ["500ml", "1L"],
+    bulkDeals: [
+      { range: "1-6 Bottles", price: "\u20B91,850", savings: "Retail" },
+      { range: "7+ Bottles", price: "\u20B91,650", savings: "10% OFF", highlight: true }
+    ],
+    description: "Cold-pressed extra virgin olive oil, rich in antioxidants and perfect for healthy cooking.",
+    features: [
+      { title: "First Cold Pressed", desc: "Maintains all nutritional value." },
+      { title: "Heart Healthy", desc: "Zero cholesterol and rich in MUFAs." }
+    ],
+    specs: [
+      { label: "Origin", value: "Tunisia" },
+      { label: "Acidity", value: "< 0.4%" }
+    ],
+    seller: { name: "Gourmet Mart", initials: "GM", isCertified: true, platformRating: 4.8 },
+    frequentlyBought: [],
+    similarModels: []
   }
 ];

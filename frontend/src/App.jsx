@@ -19,6 +19,8 @@ import SellerOrders from './pages/SellerOrders/SellerOrders';
 import SellerAuctions from './pages/SellerAuctions/SellerAuctions';
 import SubmitAuctionAddress from './pages/AuctionWinner/SubmitAuctionAddress';
 import AuctionOrderConfirmation from './pages/AuctionWinner/AuctionOrderConfirmation';
+import StaticPage from './pages/Static/StaticPage';
+import ScrollToTop from './components/ScrollToTop';
 import ProtectedRoute from './components/ProtectedRoute';
 import './App.css';
 import { CartProvider } from './context/CartContext';
@@ -29,6 +31,7 @@ function App() {
     <WishlistProvider>
       <CartProvider>
         <Router>
+          <ScrollToTop />
           <Routes>
           {/* Buyer-only: Home feed redirects sellers to seller dashboard */}
           <Route 
@@ -200,6 +203,8 @@ function App() {
               </ProtectedRoute>
             } 
           />
+          
+          <Route path="/info/:pageId" element={<StaticPage />} />
           
           {/* Catch-all route redirects to home (which will redirect to login if not authenticated) */}
           <Route path="*" element={<Navigate to="/" replace />} />

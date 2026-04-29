@@ -124,7 +124,29 @@ exports.getSellerNegotiationSummary = async (req, res) => {
     const conversations = Array.from(conversationMap.values())
       .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
-    const newRequests = conversations.filter((conversation) => {
+    // Get real negotiation records for these conversations
+    const negotiationRecords = await Negotiation.find({
+      productId: { $in: sellerProductIds },
+      seller: req.user._id
+    });
+
+    const recordMap = new Map(
+      negotiationRecords.map(nr => [`${nr.productId}:${nr.buyer}`, nr])
+    );
+
+    const enrichedConversations = conversations.map(conv => {
+      const record = recordMap.get(conv.id);
+      return {
+        ...conv,
+        negotiationId: record?._id || null,
+        status: record?.status || 'PENDING'
+      };
+    });
+
+    // Remove declined negotiations from the dashboard view
+    const visibleConversations = enrichedConversations.filter(conv => conv.status !== 'DECLINED');
+
+    const newRequests = visibleConversations.filter((conversation) => {
       const ageMs = new Date() - new Date(conversation.createdAt);
       return ageMs <= 24 * 60 * 60 * 1000;
     }).length;
@@ -132,10 +154,47 @@ exports.getSellerNegotiationSummary = async (req, res) => {
     res.status(200).json({
       success: true,
       data: {
-        openNegotiations: conversations.length,
+        openNegotiations: visibleConversations.length,
         newRequests,
-        conversations: conversations.slice(0, 5)
+        conversations: visibleConversations.slice(0, 5)
       }
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+};
+
+// @desc    Update negotiation status (Accept/Decline)
+// @route   PUT /api/negotiation/:id/status
+// @access  Private
+exports.updateNegotiationStatus = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+
+    if (!['ACCEPTED', 'DECLINED'].includes(status)) {
+      return res.status(400).json({ success: false, error: 'Invalid status' });
+    }
+
+    let negotiation = await Negotiation.findById(id);
+    
+    if (!negotiation) {
+      // If no negotiation record exists yet (just messages), we might need to create one
+      // But for simplicity, we'll assume the first message created it (or we create it now)
+      return res.status(404).json({ success: false, error: 'Negotiation record not found' });
+    }
+
+    // Verify ownership
+    if (negotiation.seller.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ success: false, error: 'Not authorized to update this negotiation' });
+    }
+
+    negotiation.status = status;
+    await negotiation.save();
+
+    res.status(200).json({
+      success: true,
+      data: negotiation
     });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });

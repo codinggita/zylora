@@ -6,6 +6,7 @@ import {
   ChevronRight, Star, ArrowLeft, Filter, SlidersHorizontal, Loader2,
   ShoppingCart, Search
 } from 'lucide-react';
+import { products as staticProducts } from '../../data/products';
 
 const CategoryPage = () => {
   const { categoryName } = useParams();
@@ -24,8 +25,12 @@ const CategoryPage = () => {
           : 'https://zylora-e-commerce.onrender.com';
 
         const res = await axios.get(`${BACKEND_URL}/api/products?category=${categoryName}`);
-        if (res.data.success) {
+        if (res.data.success && res.data.data.length > 0) {
           setProducts(res.data.data);
+        } else {
+          // Fallback to static products if API returns empty
+          const filtered = staticProducts.filter(p => p.category.toLowerCase() === categoryName.toLowerCase());
+          setProducts(filtered);
         }
       } catch (err) {
         console.error('Error fetching category products:', err);

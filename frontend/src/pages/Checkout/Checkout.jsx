@@ -14,16 +14,17 @@ const Checkout = () => {
   const location = useLocation();
   const negotiatedPrice = location.state?.price;
   const negotiatedProduct = location.state?.product;
+  const buyNowQuantity = location.state?.quantity || 1;
   const { cartItems, cartCount, clearCart } = useCart();
   
-  // Use negotiated product if available, otherwise use cart items
+  // Use buy now/negotiated product if available, otherwise use cart items
   const checkoutItems = negotiatedProduct ? [
     {
       id: negotiatedProduct.id || negotiatedProduct._id,
       name: negotiatedProduct.name,
       price: negotiatedPrice || negotiatedProduct.price,
-      quantity: 1,
-      image: negotiatedProduct.images?.[0] || negotiatedProduct.image || 'https://placehold.co/300x300/f3f4f6/9ca3af'
+      quantity: buyNowQuantity,
+      image: (negotiatedProduct.images && negotiatedProduct.images[0]) || negotiatedProduct.image || 'https://placehold.co/300x300/f3f4f6/9ca3af'
     }
   ] : cartItems;
 
@@ -342,42 +343,45 @@ const Checkout = () => {
 
               {/* Address Cards */}
               <div className="space-y-4">
-                {addresses.map((addr) => (
-                  <div 
-                    key={addr.id}
-                    onClick={() => selectAddress(addr.id)}
-                    className={`border-2 rounded-xl p-6 relative cursor-pointer transition-all ${addr.selected ? 'border-blue-600 bg-blue-50/30' : 'border-gray-100 hover:border-gray-200 bg-white'}`}
-                  >
-                    {addr.selected && (
-                      <div className="absolute top-4 right-4 text-blue-600">
-                        <Check size={20} className="bg-blue-600 text-white rounded-full p-0.5" />
+                {addresses.map((addr) => {
+                  const addrId = addr._id || addr.id;
+                  return (
+                    <div 
+                      key={addrId}
+                      onClick={() => selectAddress(addrId)}
+                      className={`border-2 rounded-xl p-6 relative cursor-pointer transition-all ${addr.selected ? 'border-blue-600 bg-blue-50/30' : 'border-gray-100 hover:border-gray-200 bg-white'}`}
+                    >
+                      {addr.selected && (
+                        <div className="absolute top-4 right-4 text-blue-600">
+                          <Check size={20} className="bg-blue-600 text-white rounded-full p-0.5" />
+                        </div>
+                      )}
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="font-black text-gray-900">{addr.name}</span>
+                        <span className="bg-gray-900 text-white text-[8px] font-black px-1.5 py-0.5 rounded uppercase">{addr.type || 'Home'}</span>
                       </div>
-                    )}
-                    <div className="flex items-center gap-2 mb-2">
-                      <span className="font-black text-gray-900">{addr.name}</span>
-                      <span className="bg-gray-900 text-white text-[8px] font-black px-1.5 py-0.5 rounded uppercase">{addr.type}</span>
+                      <p className="text-sm text-gray-600 leading-relaxed max-w-md">
+                        {addr.address}<br />
+                        <span className="font-bold text-gray-900">{addr.mobile}</span>
+                      </p>
+                      <div className="mt-4 flex gap-3">
+                        <button 
+                          onClick={(e) => handleEditAddress(addr, e)}
+                          className="border border-gray-200 px-4 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-widest text-gray-500 hover:bg-gray-50 transition-colors"
+                        >
+                          Edit Address
+                        </button>
+                        <button 
+                          onClick={(e) => handleDeleteAddress(addrId, e)}
+                          className="border border-red-100 px-4 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-widest text-red-500 hover:bg-red-50 transition-colors flex items-center gap-1.5"
+                        >
+                          <Trash2 size={12} />
+                          Delete
+                        </button>
+                      </div>
                     </div>
-                    <p className="text-sm text-gray-600 leading-relaxed max-w-md">
-                      {addr.address}<br />
-                      <span className="font-bold text-gray-900">{addr.mobile}</span>
-                    </p>
-                    <div className="mt-4 flex gap-3">
-                      <button 
-                        onClick={(e) => handleEditAddress(addr, e)}
-                        className="border border-gray-200 px-4 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-widest text-gray-500 hover:bg-gray-50 transition-colors"
-                      >
-                        Edit Address
-                      </button>
-                      <button 
-                        onClick={(e) => handleDeleteAddress(addr.id, e)}
-                        className="border border-red-100 px-4 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-widest text-red-500 hover:bg-red-50 transition-colors flex items-center gap-1.5"
-                      >
-                        <Trash2 size={12} />
-                        Delete
-                      </button>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
 
               {/* Add/Edit Address Form */}
