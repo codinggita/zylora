@@ -16,7 +16,7 @@ const SellerOrders = () => {
 
   const BACKEND_URL = window.location.hostname === 'localhost'
     ? 'http://localhost:5001'
-    : 'https://zylora-3.onrender.com';
+    : 'https://zylora-e-commerce.onrender.com';
 
   const location = useLocation();
 

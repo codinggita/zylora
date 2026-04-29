@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
 import { motion } from 'framer-motion';
@@ -18,7 +18,7 @@ const AuctionOrderConfirmation = () => {
 
   const BACKEND_URL = window.location.hostname === 'localhost'
     ? 'http://localhost:5001'
-    : 'https://zylora-3.onrender.com';
+    : 'https://zylora-e-commerce.onrender.com';
 
   useEffect(() => {
     fetchWinnerStatus();
@@ -107,7 +107,7 @@ const AuctionOrderConfirmation = () => {
                       <p className="text-xs text-gray-500 font-medium mt-1 leading-relaxed">
                         {winnerStatus?.address?.address}, {winnerStatus?.address?.city}, {winnerStatus?.address?.state} {winnerStatus?.address?.postalCode}
                       </p>
-                      <p className="text-xs text-gray-900 font-bold mt-2">ðŸ“± {winnerStatus?.address?.mobile}</p>
+                      <p className="text-xs text-gray-900 font-bold mt-2">📱 {winnerStatus?.address?.mobile}</p>
                     </div>
                   </div>
                 </div>
@@ -138,7 +138,7 @@ const AuctionOrderConfirmation = () => {
                 <div className="space-y-4 mb-8">
                   <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest text-gray-500">
                     <span>Winning Bid</span>
-                    <span className="text-white">₹{winnerStatus?.winningBid?.toLocaleString()}</span>
+                    <span className="text-white">?{winnerStatus?.winningBid?.toLocaleString()}</span>
                   </div>
                   <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest text-gray-500">
                     <span>Platform Fee</span>
@@ -146,11 +146,11 @@ const AuctionOrderConfirmation = () => {
                   </div>
                   <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest text-gray-500">
                     <span>GST (Included)</span>
-                    <span className="text-white">₹{(winnerStatus?.winningBid * 0.18).toFixed(2)}</span>
+                    <span className="text-white">?{(winnerStatus?.winningBid * 0.18).toFixed(2)}</span>
                   </div>
                   <div className="pt-6 border-t border-white/10 flex justify-between items-center">
                     <span className="text-xs font-black uppercase tracking-widest">Total Settle</span>
-                    <span className="text-3xl font-black text-green-400">₹{winnerStatus?.winningBid?.toLocaleString()}</span>
+                    <span className="text-3xl font-black text-green-400">?{winnerStatus?.winningBid?.toLocaleString()}</span>
                   </div>
                 </div>
 

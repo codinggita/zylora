@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import Header from '../../components/Header';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
@@ -20,7 +20,7 @@ const Home = () => {
 
   const BACKEND_URL = window.location.hostname === 'localhost' 
     ? 'http://localhost:5001' 
-    : 'https://zylora-3.onrender.com';
+    : 'https://zylora-e-commerce.onrender.com';
 
   useEffect(() => {
     const socket = io(BACKEND_URL);
@@ -51,7 +51,7 @@ const Home = () => {
         setLoading(false);
       }
 
-      // Fetch auctions separately â€” failure won't affect products
+      // Fetch auctions separately — failure won't affect products
       try {
         const auctionRes = await axios.get(`${BACKEND_URL}/api/auctions`);
         if (auctionRes.data.success) {
@@ -106,9 +106,9 @@ const Home = () => {
     <div className="min-h-screen bg-[#F8F9FB] text-gray-900 font-sans">
       {/* Top Notification Bar */}
       <div className="bg-[#0A1628] text-white text-[10px] md:text-xs py-2 px-4 flex justify-center items-center gap-4">
-        <span>ðŸšš Free delivery on orders above ₹1299</span>
+        <span>🚚 Free delivery on orders above ?1299</span>
         <span className="hidden md:inline">|</span>
-        <Link to="/agri-auctions" className="text-amber-500 font-semibold cursor-pointer">ðŸŒ¾ Agri Auctions Live Now â†’</Link>
+        <Link to="/agri-auctions" className="text-amber-500 font-semibold cursor-pointer">🌾 Agri Auctions Live Now →</Link>
       </div>
 
       <Header />
@@ -265,8 +265,8 @@ const Home = () => {
                   <span className="text-[10px] text-gray-400 font-bold ml-1">{prod.rating}</span>
                 </div>
                 <div className="flex items-center gap-3 mt-3">
-                  <span className="text-xl font-black text-gray-900">₹{prod.price.toLocaleString()}</span>
-                  <span className="text-xs text-gray-400 line-through font-medium">₹{prod.oldPrice.toLocaleString()}</span>
+                  <span className="text-xl font-black text-gray-900">?{prod.price.toLocaleString()}</span>
+                  <span className="text-xs text-gray-400 line-through font-medium">?{prod.oldPrice.toLocaleString()}</span>
                 </div>
               </motion.div>
             ))}
@@ -344,7 +344,7 @@ const Home = () => {
                   <CheckCircle2 size={12} /> {prod.tag}
                 </span>
                 <h3 className="font-bold text-xl text-gray-900 group-hover:text-amber-600 transition-colors">{prod.name}</h3>
-                <p className="text-2xl font-black text-gray-900 mt-2">₹{prod.price}</p>
+                <p className="text-2xl font-black text-gray-900 mt-2">?{prod.price}</p>
                 <button className="mt-5 bg-[#0A1628] text-white px-8 py-3 rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-amber-500 transition-all hover:scale-105 active:scale-95 shadow-lg shadow-gray-200">
                   Add to Cart
                 </button>
@@ -411,7 +411,7 @@ const Home = () => {
                 <div className="flex justify-between items-center mt-8 p-4 bg-black/20 rounded-2xl">
                   <div>
                     <span className="text-[10px] text-green-300/60 uppercase font-black tracking-widest">Current Bid</span>
-                    <p className="text-2xl font-bold">₹{(auction.currentBid || auction.startingPrice).toLocaleString()}</p>
+                    <p className="text-2xl font-bold">?{(auction.currentBid || auction.startingPrice).toLocaleString()}</p>
                   </div>
                   <div className="text-right">
                     <span className="text-[10px] text-green-300/60 uppercase font-black tracking-widest">Ends In</span>
@@ -510,7 +510,7 @@ const Home = () => {
         </div>
 
         <div className="max-w-7xl mx-auto px-4 mt-20 pt-8 border-t border-white/5 flex flex-col md:flex-row justify-between items-center gap-4">
-          <p className="text-[10px] text-gray-500">Â© 2024 ZyLora. All rights reserved.</p>
+          <p className="text-[10px] text-gray-500">© 2024 ZyLora. All rights reserved.</p>
           <div className="flex gap-6 text-[10px] text-gray-500">
             <span className="hover:text-white cursor-pointer">Privacy Policy</span>
             <span className="hover:text-white cursor-pointer">Terms of Service</span>
