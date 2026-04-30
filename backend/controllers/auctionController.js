@@ -520,13 +520,13 @@ exports.createAuctionOrder = async (req, res) => {
     auction.orderCreatedAt = new Date();
     await auction.save();
 
-    // Send order confirmation email
-    await sendOrderConfirmationEmail(
+    // Send order confirmation email (fire and forget to prevent blocking)
+    sendOrderConfirmationEmail(
       auction.highestBidder.email,
       auction.highestBidder.name,
       auction,
       auction.winnerAddress
-    );
+    ).catch(err => console.error('Background email error:', err));
 
     // Emit socket event for real-time update
     const io = req.app.get('io');

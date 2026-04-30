@@ -63,6 +63,15 @@ exports.createOrder = async (req, res) => {
 
     const createdOrder = await order.save();
 
+    // Send order confirmation email asynchronously
+    const { sendGeneralOrderConfirmationEmail } = require('../utils/emailService');
+    sendGeneralOrderConfirmationEmail(
+      req.user.email,
+      req.user.name,
+      createdOrder,
+      shippingAddress
+    ).catch(err => console.error('General order email error:', err));
+
     res.status(201).json({
       success: true,
       data: createdOrder

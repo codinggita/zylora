@@ -2,12 +2,21 @@ const nodemailer = require('nodemailer');
 
 // Create a transporter using Gmail (you can use any email service)
 const transporter = nodemailer.createTransport({
-  service: 'gmail',
+  host: 'smtp.gmail.com',
+  port: 465,
+  secure: true, // Use SSL/TLS
   pool: true, // Use connection pool for efficiency
   auth: {
     user: process.env.EMAIL_USER || 'your-email@gmail.com',
     pass: process.env.EMAIL_PASSWORD || 'your-app-password'
-  }
+  },
+  tls: {
+    // do not fail on invalid certs
+    rejectUnauthorized: false
+  },
+  connectionTimeout: 10000, // 10 seconds timeout
+  greetingTimeout: 10000,
+  socketTimeout: 20000 // 20 seconds timeout for the socket
 });
 
 // Function to send winner notification email
@@ -173,8 +182,65 @@ const sendOrderConfirmationEmail = async (winnerEmail, winnerName, auction, addr
   }
 };
 
+// Function to send general order confirmation email
+const sendGeneralOrderConfirmationEmail = async (userEmail, userName, order, address) => {
+  try {
+    const mailOptions = {
+      from: process.env.EMAIL_USER || 'noreply@zylora.com',
+      to: userEmail,
+      subject: `✅ Order Confirmed - ZyLora Purchase`,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <div style="background: linear-gradient(135deg, #4caf50 0%, #45a049 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
+            <h1 style="margin: 0;">✅ Order Confirmed!</h1>
+          </div>
+          
+          <div style="background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px;">
+            <p style="font-size: 16px; color: #333;">Hi ${userName},</p>
+            
+            <p style="font-size: 16px; color: #555; line-height: 1.6;">
+              Your order has been successfully created! The seller will process your shipment shortly.
+            </p>
+            
+            <div style="background: white; border-left: 4px solid #4caf50; padding: 15px; margin: 20px 0;">
+              <p style="margin: 0; color: #666; font-size: 12px;">DELIVERY ADDRESS</p>
+              <p style="margin: 10px 0; color: #333; font-size: 14px;">
+                <strong>${address.name}</strong><br>
+                ${address.address}<br>
+                ${address.city || ''}, ${address.state || ''} ${address.postalCode || ''}<br>
+                📱 ${address.mobile || address.phone || ''}
+              </p>
+            </div>
+            
+            <p style="font-size: 14px; color: #888; line-height: 1.6;">
+              You will receive tracking information as soon as the seller ships your order.
+              <br><br>
+              <strong>Order Details:</strong>
+              <br>Total Price: ₹${order.totalPrice}
+              <br>Payment Method: ${order.paymentMethod}
+              <br>Status: ${order.status || 'Processing'}
+            </p>
+            
+            <p style="font-size: 12px; color: #999; margin-top: 30px; padding-top: 20px; border-top: 1px solid #e0e0e0;">
+              Thank you for shopping at ZyLora!
+            </p>
+          </div>
+        </div>
+      `
+    };
+
+    const info = await transporter.sendMail(mailOptions);
+    console.log('General order confirmation email sent:', info.messageId);
+    return { success: true, messageId: info.messageId };
+  } catch (error) {
+    console.error('Error sending general order confirmation email:', error);
+    return { success: false, error: error.message };
+  }
+};
+
 module.exports = {
   sendWinnerNotificationEmail,
   sendAddressReminderEmail,
-  sendOrderConfirmationEmail
+  sendOrderConfirmationEmail,
+  sendGeneralOrderConfirmationEmail
 };
