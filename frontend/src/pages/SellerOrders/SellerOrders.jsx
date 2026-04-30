@@ -87,7 +87,7 @@ const SellerOrders = () => {
 
   return (
     <div className="min-h-screen bg-[#F8F9FB] flex flex-col font-sans">
-      <Header />
+      <Header isDashboard={true} />
 
       <div className="flex flex-1 max-w-[1600px] mx-auto w-full">
         <aside className="w-64 bg-white border-r border-gray-200 hidden lg:flex flex-col py-6 px-4">

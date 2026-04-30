@@ -11,7 +11,7 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
 import { io } from 'socket.io-client';
-import { products as staticProducts } from '../../data/products';
+import { Helmet } from 'react-helmet-async';
 
 const Home = () => {
   const { t } = useTranslation();
@@ -165,16 +165,15 @@ const Home = () => {
   }, [BACKEND_URL, heroSlides.length]);
 
   return (
-    <div className="min-h-screen bg-[#F8F9FB] text-gray-900 font-sans">
-      {/* Top Notification Bar */}
-      <div className="bg-[#0A1628] text-white text-[10px] md:text-xs py-2 px-4 flex justify-center items-center gap-4">
-        <span>🚚 {t('free_delivery')} &#8377;1299</span>
-        <span className="hidden md:inline">|</span>
-        <Link to="/agri-auctions" className="text-amber-500 font-semibold cursor-pointer">🌾 {t('agri_auctions_live')} →</Link>
-      </div>
-
+    <div className="min-h-screen bg-white text-gray-900">
+      <Helmet>
+        <title>ZyLora | {t('todays_deals')}</title>
+        <meta name="description" content="Discover premium organic grains and artisanal produce sourced directly from verified sustainable farms." />
+        <meta property="og:title" content="ZyLora Premium Marketplace" />
+        <meta property="og:description" content="Discover premium organic grains and artisanal produce sourced directly from verified sustainable farms." />
+      </Helmet>
       <Header />
-
+      
       {/* Hero Section */}
       <section className="relative h-[450px] md:h-[700px] bg-gray-950 overflow-hidden">
         <AnimatePresence mode="wait">
@@ -274,52 +273,6 @@ const Home = () => {
         >
           <ArrowRight size={24} className="group-hover:translate-x-1 transition-transform" />
         </button>
-      </section>
-
-      {/* Categories Section */}
-      <section className="max-w-7xl mx-auto px-4 py-12">
-        <div className="flex justify-between items-center mb-8">
-          <h2 className="text-2xl font-bold text-gray-900">{t('explore_categories')}</h2>
-          <button className="text-amber-500 text-sm font-bold flex items-center gap-1 hover:text-amber-600 transition-colors group">
-            {t('view_all')} <ChevronRight size={16} className="group-hover:translate-x-1 transition-transform" />
-          </button>
-        </div>
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          className="flex overflow-x-auto pb-6 pt-2 gap-6 md:gap-8 justify-start lg:justify-between snap-x no-scrollbar"
-        >
-          {[
-            { name: t('electronics'), path: 'Electronics', image: 'https://images.unsplash.com/photo-1498049794561-7780e7231661?auto=format&fit=crop&q=80&w=300' },
-            { name: t('fashion'), path: 'Fashion', image: 'https://images.unsplash.com/photo-1445205170230-053b83016050?auto=format&fit=crop&q=80&w=300' },
-            { name: t('agri'), path: 'Agri', image: 'https://images.unsplash.com/photo-1523348837708-15d4a09cfac2?auto=format&fit=crop&q=80&w=300' },
-            { name: t('home'), path: 'Home', image: 'https://images.unsplash.com/photo-1513694203232-719a280e022f?auto=format&fit=crop&q=80&w=300' },
-            { name: t('furniture'), path: 'Furniture', image: 'https://images.unsplash.com/photo-1505693314120-0d443867891c?auto=format&fit=crop&q=80&w=300' },
-            { name: t('sports'), path: 'Sports', image: 'https://images.unsplash.com/photo-1461896836934-ffe607ba8211?auto=format&fit=crop&q=80&w=300' },
-            { name: t('beauty'), path: 'Beauty', image: 'https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?auto=format&fit=crop&q=80&w=300' },
-            { name: t('toys'), path: 'Toys', image: 'https://images.unsplash.com/photo-1566576912321-d58ddd7a6088?auto=format&fit=crop&q=80&w=300' },
-            { name: t('books'), path: 'Books', image: 'https://images.unsplash.com/photo-1495446815901-a7297e633e8d?auto=format&fit=crop&q=80&w=300' },
-            { name: t('grocery'), path: 'Grocery', image: 'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&q=80&w=300' },
-          ].map((cat, i) => (
-            <motion.div
-              key={i}
-              initial={{ opacity: 0, scale: 0.8 }}
-              whileInView={{ opacity: 1, scale: 1 }}
-              viewport={{ once: true }}
-              transition={{ delay: i * 0.05 }}
-              onClick={() => navigate(`/category/${cat.path}`)}
-              className="flex flex-col items-center gap-3 group cursor-pointer snap-start min-w-[72px] md:min-w-[88px]"
-            >
-              <div className="w-16 h-16 md:w-20 md:h-20 rounded-full overflow-hidden shadow-sm group-hover:shadow-xl group-hover:-translate-y-1.5 transition-all duration-300 ring-2 ring-transparent group-hover:ring-amber-400 p-[2px]">
-                <div className="w-full h-full rounded-full overflow-hidden bg-gray-100">
-                  <img src={cat.image} alt={cat.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
-                </div>
-              </div>
-              <span className="text-[11px] md:text-sm font-bold text-gray-700 group-hover:text-amber-600 transition-colors">{cat.name}</span>
-            </motion.div>
-          ))}
-        </motion.div>
       </section>
 
       {/* Today's Deals */}
