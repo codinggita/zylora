@@ -1,5 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Sparkles, TrendingUp, AlertCircle, RefreshCw, Calendar, ChevronDown, ChevronUp } from 'lucide-react';
+import { 
+  Sparkles, TrendingUp, AlertCircle, RefreshCw, Calendar, 
+  ChevronDown, ChevronUp, BarChart3, Lightbulb, Rocket, 
+  Tag, Box, CheckSquare, Zap, Target, PieChart, Activity
+} from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { analyzeSellerData, parseRecommendations, getNextUpdateTime } from '../utils/geminiAnalytics.js';
 
 const EarningsAnalytics = ({ 
@@ -9,6 +14,7 @@ const EarningsAnalytics = ({
   pendingOrders,
   negotiationCount 
 }) => {
+  const { t, i18n } = useTranslation();
   const [analysis, setAnalysis] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -78,7 +84,7 @@ const EarningsAnalytics = ({
       const analyticsData = calculateAnalyticsData();
       const userId = JSON.parse(localStorage.getItem('user') || '{}').id || 'default';
       
-      const result = await analyzeSellerData(analyticsData, userId, frequencyType);
+      const result = await analyzeSellerData(analyticsData, userId, frequencyType, i18n.language);
       
       if (result.success) {
         setAnalysis(result.analysis);
@@ -96,46 +102,52 @@ const EarningsAnalytics = ({
 
   useEffect(() => {
     fetchAnalysis();
-  }, [frequencyType, sellerOrders.length]);
+  }, [frequencyType, sellerOrders.length, i18n.language]);
 
   const parsedSections = analysis ? parseRecommendations(analysis) : {};
 
   const sectionConfig = [
     {
       id: 'keyInsights',
-      title: '💡 Key Insights',
-      icon: '📊',
-      color: 'from-blue-50 to-blue-100'
+      title: t('key_insights'),
+      icon: BarChart3,
+      color: 'blue',
+      description: t('key_insights_desc')
     },
     {
       id: 'recommendations',
-      title: '🎯 Recommendations',
-      icon: '⭐',
-      color: 'from-amber-50 to-amber-100'
+      title: t('recommendations'),
+      icon: Lightbulb,
+      color: 'amber',
+      description: t('recommendations_desc')
     },
     {
       id: 'growthOpportunities',
-      title: '📈 Growth Opportunities',
-      icon: '🚀',
-      color: 'from-green-50 to-green-100'
+      title: t('growth_opportunities'),
+      icon: Rocket,
+      color: 'green',
+      description: t('growth_opportunities_desc')
     },
     {
       id: 'pricingStrategy',
-      title: '💰 Pricing Strategy',
-      icon: '💳',
-      color: 'from-purple-50 to-purple-100'
+      title: t('pricing_strategy'),
+      icon: Tag,
+      color: 'purple',
+      description: t('pricing_strategy_desc')
     },
     {
       id: 'inventoryTips',
-      title: '📦 Inventory Tips',
-      icon: '🏢',
-      color: 'from-orange-50 to-orange-100'
+      title: t('inventory_tips'),
+      icon: Box,
+      color: 'orange',
+      description: t('inventory_tips_desc')
     },
     {
       id: 'nextSteps',
-      title: '✅ Next Steps',
-      icon: '🎬',
-      color: 'from-indigo-50 to-indigo-100'
+      title: t('priority_actions'),
+      icon: CheckSquare,
+      color: 'indigo',
+      description: t('priority_actions_desc')
     }
   ];
 
@@ -155,20 +167,36 @@ const EarningsAnalytics = ({
 
     const isExpanded = expandedSection === section.id;
 
+    const colorClasses = {
+      blue: 'bg-blue-50 text-blue-600 border-blue-100',
+      amber: 'bg-amber-50 text-amber-600 border-amber-100',
+      green: 'bg-green-50 text-green-600 border-green-100',
+      purple: 'bg-purple-50 text-purple-600 border-purple-100',
+      orange: 'bg-orange-50 text-orange-600 border-orange-100',
+      indigo: 'bg-indigo-50 text-indigo-600 border-indigo-100'
+    };
+
     return (
-      <div key={section.id} className="mb-4 border border-gray-200 rounded-lg overflow-hidden hover:border-gray-300 transition-colors bg-white">
+      <div key={section.id} className="mb-4 border border-gray-100 rounded-2xl overflow-hidden hover:shadow-md transition-all bg-white group">
         <button
           onClick={() => setExpandedSection(isExpanded ? null : section.id)}
-          className={`w-full px-4 py-3 flex items-center justify-between bg-gradient-to-r ${section.color} hover:shadow-sm transition-all`}
+          className={`w-full px-6 py-5 flex items-center justify-between text-left transition-colors ${isExpanded ? 'bg-gray-50/50' : 'hover:bg-gray-50/30'}`}
         >
-          <div className="flex items-center gap-3">
-            <span className="text-xl">{section.icon}</span>
-            <h3 className="font-semibold text-gray-900">{section.title}</h3>
-            <span className="text-xs bg-white px-2 py-1 rounded-full text-gray-700 font-medium">
-              {items.length} tips
-            </span>
+          <div className="flex items-center gap-4">
+            <div className={`w-12 h-12 rounded-xl flex items-center justify-center border ${colorClasses[section.color]}`}>
+              <section.icon size={22} />
+            </div>
+            <div>
+              <div className="flex items-center gap-3">
+                <h3 className="font-bold text-gray-900">{section.title}</h3>
+                <span className={`text-[10px] font-black px-2 py-0.5 rounded-full uppercase tracking-widest ${colorClasses[section.color]}`}>
+                  {items.length} {t('points')}
+                </span>
+              </div>
+              <p className="text-[10px] text-gray-500 font-medium mt-1 line-clamp-1">{section.description}</p>
+            </div>
           </div>
-          {isExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+          {isExpanded ? <ChevronUp size={20} className="text-gray-400" /> : <ChevronDown size={20} className="text-gray-400" />}
         </button>
 
         {isExpanded && (
@@ -196,8 +224,8 @@ const EarningsAnalytics = ({
             <Sparkles size={24} className="text-white" />
           </div>
           <div>
-            <h2 className="text-xl font-bold text-gray-900">AI Business Advisor</h2>
-            <p className="text-sm text-gray-500">Powered by Gemini</p>
+            <h2 className="text-xl font-bold text-gray-900">{t('ai_business_advisor')}</h2>
+            <p className="text-sm text-gray-500">{t('powered_by_gemini')}</p>
           </div>
         </div>
 
@@ -214,7 +242,7 @@ const EarningsAnalytics = ({
                     : 'text-gray-600 hover:text-gray-900'
                 }`}
               >
-                {type.charAt(0).toUpperCase() + type.slice(1)}
+                {t(type)}
               </button>
             ))}
           </div>
@@ -238,8 +266,8 @@ const EarningsAnalytics = ({
             <Sparkles size={20} className="text-blue-600" />
           </div>
           <div>
-            <p className="font-medium text-blue-900">Analyzing your business...</p>
-            <p className="text-sm text-blue-700">This may take a moment</p>
+            <p className="font-medium text-blue-900">{t('analyzing_business')}</p>
+            <p className="text-sm text-blue-700">{t('please_wait')}</p>
           </div>
         </div>
       )}
@@ -248,7 +276,7 @@ const EarningsAnalytics = ({
         <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg flex items-center gap-3">
           <AlertCircle size={20} className="text-red-600 flex-shrink-0" />
           <div>
-            <p className="font-medium text-red-900">Analysis Error</p>
+            <p className="font-medium text-red-900">{t('analysis_error')}</p>
             <p className="text-sm text-red-700">{error}</p>
           </div>
         </div>
@@ -256,7 +284,7 @@ const EarningsAnalytics = ({
 
       {fromCache && !loading && (
         <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-800">
-          📌 Cached analysis - Next update: {nextUpdate?.toLocaleDateString()}
+          📌 {t('cached_analysis')} - {t('next_update')}: {nextUpdate?.toLocaleDateString()}
         </div>
       )}
 
@@ -267,19 +295,19 @@ const EarningsAnalytics = ({
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6 p-4 bg-gradient-to-r from-gray-50 to-gray-100 rounded-lg">
             <div className="text-center">
               <p className="text-2xl font-bold text-gray-900">&#8377;{(totalRevenue || 0).toLocaleString()}</p>
-              <p className="text-xs text-gray-600 mt-1">Total Revenue</p>
+              <p className="text-xs text-gray-600 mt-1">{t('total_revenue')}</p>
             </div>
             <div className="text-center">
               <p className="text-2xl font-bold text-gray-900">{sellerOrders.length}</p>
-              <p className="text-xs text-gray-600 mt-1">Total Orders</p>
+              <p className="text-xs text-gray-600 mt-1">{t('total_orders')}</p>
             </div>
             <div className="text-center">
               <p className="text-2xl font-bold text-gray-900">{sellerProducts.length}</p>
-              <p className="text-xs text-gray-600 mt-1">Active Products</p>
+              <p className="text-xs text-gray-600 mt-1">{t('active_products')}</p>
             </div>
             <div className="text-center">
               <p className="text-2xl font-bold text-gray-900">{pendingOrders}</p>
-              <p className="text-xs text-gray-600 mt-1">Pending Orders</p>
+              <p className="text-xs text-gray-600 mt-1">{t('pending_orders')}</p>
             </div>
           </div>
 
@@ -290,11 +318,11 @@ const EarningsAnalytics = ({
 
           {/* Last Updated */}
           <div className="mt-6 pt-4 border-t border-gray-200 text-xs text-gray-500 text-center">
-            <p>Last updated: {new Date().toLocaleString()}</p>
+            <p>{t('last_updated')}: {new Date().toLocaleString()}</p>
             {nextUpdate && (
               <p className="mt-1">
                 <Calendar size={12} className="inline mr-1" />
-                Next analysis: {nextUpdate.toLocaleDateString()}
+                {t('next_analysis')}: {nextUpdate.toLocaleDateString()}
               </p>
             )}
           </div>

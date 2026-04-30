@@ -36,6 +36,10 @@ const negotiationSchema = new mongoose.Schema({
   lastMessageAt: {
     type: Date,
     default: Date.now
+  },
+  lastBuzzAt: {
+    type: Date,
+    default: null
   }
 }, {
   timestamps: true

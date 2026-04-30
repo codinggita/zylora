@@ -80,8 +80,8 @@ const SellerNegotiations = () => {
 
         <main className="flex-1 p-8 overflow-y-auto">
           <div className="mb-8">
-            <h1 className="text-xl font-bold text-gray-900">Accepted Negotiations</h1>
-            <p className="text-sm text-gray-500 mt-1">Only buyers whose negotiation request you accepted will appear here.</p>
+            <h1 className="text-xl font-bold text-gray-900">Active Negotiations</h1>
+            <p className="text-sm text-gray-500 mt-1">Manage your ongoing deals and finalized agreements here.</p>
           </div>
 
           {loading ? (
@@ -113,8 +113,12 @@ const SellerNegotiations = () => {
                         className="max-w-full max-h-full object-contain"
                       />
                     </div>
-                    <span className="bg-green-50 text-green-600 text-[10px] font-black px-2 py-1 rounded uppercase tracking-widest">
-                      Accepted
+                    <span className={`text-[10px] font-black px-2 py-1 rounded uppercase tracking-widest ${
+                      item.status === 'AGREED' ? 'bg-green-50 text-green-600' :
+                      item.status === 'ACCEPTED' ? 'bg-blue-50 text-blue-600' :
+                      'bg-amber-50 text-amber-600'
+                    }`}>
+                      {item.status}
                     </span>
                   </div>
 
@@ -138,8 +142,10 @@ const SellerNegotiations = () => {
 
                   <div className="flex items-center justify-between pt-4 border-t border-gray-50">
                     <div>
-                      <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Accepted Price</p>
-                      <p className="text-lg font-bold text-gray-900">&#8377;{(item.agreedPrice || item.product.price).toLocaleString()}</p>
+                      <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
+                        {item.status === 'AGREED' ? 'Final Price' : 'Last Offer'}
+                      </p>
+                      <p className="text-lg font-bold text-gray-900">&#8377;{(item.agreedPrice || item.lastOfferPrice || item.product.price).toLocaleString()}</p>
                     </div>
                     <button
                       onClick={() => navigate(`/negotiate/${item.product.id}?buyerId=${item.buyer.id}`)}

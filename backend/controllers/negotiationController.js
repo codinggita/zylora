@@ -143,8 +143,8 @@ exports.getSellerNegotiationSummary = async (req, res) => {
       };
     });
 
-    // Remove declined negotiations from the dashboard view
-    const visibleConversations = enrichedConversations.filter(conv => conv.status !== 'DECLINED');
+    // Only show PENDING requests on the dashboard summary to keep it actionable
+    const visibleConversations = enrichedConversations.filter(conv => conv.status === 'PENDING');
 
     const newRequests = visibleConversations.filter((conversation) => {
       const ageMs = new Date() - new Date(conversation.createdAt);
@@ -215,7 +215,7 @@ exports.getSellerAcceptedNegotiations = async (req, res) => {
 
     const negotiations = await Negotiation.find({
       seller: req.user._id,
-      status: 'AGREED'
+      status: { $nin: ['PENDING', 'DECLINED'] }
     })
       .populate('buyer', 'name email phone')
       .populate('productId', 'name description images price')

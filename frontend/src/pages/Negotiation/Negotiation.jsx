@@ -1,9 +1,9 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   ArrowLeft, Send, Phone, Video, Check, 
   Paperclip, ShieldCheck, Edit2, CheckCircle,
-  Info, ShoppingCart, Tag
+  Info, ShoppingCart, Tag, Bell, AlertTriangle, X
 } from 'lucide-react';
 import { useNavigate, Link, useParams } from 'react-router-dom';
 import { products } from '../../data/products';
@@ -28,6 +28,30 @@ const Negotiation = () => {
   const socket = useRef(null);
   const [userRole, setUserRole] = useState('buyer');
   const isSeller = userRole === 'seller';
+
+  // Emergency Buzzer State
+  const [buzzerCooldown, setBuzzerCooldown] = useState(false);
+  const [buzzerCooldownTime, setBuzzerCooldownTime] = useState(0);
+  const [incomingBuzz, setIncomingBuzz] = useState(null);
+  const audioCtxRef = useRef(null);
+
+  // Pre-initialize AudioContext on first user interaction (required by browsers)
+  useEffect(() => {
+    const warmUpAudio = () => {
+      if (!audioCtxRef.current) {
+        audioCtxRef.current = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      if (audioCtxRef.current.state === 'suspended') {
+        audioCtxRef.current.resume();
+      }
+    };
+    document.addEventListener('click', warmUpAudio, { once: false });
+    document.addEventListener('keydown', warmUpAudio, { once: false });
+    return () => {
+      document.removeEventListener('click', warmUpAudio);
+      document.removeEventListener('keydown', warmUpAudio);
+    };
+  }, []);
 
   const scrollToBottom = (force = false) => {
     const messagesContainer = chatEndRef.current?.parentElement;
@@ -171,18 +195,30 @@ const Negotiation = () => {
 
     socket.current.on('receive_message', (message) => {
       console.log('Message received from socket:', message);
-      const isMe = message.sender === currentUserId;
-      const displaySender = isMe ? 'you' : (userRole === 'seller' ? 'buyer' : 'seller');
+      
+      const user = JSON.parse(sessionStorage.getItem('user') || '{}');
+      const currentId = user?._id || user?.id;
+      const isMe = message.sender === currentId;
+      
+      // If it's me, and we already added it locally, don't add again
+      // (socket.to(room) shouldn't send to sender, but just in case of multiple tabs)
+      
+      const displaySender = isMe ? 'you' : (message.senderRole || (userRole === 'seller' ? 'buyer' : 'seller'));
 
-      setMessages(prev => [...prev, {
-        id: message.id || Date.now(),
-        sender: displaySender,
-        text: message.text,
-        type: message.type,
-        offerPrice: message.offerPrice,
-        time: message.time,
-        status: 'received'
-      }]);
+      setMessages(prev => {
+        // Prevent duplicates if already added locally
+        if (prev.some(m => m.id === message.id)) return prev;
+        
+        return [...prev, {
+          id: message.id || Date.now(),
+          sender: displaySender,
+          text: message.text,
+          type: message.type,
+          offerPrice: message.offerPrice,
+          time: message.time,
+          status: 'received'
+        }];
+      });
     });
 
     socket.current.on('price_update', (data) => {
@@ -213,10 +249,77 @@ const Negotiation = () => {
       }
     });
 
+    // Listen for incoming urgent buzz
+    socket.current.on('urgent_buzz', (data) => {
+      console.log('🚨 URGENT BUZZ RECEIVED:', data);
+      setIncomingBuzz(data);
+
+      // Play buzzer sound using pre-warmed AudioContext
+      const playBuzzerSound = async () => {
+        try {
+          let ctx = audioCtxRef.current;
+          if (!ctx) {
+            ctx = new (window.AudioContext || window.webkitAudioContext)();
+            audioCtxRef.current = ctx;
+          }
+          // Resume if suspended
+          if (ctx.state === 'suspended') {
+            await ctx.resume();
+          }
+
+          const playTone = (freq, startTime, duration) => {
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.type = 'square';
+            osc.frequency.setValueAtTime(freq, startTime);
+            gain.gain.setValueAtTime(0.35, startTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, startTime + duration);
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.start(startTime);
+            osc.stop(startTime + duration);
+          };
+
+          // Urgent alarm: 3 bursts of rapid alternating tones
+          const now = ctx.currentTime;
+          for (let burst = 0; burst < 3; burst++) {
+            const offset = burst * 0.7;
+            for (let i = 0; i < 4; i++) {
+              playTone(880, now + offset + i * 0.12, 0.1);
+              playTone(660, now + offset + i * 0.12 + 0.06, 0.1);
+            }
+          }
+        } catch (e) {
+          console.log('Audio playback failed:', e);
+        }
+      };
+      playBuzzerSound();
+
+      // Vibrate if supported (mobile)
+      if (navigator.vibrate) {
+        navigator.vibrate([200, 100, 200, 100, 400]);
+      }
+
+      // Flash browser tab title
+      const originalTitle = document.title;
+      let flashCount = 0;
+      const titleFlash = setInterval(() => {
+        document.title = flashCount % 2 === 0 ? '🚨 URGENT BUZZ!' : originalTitle;
+        flashCount++;
+        if (flashCount > 12) {
+          clearInterval(titleFlash);
+          document.title = originalTitle;
+        }
+      }, 600);
+
+      // Auto-dismiss after 8 seconds
+      setTimeout(() => setIncomingBuzz(null), 8000);
+    });
+
     return () => {
       if (socket.current) socket.current.disconnect();
     };
-  }, []);
+  }, [id, userRole]);
 
   const handleSendMessage = (e) => {
     e.preventDefault();
@@ -252,6 +355,48 @@ const Negotiation = () => {
 
     setNewMessage('');
   };
+
+  // Emergency Buzzer Handler
+  const handleEmergencyBuzz = useCallback(() => {
+    if (buzzerCooldown || !socket.current) return;
+
+    const user = JSON.parse(sessionStorage.getItem('user') || '{}');
+    const currentUserId = user?._id || user?.id;
+    const searchParams = new URLSearchParams(window.location.search);
+    const targetBuyerId = searchParams.get('buyerId') || (userRole === 'buyer' ? currentUserId : null);
+
+    socket.current.emit('urgent_buzz', {
+      productId: id,
+      buyerId: targetBuyerId,
+      buyerName: user?.name || 'Buyer',
+      productName: product?.name || 'Product',
+      senderId: currentUserId
+    });
+
+    // Add system message
+    const systemMsg = {
+      id: Date.now(),
+      sender: 'system',
+      text: '🚨 Emergency buzz sent to seller!',
+      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      isSystem: true
+    };
+    setMessages(prev => [...prev, systemMsg]);
+
+    // 30-second cooldown
+    setBuzzerCooldown(true);
+    setBuzzerCooldownTime(30);
+    const interval = setInterval(() => {
+      setBuzzerCooldownTime(prev => {
+        if (prev <= 1) {
+          clearInterval(interval);
+          setBuzzerCooldown(false);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+  }, [buzzerCooldown, id, product, userRole]);
 
   const handleUpdateDealStatus = (status) => {
     const user = JSON.parse(sessionStorage.getItem('user') || 'null');
@@ -309,6 +454,81 @@ const Negotiation = () => {
   return (
     <div className="min-h-screen bg-[#F8F9FB] text-gray-900 font-sans">
       <Header />
+
+      {/* Emergency Buzz Overlay */}
+      <AnimatePresence>
+        {incomingBuzz && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[9999] flex items-center justify-center"
+            style={{ backgroundColor: 'rgba(220, 38, 38, 0.15)', backdropFilter: 'blur(8px)' }}
+            onClick={() => setIncomingBuzz(null)}
+          >
+            <motion.div
+              initial={{ scale: 0.5, opacity: 0 }}
+              animate={{ 
+                scale: [0.5, 1.05, 1], 
+                opacity: 1,
+                x: [0, -8, 8, -8, 8, -4, 4, 0]
+              }}
+              exit={{ scale: 0.5, opacity: 0 }}
+              transition={{ duration: 0.5 }}
+              onClick={(e) => e.stopPropagation()}
+              className="relative bg-white rounded-3xl shadow-2xl border-2 border-red-200 p-8 max-w-md w-full mx-4"
+              style={{ boxShadow: '0 0 60px rgba(239, 68, 68, 0.3), 0 0 120px rgba(239, 68, 68, 0.1)' }}
+            >
+              {/* Pulsing red ring */}
+              <div className="absolute -top-6 left-1/2 -translate-x-1/2">
+                <div className="relative">
+                  <div className="absolute inset-0 rounded-full bg-red-500 animate-ping opacity-30" style={{ width: '48px', height: '48px' }}></div>
+                  <div className="relative w-12 h-12 bg-gradient-to-br from-red-500 to-red-600 rounded-full flex items-center justify-center shadow-lg shadow-red-500/40">
+                    <Bell size={24} className="text-white" fill="white" />
+                  </div>
+                </div>
+              </div>
+
+              <div className="text-center mt-4">
+                <div className="inline-flex items-center gap-1.5 bg-red-50 text-red-600 text-[10px] font-black px-3 py-1.5 rounded-full uppercase tracking-widest mb-4 border border-red-100">
+                  <AlertTriangle size={12} />
+                  URGENT NOTIFICATION
+                </div>
+
+                <h3 className="text-xl font-black text-gray-900 mb-2">
+                  🚨 Emergency Buzz!
+                </h3>
+                <p className="text-sm text-gray-600 mb-1">
+                  <span className="font-bold text-gray-900">{incomingBuzz.buyerName}</span> needs your urgent attention
+                </p>
+                <p className="text-xs text-gray-400 mb-6">
+                  Regarding: <span className="font-semibold text-gray-600">{incomingBuzz.productName}</span>
+                </p>
+
+                {/* Animated urgency bars */}
+                <div className="flex items-center justify-center gap-1 mb-6">
+                  {[...Array(5)].map((_, i) => (
+                    <motion.div
+                      key={i}
+                      className="w-1.5 rounded-full bg-gradient-to-t from-red-500 to-red-400"
+                      animate={{ height: [8, 24, 8] }}
+                      transition={{ duration: 0.6, repeat: Infinity, delay: i * 0.1 }}
+                    />
+                  ))}
+                </div>
+
+                <button
+                  onClick={() => setIncomingBuzz(null)}
+                  className="w-full bg-gradient-to-r from-red-500 to-red-600 text-white py-3.5 rounded-xl font-black text-xs uppercase tracking-widest hover:from-red-600 hover:to-red-700 transition-all shadow-lg shadow-red-500/30 flex items-center justify-center gap-2"
+                >
+                  <X size={16} /> Acknowledge & Dismiss
+                </button>
+                <p className="text-[10px] text-gray-400 mt-3 font-medium">Auto-dismisses in 8 seconds</p>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <main className="max-w-7xl mx-auto px-4 py-6">
         {/* Breadcrumb */}
@@ -469,6 +689,33 @@ const Negotiation = () => {
                     >
                       <Send size={20} />
                     </button>
+
+                    {/* Emergency Buzz Button — Buyer Only */}
+                    {userRole === 'buyer' && dealStatus !== 'DECLINED' && (
+                      <button
+                        type="button"
+                        onClick={handleEmergencyBuzz}
+                        disabled={buzzerCooldown}
+                        title={buzzerCooldown ? `Wait ${buzzerCooldownTime}s` : 'Send urgent buzz to seller'}
+                        className={`relative p-3 rounded-xl transition-all shadow-lg ${
+                          buzzerCooldown 
+                            ? 'bg-gray-200 text-gray-400 cursor-not-allowed shadow-gray-100' 
+                            : 'bg-gradient-to-br from-red-500 to-red-600 text-white hover:from-red-600 hover:to-red-700 shadow-red-500/30 hover:shadow-red-500/50'
+                        }`}
+                      >
+                        {!buzzerCooldown && (
+                          <span className="absolute -top-1 -right-1 flex h-3 w-3">
+                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-300 opacity-75"></span>
+                            <span className="relative inline-flex rounded-full h-3 w-3 bg-red-400"></span>
+                          </span>
+                        )}
+                        {buzzerCooldown ? (
+                          <span className="text-xs font-black w-5 h-5 flex items-center justify-center">{buzzerCooldownTime}</span>
+                        ) : (
+                          <Bell size={20} />
+                        )}
+                      </button>
+                    )}
                   </form>
                   {dealStatus !== 'NEW' && (
                     <button 

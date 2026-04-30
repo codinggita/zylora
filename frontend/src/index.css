@@ -1,1 +1,24 @@
 @import "tailwindcss";
+
+@layer utilities {
+  .animate-spin-slow {
+    animation: spin 8s linear infinite;
+  }
+  
+  .glass-card {
+    @apply bg-white/10 backdrop-blur-2xl border border-white/10;
+  }
+  
+  .text-glow-amber {
+    text-shadow: 0 0 10px rgba(245, 158, 11, 0.5);
+  }
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
