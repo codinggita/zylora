@@ -400,9 +400,9 @@ const SellerDashboard = ({ initialTab = 'Dashboard' }) => {
   };
 
   return (
-    <div className="min-h-screen bg-[#F8F9FB] flex flex-col font-sans">
-      <Header />
-
+    <div className="min-h-screen bg-gray-50 flex flex-col">
+      <Header isDashboard={true} />
+      
       {/* Emergency Buzz Overlay */}
       <AnimatePresence>
         {incomingBuzz && (
