@@ -234,6 +234,7 @@ exports.selectAddress = async (req, res) => {
   }
 };
 
+
 // Get token from model, create cookie and send response
 const sendTokenResponse = (user, statusCode, res) => {
   // Create token
@@ -249,6 +250,10 @@ const sendTokenResponse = (user, statusCode, res) => {
       name: user.name,
       email: user.email,
       role: user.role
+    },
+    _meta: {
+      timestamp: new Date().toISOString(),
+      version: '1.0.0'
     }
   });
 };

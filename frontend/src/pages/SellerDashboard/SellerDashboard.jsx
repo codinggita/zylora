@@ -1,19 +1,27 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   LayoutDashboard, Package, ShoppingCart, MessageSquare,
   Gavel, Wallet, RotateCcw, Settings, Plus,
   ArrowUpRight, TrendingUp, CheckCircle2,
-  X, Edit, Trash2
+  X, Edit, Trash2, Bell, AlertTriangle
 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import { io } from 'socket.io-client';
+import { useTranslation } from 'react-i18next';
 import Header from '../../components/Header';
 import EarningsAnalytics from '../../components/EarningsAnalytics';
 
 const SellerDashboard = ({ initialTab = 'Dashboard' }) => {
   const navigate = useNavigate();
+  const { t, i18n } = useTranslation();
   const [activeTab, setActiveTab] = useState(initialTab);
+
+  const toggleLanguage = () => {
+    const nextLang = i18n.language === 'en' ? 'hi' : 'en';
+    i18n.changeLanguage(nextLang);
+  };
 
   useEffect(() => {
     setActiveTab(initialTab);
@@ -40,6 +48,29 @@ const SellerDashboard = ({ initialTab = 'Dashboard' }) => {
     negotiable: true
   });
 
+  // Emergency Buzzer State
+  const [incomingBuzz, setIncomingBuzz] = useState(null);
+  const audioCtxRef = useRef(null);
+  const socket = useRef(null);
+
+  // Pre-initialize AudioContext on first user interaction
+  useEffect(() => {
+    const warmUpAudio = () => {
+      if (!audioCtxRef.current) {
+        audioCtxRef.current = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      if (audioCtxRef.current.state === 'suspended') {
+        audioCtxRef.current.resume();
+      }
+    };
+    document.addEventListener('click', warmUpAudio, { once: false });
+    document.addEventListener('keydown', warmUpAudio, { once: false });
+    return () => {
+      document.removeEventListener('click', warmUpAudio);
+      document.removeEventListener('keydown', warmUpAudio);
+    };
+  }, []);
+
   const BACKEND_URL = window.location.hostname === 'localhost'
     ? 'http://localhost:5001'
     : 'https://zylora-e-commerce.onrender.com';
@@ -50,6 +81,106 @@ const SellerDashboard = ({ initialTab = 'Dashboard' }) => {
       headers: { Authorization: `Bearer ${token}` }
     };
   };
+
+  // Initialize Sockets for all seller products to listen for buzzes
+  useEffect(() => {
+    const userData = sessionStorage.getItem('user');
+    if (!userData) return;
+    
+    const user = JSON.parse(userData);
+    const sellerId = user._id || user.id;
+
+    socket.current = io(BACKEND_URL);
+
+    socket.current.on('connect', () => {
+      console.log('Dashboard connected to WebSocket');
+    });
+
+    socket.current.on('receive_message', (data) => {
+      console.log('New message received on dashboard:', data);
+      // Refresh dashboard data to show new message/count
+      fetchDashboardData();
+      
+      // Optional: Show a toast or notification if not the sender
+      const currentUserId = JSON.parse(sessionStorage.getItem('user'))?._id;
+      if (data.sender !== currentUserId) {
+        // We could show a small toast here if we had a toast system
+        console.log(`New message from buyer for product ${data.productId}`);
+      }
+    });
+
+    socket.current.on('deal_update', (data) => {
+      console.log('Deal update received on dashboard:', data);
+      fetchDashboardData();
+    });
+
+    socket.current.on('urgent_buzz', (data) => {
+      console.log('🚨 DASHBOARD RECEIVED BUZZ:', data);
+      setIncomingBuzz(data);
+
+      // Play buzzer sound
+      const playBuzzerSound = async () => {
+        try {
+          let ctx = audioCtxRef.current;
+          if (!ctx) {
+            ctx = new (window.AudioContext || window.webkitAudioContext)();
+            audioCtxRef.current = ctx;
+          }
+          if (ctx.state === 'suspended') await ctx.resume();
+
+          const playTone = (freq, startTime, duration) => {
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.type = 'square';
+            osc.frequency.setValueAtTime(freq, startTime);
+            gain.gain.setValueAtTime(0.35, startTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, startTime + duration);
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.start(startTime);
+            osc.stop(startTime + duration);
+          };
+
+          const now = ctx.currentTime;
+          for (let burst = 0; burst < 3; burst++) {
+            const offset = burst * 0.7;
+            for (let i = 0; i < 4; i++) {
+              playTone(880, now + offset + i * 0.12, 0.1);
+              playTone(660, now + offset + i * 0.12 + 0.06, 0.1);
+            }
+          }
+        } catch (e) { console.log('Audio failed:', e); }
+      };
+      playBuzzerSound();
+
+      // Flash tab title
+      const originalTitle = document.title;
+      let flashCount = 0;
+      const titleFlash = setInterval(() => {
+        document.title = flashCount % 2 === 0 ? '🚨 URGENT BUZZ!' : originalTitle;
+        flashCount++;
+        if (flashCount > 12) {
+          clearInterval(titleFlash);
+          document.title = originalTitle;
+        }
+      }, 600);
+
+      setTimeout(() => setIncomingBuzz(null), 8000);
+    });
+
+    return () => {
+      if (socket.current) socket.current.disconnect();
+    };
+  }, [BACKEND_URL]);
+
+  // Separate effect to join rooms whenever products list changes
+  useEffect(() => {
+    if (socket.current && socket.current.connected && sellerProducts.length > 0) {
+      sellerProducts.forEach(prod => {
+        socket.current.emit('join_negotiation', { productId: prod._id || prod.id });
+      });
+    }
+  }, [sellerProducts]);
 
   const fetchDashboardData = async () => {
     try {
@@ -229,7 +360,7 @@ const SellerDashboard = ({ initialTab = 'Dashboard' }) => {
 
   const stats = [
     {
-      label: 'TOTAL REVENUE',
+      label: t('total_revenue').toUpperCase(),
       value: `\u20B9${totalRevenue.toLocaleString()}`,
       change: revenueChangeText,
       icon: Wallet,
@@ -237,7 +368,7 @@ const SellerDashboard = ({ initialTab = 'Dashboard' }) => {
       bg: 'bg-amber-50'
     },
     {
-      label: 'ACTIVE LISTINGS',
+      label: t('active_products').toUpperCase(),
       value: sellerProducts.length.toString(),
       change: sellerProducts.length > 0 ? 'Live seller products' : 'Add your first product',
       icon: Package,
@@ -245,7 +376,7 @@ const SellerDashboard = ({ initialTab = 'Dashboard' }) => {
       bg: 'bg-blue-50'
     },
     {
-      label: 'PENDING ORDERS',
+      label: t('pending_orders').toUpperCase(),
       value: pendingOrders.toString(),
       change: pendingOrders > 0 ? 'Orders need fulfillment' : 'No pending orders',
       icon: ShoppingCart,
@@ -253,7 +384,7 @@ const SellerDashboard = ({ initialTab = 'Dashboard' }) => {
       bg: 'bg-orange-50'
     },
     {
-      label: 'OPEN NEGOTIATIONS',
+      label: t('negotiations').toUpperCase(),
       value: negotiationSummary.openNegotiations.toString(),
       change: negotiationSummary.newRequests > 0 ? `${negotiationSummary.newRequests} new requests` : 'No new requests',
       icon: MessageSquare,
@@ -272,6 +403,82 @@ const SellerDashboard = ({ initialTab = 'Dashboard' }) => {
     <div className="min-h-screen bg-[#F8F9FB] flex flex-col font-sans">
       <Header />
 
+      {/* Emergency Buzz Overlay */}
+      <AnimatePresence>
+        {incomingBuzz && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[9999] flex items-center justify-center"
+            style={{ backgroundColor: 'rgba(220, 38, 38, 0.15)', backdropFilter: 'blur(8px)' }}
+            onClick={() => setIncomingBuzz(null)}
+          >
+            <motion.div
+              initial={{ scale: 0.5, opacity: 0 }}
+              animate={{ 
+                scale: [0.5, 1.05, 1], 
+                opacity: 1,
+                x: [0, -8, 8, -8, 8, -4, 4, 0]
+              }}
+              exit={{ scale: 0.5, opacity: 0 }}
+              transition={{ duration: 0.5 }}
+              onClick={(e) => e.stopPropagation()}
+              className="relative bg-white rounded-3xl shadow-2xl border-2 border-red-200 p-8 max-w-md w-full mx-4"
+              style={{ boxShadow: '0 0 60px rgba(239, 68, 68, 0.3), 0 0 120px rgba(239, 68, 68, 0.1)' }}
+            >
+              <div className="absolute -top-6 left-1/2 -translate-x-1/2">
+                <div className="relative">
+                  <div className="absolute inset-0 rounded-full bg-red-500 animate-ping opacity-30" style={{ width: '48px', height: '48px' }}></div>
+                  <div className="relative w-12 h-12 bg-gradient-to-br from-red-500 to-red-600 rounded-full flex items-center justify-center shadow-lg shadow-red-500/40">
+                    <Bell size={24} className="text-white" fill="white" />
+                  </div>
+                </div>
+              </div>
+
+              <div className="text-center mt-4">
+                <div className="inline-flex items-center gap-1.5 bg-red-50 text-red-600 text-[10px] font-black px-3 py-1.5 rounded-full uppercase tracking-widest mb-4 border border-red-100">
+                  <AlertTriangle size={12} />
+                  URGENT NOTIFICATION
+                </div>
+
+                <h3 className="text-xl font-black text-gray-900 mb-2">
+                  🚨 Emergency Buzz!
+                </h3>
+                <p className="text-sm text-gray-600 mb-1">
+                  <span className="font-bold text-gray-900">{incomingBuzz.buyerName}</span> needs your urgent attention
+                </p>
+                <p className="text-xs text-gray-400 mb-6">
+                  Regarding: <span className="font-semibold text-gray-600">{incomingBuzz.productName}</span>
+                </p>
+
+                <div className="flex items-center justify-center gap-1 mb-6">
+                  {[...Array(5)].map((_, i) => (
+                    <motion.div
+                      key={i}
+                      className="w-1.5 rounded-full bg-gradient-to-t from-red-500 to-red-400"
+                      animate={{ height: [8, 24, 8] }}
+                      transition={{ duration: 0.6, repeat: Infinity, delay: i * 0.1 }}
+                    />
+                  ))}
+                </div>
+
+                <button
+                  onClick={() => {
+                    setIncomingBuzz(null);
+                    // Optionally scroll to or highlight the specific negotiation
+                    setActiveTab('Dashboard'); 
+                  }}
+                  className="w-full bg-gradient-to-r from-red-500 to-red-600 text-white py-3.5 rounded-xl font-black text-xs uppercase tracking-widest hover:from-red-600 hover:to-red-700 transition-all shadow-lg shadow-red-500/30 flex items-center justify-center gap-2"
+                >
+                  <X size={16} /> Acknowledge & Dismiss
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <div className="flex flex-1 max-w-[1600px] mx-auto w-full">
         <aside className="w-64 bg-white border-r border-gray-200 hidden lg:flex flex-col py-6 px-4">
           <div className="mb-10 px-4">
@@ -281,13 +488,13 @@ const SellerDashboard = ({ initialTab = 'Dashboard' }) => {
 
           <nav className="space-y-1 flex-1">
             {[
-              { name: 'Dashboard', icon: LayoutDashboard, path: '/seller-dashboard' },
-              { name: 'My Products', icon: Package, tab: 'My Products', path: '/seller-dashboard' },
-              { name: 'Orders', icon: ShoppingCart, path: '/seller-orders' },
-              { name: 'Negotiations', icon: MessageSquare, path: '/seller-negotiations' },
-              { name: 'Auction Manager', icon: Gavel, path: '/seller-auctions' },
-              { name: 'Earnings', icon: Wallet, path: '/seller-earnings' },
-              { name: 'Returns', icon: RotateCcw, path: '/seller-orders?filter=Returns' }
+              { name: t('dashboard'), icon: LayoutDashboard, path: '/seller-dashboard' },
+              { name: t('my_products'), icon: Package, tab: 'My Products', path: '/seller-dashboard' },
+              { name: t('orders'), icon: ShoppingCart, path: '/seller-orders' },
+              { name: t('negotiations'), icon: MessageSquare, path: '/seller-negotiations' },
+              { name: t('auction_manager'), icon: Gavel, path: '/seller-auctions' },
+              { name: t('earnings'), icon: Wallet, path: '/seller-earnings' },
+              { name: t('returns'), icon: RotateCcw, path: '/seller-orders?filter=Returns' }
             ].map((item) => {
               const isActive = item.tab 
                 ? activeTab === item.tab 
@@ -323,23 +530,34 @@ const SellerDashboard = ({ initialTab = 'Dashboard' }) => {
           <div className="flex items-center justify-between mb-8">
             <div>
               <h1 className="text-xl font-bold text-gray-900">
-                {activeTab === 'Earnings' ? 'Earnings & AI Analytics' : 'Seller Overview'}
+                {activeTab === 'Earnings' ? t('earnings') + ' & AI Analytics' : t('seller_overview')}
               </h1>
               <p className="text-sm text-gray-500 mt-1">
                 {activeTab === 'Earnings' 
                   ? 'Track your revenue performance and get AI-powered insights.'
-                  : 'Track your marketplace performance and manage deals.'}
+                  : t('track_performance')}
               </p>
             </div>
-            {activeTab === 'Dashboard' && (
+            <div className="flex items-center gap-4">
               <button
-                onClick={() => setShowAddModal(true)}
-                className="bg-black text-white px-4 py-2.5 rounded-lg text-sm font-bold flex items-center gap-2 hover:bg-gray-900 transition-colors"
+                onClick={toggleLanguage}
+                className="flex items-center gap-2 px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs font-bold text-gray-600 hover:bg-gray-100 transition-colors"
               >
-                <Plus size={18} />
-                Add New Product
+                <span className="w-5 h-5 flex items-center justify-center bg-white rounded shadow-sm">
+                  {i18n.language === 'en' ? 'EN' : 'HI'}
+                </span>
+                {i18n.language === 'en' ? 'हिन्दी' : 'English'}
               </button>
-            )}
+              {activeTab === 'Dashboard' && (
+                <button
+                  onClick={() => setShowAddModal(true)}
+                  className="bg-black text-white px-4 py-2.5 rounded-lg text-sm font-bold flex items-center gap-2 hover:bg-gray-900 transition-colors"
+                >
+                  <Plus size={18} />
+                  {t('add_new_product')}
+                </button>
+              )}
+            </div>
           </div>
 
           <AnimatePresence>
@@ -692,12 +910,12 @@ const SellerDashboard = ({ initialTab = 'Dashboard' }) => {
                 <table className="w-full text-left">
                   <thead className="bg-gray-50 text-[10px] font-black text-gray-400 uppercase tracking-widest">
                     <tr>
-                      <th className="px-6 py-4">Product</th>
-                      <th className="px-6 py-4">Price</th>
-                      <th className="px-6 py-4">Stock</th>
-                      <th className="px-6 py-4">Negotiate</th>
-                      <th className="px-6 py-4">Status</th>
-                      <th className="px-6 py-4 text-right">Actions</th>
+                      <th className="px-6 py-4">{t('product')}</th>
+                      <th className="px-6 py-4">{t('price')}</th>
+                      <th className="px-6 py-4">{t('stock')}</th>
+                      <th className="px-6 py-4">{t('negotiate')}</th>
+                      <th className="px-6 py-4">{t('status')}</th>
+                      <th className="px-6 py-4 text-right">{t('actions')}</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-50">
@@ -777,22 +995,22 @@ const SellerDashboard = ({ initialTab = 'Dashboard' }) => {
                 <div className="xl:col-span-8 space-y-8">
                   <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
                     <div className="p-6 border-b border-gray-50 flex items-center justify-between">
-                      <h3 className="font-bold text-gray-900">Recent Products</h3>
+                      <h3 className="font-bold text-gray-900">{t('recent_products')}</h3>
                       <button 
                         onClick={() => setActiveTab('My Products')}
                         className="text-blue-600 text-sm font-bold hover:underline"
                       >
-                        View All
+                        {t('view_all')}
                       </button>
                     </div>
                     <div className="overflow-x-auto">
                       <table className="w-full text-left">
                         <thead className="bg-gray-50 text-[10px] font-black text-gray-400 uppercase tracking-widest">
                           <tr>
-                            <th className="px-6 py-4">Product</th>
-                            <th className="px-6 py-4">Price</th>
-                            <th className="px-6 py-4">Stock</th>
-                            <th className="px-6 py-4 text-right">Actions</th>
+                            <th className="px-6 py-4">{t('product')}</th>
+                            <th className="px-6 py-4">{t('price')}</th>
+                            <th className="px-6 py-4">{t('stock')}</th>
+                            <th className="px-6 py-4 text-right">{t('actions')}</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-50">
@@ -910,7 +1128,7 @@ const SellerDashboard = ({ initialTab = 'Dashboard' }) => {
                   </div>
 
                   <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm">
-                    <h3 className="font-bold text-gray-900 mb-6">Recent Orders</h3>
+                    <h3 className="font-bold text-gray-900 mb-6">{t('recent_orders')}</h3>
                     <div className="space-y-4">
                       {recentOrders.length > 0 ? recentOrders.map((order) => (
                         <div key={order._id} className="flex items-center justify-between p-4 bg-white border border-gray-100 rounded-xl hover:border-blue-100 transition-colors cursor-pointer group">
@@ -928,7 +1146,7 @@ const SellerDashboard = ({ initialTab = 'Dashboard' }) => {
                           <div className="text-right">
                             <div className="text-sm font-bold text-gray-900">&#8377;{order.sellerTotal.toLocaleString()}</div>
                             <div className={`text-[10px] font-black mt-1 ${statusColor(order.status)}`}>
-                              {order.status.toUpperCase()}
+                              {t(order.status.toLowerCase())}
                             </div>
                           </div>
                         </div>

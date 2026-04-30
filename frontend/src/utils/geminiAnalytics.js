@@ -20,18 +20,19 @@ const getAnalysisCache = () => {
   }
 };
 
-const saveAnalysisToCache = (sellerId, analysis, frequencyType = 'weekly') => {
+const saveAnalysisToCache = (sellerId, analysis, frequencyType = 'weekly', lang = 'en') => {
   try {
     const cache = getAnalysisCache();
     const now = new Date();
     const cacheKey = frequencyType === 'daily' 
-      ? `${sellerId}_day_${now.getDate()}`
-      : `${sellerId}_week_${Math.ceil(now.getDate() / 7)}`;
+      ? `${sellerId}_day_${now.getDate()}_${lang}`
+      : `${sellerId}_week_${Math.ceil(now.getDate() / 7)}_${lang}`;
     
     cache[cacheKey] = {
       data: analysis,
       timestamp: now.getTime(),
-      type: frequencyType
+      type: frequencyType,
+      lang: lang
     };
     
     localStorage.setItem('seller_ai_analysis_cache', JSON.stringify(cache));
@@ -40,13 +41,13 @@ const saveAnalysisToCache = (sellerId, analysis, frequencyType = 'weekly') => {
   }
 };
 
-const getCachedAnalysis = (sellerId, frequencyType = 'weekly') => {
+const getCachedAnalysis = (sellerId, frequencyType = 'weekly', lang = 'en') => {
   try {
     const cache = getAnalysisCache();
     const now = new Date();
     const cacheKey = frequencyType === 'daily'
-      ? `${sellerId}_day_${now.getDate()}`
-      : `${sellerId}_week_${Math.ceil(now.getDate() / 7)}`;
+      ? `${sellerId}_day_${now.getDate()}_${lang}`
+      : `${sellerId}_week_${Math.ceil(now.getDate() / 7)}_${lang}`;
     
     const cached = cache[cacheKey];
     if (cached) {
@@ -70,7 +71,7 @@ const getCachedAnalysis = (sellerId, frequencyType = 'weekly') => {
 /**
  * Prepare analysis prompt with seller data
  */
-const buildAnalysisPrompt = (sellerData) => {
+const buildAnalysisPrompt = (sellerData, lang = 'en') => {
   const {
     totalRevenue,
     orderCount,
@@ -85,8 +86,14 @@ const buildAnalysisPrompt = (sellerData) => {
   const monthlyTrend = revenueByMonth?.slice(-3).map(m => m.total).join(', ') || '0';
   const monthlyLabels = revenueByMonth?.slice(-3).map(m => m.label).join(', ') || 'Recent months';
 
+  const languageInstruction = lang === 'hi' 
+    ? "IMPORTANT: Please provide your entire response in HINDI language using Devanagari script. Ensure the tone is professional and business-oriented."
+    : "Respond in English. Ensure the tone is professional and business-oriented.";
+
   return `
 You are a business consultant for an e-commerce seller. Analyze the following seller performance data and provide actionable, specific business improvement recommendations.
+
+${languageInstruction}
 
 SELLER PERFORMANCE DATA (Last 6 months):
 - Total Revenue: ₹${totalRevenue?.toLocaleString() || 0}
@@ -116,12 +123,12 @@ Format your response as clear sections with bullet points. Be specific and data-
 /**
  * Call NVIDIA API for business analysis with multiple fallbacks
  */
-export const analyzeSellerData = async (sellerData, sellerId = 'default', frequencyType = 'weekly') => {
+export const analyzeSellerData = async (sellerData, sellerId = 'default', frequencyType = 'weekly', lang = 'en') => {
   try {
     // Check cache first
-    const cachedAnalysis = getCachedAnalysis(sellerId, frequencyType);
+    const cachedAnalysis = getCachedAnalysis(sellerId, frequencyType, lang);
     if (cachedAnalysis) {
-      console.log('Using cached analysis');
+      console.log(`Using cached analysis for language: ${lang}`);
       return {
         success: true,
         analysis: cachedAnalysis,
@@ -129,7 +136,7 @@ export const analyzeSellerData = async (sellerData, sellerId = 'default', freque
       };
     }
 
-    const prompt = buildAnalysisPrompt(sellerData);
+    const prompt = buildAnalysisPrompt(sellerData, lang);
     let lastError = null;
 
     // Try different models
@@ -156,7 +163,11 @@ export const analyzeSellerData = async (sellerData, sellerId = 'default', freque
               messages: [{
                 role: 'user',
                 content: prompt
-              }]
+              }],
+              max_tokens: 1024,
+              temperature: 0.7,
+              top_p: 0.9,
+              stream: false
             }
           })
         });
@@ -168,7 +179,7 @@ export const analyzeSellerData = async (sellerData, sellerId = 'default', freque
             const analysis = data.choices[0].message.content;
             
             // Cache the analysis
-            saveAnalysisToCache(sellerId, analysis, frequencyType);
+            saveAnalysisToCache(sellerId, analysis, frequencyType, lang);
 
             return {
               success: true,
@@ -213,30 +224,35 @@ export const parseRecommendations = (analysisText) => {
   const lines = analysisText.split('\n');
   let currentSection = '';
 
+  const headerMap = {
+    keyInsights: ['KEY INSIGHTS', 'महत्वपूर्ण अंतर्दृष्टि', 'अंतर्दृष्टि', 'INSIGHTS'],
+    recommendations: ['RECOMMENDATIONS', 'सिफारिशें', 'सुझाव'],
+    growthOpportunities: ['GROWTH OPPORTUNITIES', 'विकास के अवसर', 'अवसर', 'OPPORTUNITIES'],
+    pricingStrategy: ['PRICING STRATEGY', 'मूल्य निर्धारण रणनीति', 'मूल्य निर्धारण', 'PRICING'],
+    inventoryTips: ['INVENTORY TIPS', 'इन्वेंटरी टिप्स', 'इन्वेंटरी', 'INVENTORY'],
+    nextSteps: ['NEXT STEPS', 'प्राथमिकता कार्रवाई', 'अगले कदम', 'STEPS']
+  };
+
   for (const line of lines) {
-    // Check for section headers
-    if (line.includes('KEY INSIGHTS')) {
-      currentSection = 'keyInsights';
-      sections[currentSection] = [];
-    } else if (line.includes('RECOMMENDATIONS')) {
-      currentSection = 'recommendations';
-      sections[currentSection] = [];
-    } else if (line.includes('GROWTH OPPORTUNITIES')) {
-      currentSection = 'growthOpportunities';
-      sections[currentSection] = [];
-    } else if (line.includes('PRICING STRATEGY')) {
-      currentSection = 'pricingStrategy';
-      sections[currentSection] = [];
-    } else if (line.includes('INVENTORY TIPS')) {
-      currentSection = 'inventoryTips';
-      sections[currentSection] = [];
-    } else if (line.includes('NEXT STEPS')) {
-      currentSection = 'nextSteps';
-      sections[currentSection] = [];
-    } else if (line.trim().startsWith('-') || line.trim().startsWith('*') || line.trim().match(/^\d+\./)) {
-      // Collect bullet points
+    const upperLine = line.toUpperCase();
+    
+    // Check for section headers using the map
+    let foundHeader = false;
+    for (const [sectionId, keywords] of Object.entries(headerMap)) {
+      if (keywords.some(keyword => upperLine.includes(keyword.toUpperCase()))) {
+        currentSection = sectionId;
+        sections[currentSection] = [];
+        foundHeader = true;
+        break;
+      }
+    }
+
+    if (foundHeader) continue;
+
+    // Collect bullet points
+    if (line.trim().startsWith('-') || line.trim().startsWith('*') || line.trim().match(/^(\d+|[•\u2022\u25CF])[\.\s]/)) {
       if (currentSection && sections[currentSection]) {
-        const cleanedLine = line.trim().replace(/^([-•*]|\d+\.)\s*/, '');
+        const cleanedLine = line.trim().replace(/^([-•\u2022\u25CF*]|\d+[\.\s])\s*/, '');
         if (cleanedLine) {
           sections[currentSection].push(cleanedLine);
         }

@@ -1,4 +1,6 @@
 const Product = require('../models/Product');
+const Negotiation = require('../models/Negotiation');
+const Message = require('../models/Message');
 
 // @desc    Get all products
 // @route   GET /api/products
@@ -136,13 +138,20 @@ exports.deleteProduct = async (req, res) => {
       return res.status(403).json({ success: false, error: 'Not authorized to delete this product' });
     }
 
-    await product.deleteOne();
+    // Cascading delete related records
+    await Promise.all([
+      Negotiation.deleteMany({ productId: req.params.id }),
+      Message.deleteMany({ productId: req.params.id }),
+      product.deleteOne()
+    ]);
 
     res.status(200).json({
       success: true,
+      message: 'Product and all related negotiation data deleted successfully',
       data: {}
     });
   } catch (err) {
+    console.error('Delete Product Error:', err);
     res.status(400).json({ success: false, error: err.message });
   }
 };

@@ -10,6 +10,7 @@ const Message = require('./models/Message');
 const Product = require('./models/Product');
 const Negotiation = require('./models/Negotiation');
 const { startAuctionCompletionHandler } = require('./utils/auctionCompletionHandler');
+const { startNegotiationTimeoutHandler } = require('./utils/negotiationTimeoutHandler');
 
 // Connect to database
 connectDB();
@@ -19,7 +20,7 @@ const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
     origin: ["http://localhost:5173", "http://localhost:3000", "https://zylora-tau.vercel.app", "https://zylora-e-commerce.onrender.com", "*"],
-    methods: ["GET", "POST"],
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     credentials: true
   },
   transports: ['websocket', 'polling']
@@ -74,7 +75,9 @@ io.on('connection', (socket) => {
 
           let newStatus = existingNegotiation ? existingNegotiation.status : 'PENDING';
           if (data.type === 'offer') {
-            newStatus = 'COUNTERED';
+            newStatus = data.senderRole === 'buyer' ? 'COUNTERED' : 'OFFER_SENT';
+          } else if (data.type === 'text' && existingNegotiation && existingNegotiation.status === 'NEW') {
+            newStatus = 'PENDING';
           }
 
           const update = {
@@ -106,12 +109,28 @@ io.on('connection', (socket) => {
       console.log('Message saved and emitting:', data);
       
       const targetBuyerId = data.senderRole === 'buyer' ? data.senderId : data.buyerId;
-      const room = targetBuyerId ? `${data.productId}_${targetBuyerId}` : data.productId;
+      
+      // Emit to specific room
+      if (targetBuyerId) {
+        const specificRoom = `${data.productId}_${targetBuyerId}`;
+        socket.to(specificRoom).emit('receive_message', {
+          id: newMessage._id,
+          text: data.text,
+          sender: data.senderId,
+          type: data.type || 'text',
+          offerPrice: data.offerPrice,
+          time: newMessage.createdAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        });
+      }
 
-      socket.to(room).emit('receive_message', {
+      // ALSO emit to general product room (for seller dashboard alerts)
+      socket.to(data.productId).emit('receive_message', {
         id: newMessage._id,
+        productId: data.productId,
         text: data.text,
         sender: data.senderId,
+        senderRole: data.senderRole,
+        buyerId: targetBuyerId,
         type: data.type || 'text',
         offerPrice: data.offerPrice,
         time: newMessage.createdAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
@@ -147,7 +166,13 @@ io.on('connection', (socket) => {
 
         console.log('Deal update received:', data);
 
-        const targetBuyerId = data.senderRole === 'buyer' ? data.senderId : data.buyerId;
+        let targetBuyerId = data.senderRole === 'buyer' ? data.senderId : data.buyerId;
+        
+        // If buyerId is missing (common when accepting from dashboard), try to find it
+        if (!targetBuyerId && data.senderRole === 'seller') {
+          const latestNeg = await Negotiation.findOne({ productId: data.productId, seller: data.senderId }).sort('-lastMessageAt');
+          if (latestNeg) targetBuyerId = latestNeg.buyer;
+        }
 
         if (targetBuyerId) {
           const product = await Product.findById(data.productId).select('seller');
@@ -173,16 +198,60 @@ io.on('connection', (socket) => {
               }
             );
 
-            // Emit to the specific negotiation room (excluding sender)
-            socket.to(`${data.productId}_${targetBuyerId}`).emit('deal_update', {
+            // Emit to both specific and general rooms
+            const specificRoom = `${data.productId}_${targetBuyerId}`;
+            const updatePayload = {
               status: data.status,
               price: data.price,
-              sender: data.sender
-            });
+              sender: data.sender,
+              buyerId: targetBuyerId
+            };
+
+            socket.to(specificRoom).emit('deal_update', updatePayload);
+            socket.to(data.productId).emit('deal_update', updatePayload);
           }
         }
       } catch (err) {
         console.error('Socket deal_update error:', err);
+      }
+    });
+
+    socket.on('urgent_buzz', async (data) => {
+      try {
+        if (!data || !data.productId) {
+          console.log('Invalid buzz data:', data);
+          return;
+        }
+
+        console.log('🚨 Urgent buzz received:', data);
+
+        // Update database with buzz timestamp
+        const product = await Product.findById(data.productId).select('seller');
+        if (product) {
+          await Negotiation.findOneAndUpdate(
+            { productId: data.productId, buyer: data.buyerId, seller: product.seller },
+            { $set: { lastBuzzAt: new Date() } },
+            { upsert: true }
+          );
+        }
+
+        const payload = {
+          buyerName: data.buyerName || 'Buyer',
+          productName: data.productName || 'Product',
+          buyerId: data.buyerId,
+          timestamp: new Date().toISOString()
+        };
+
+        // Emit to specific room
+        if (data.buyerId) {
+          socket.to(`${data.productId}_${data.buyerId}`).emit('urgent_buzz', payload);
+        }
+
+        // Emit to general product room (crucial for seller dashboard alerts)
+        socket.to(data.productId).emit('urgent_buzz', payload);
+        
+      } catch (err) {
+        console.error('Socket urgent_buzz error:', err);
       }
     });
 
@@ -207,8 +276,9 @@ io.on('connection', (socket) => {
 
 app.set('io', io);
 
-// Start auction completion handler
+// Start handlers
 startAuctionCompletionHandler(io);
+startNegotiationTimeoutHandler(io);
 
 // Body parser
 app.use(express.json());
@@ -247,23 +317,38 @@ app.post('/api/ai-proxy', async (req, res) => {
     const { url, body } = req.body;
     
     if (!url || !url.startsWith('https://integrate.api.nvidia.com')) {
-       return res.status(403).json({ error: 'Proxy not allowed for this URL' });
+       return res.status(403).json({ success: false, error: 'Proxy not allowed for this URL' });
     }
+    
+    console.log(`[AI-PROXY] Forwarding to: ${url}`);
     
     const response = await fetch(url, {
        method: 'POST',
        headers: {
          'Content-Type': 'application/json',
+         'Accept': 'application/json',
          'Authorization': req.headers.authorization
        },
        body: JSON.stringify(body)
     });
     
     const data = await response.json().catch(() => ({}));
-    res.status(response.status).json(data);
+    
+    if (!response.ok) {
+      console.error(`[AI-PROXY] Upstream Error (${response.status}):`, data);
+    }
+    
+    res.status(response.status).json({
+      success: response.ok,
+      ...data,
+      _meta: {
+        timestamp: new Date().toISOString(),
+        proxy: true
+      }
+    });
   } catch (error) {
-    console.error('AI Proxy Error:', error);
-    res.status(500).json({ error: error.message });
+    console.error('[AI-PROXY] Critical Error:', error);
+    res.status(500).json({ success: false, error: error.message });
   }
 });
 
