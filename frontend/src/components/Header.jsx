@@ -202,10 +202,22 @@ const Header = ({ placeholder, isDashboard = false }) => {
             )}
 
             <div className="flex items-center gap-3 md:gap-4">
+              {/* Logout Icon (Desktop only, mobile has it in the menu) */}
+              {user && (
+                <button 
+                  onClick={handleLogout}
+                  className="hidden md:block p-2 hover:bg-white/5 rounded-full transition-all group"
+                  title="Logout"
+                >
+                  <LogOut size={22} className="text-red-500 group-hover:scale-110 transition-transform" />
+                </button>
+              )}
+
               {/* Auth Icon */}
               <button 
                 onClick={() => navigate(user ? '/profile' : '/login')}
                 className="p-2 hover:bg-white/5 rounded-full transition-all group"
+                title={user ? "Profile" : "Login"}
               >
                 {user ? (
                   <User size={22} className="text-amber-500 group-hover:scale-110 transition-transform" />

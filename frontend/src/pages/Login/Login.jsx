@@ -79,10 +79,10 @@ const Login = () => {
       </nav>
 
       <main className="flex-1 flex flex-col md:flex-row">
-        <div className="md:w-[45%] bg-[#050B17] p-12 flex flex-col justify-center relative overflow-hidden">
+        <div className="md:w-[45%] bg-[#050B17] p-6 md:p-12 flex flex-col justify-center relative overflow-hidden">
           <div className="relative z-10 max-w-md">
             <h2 className="text-xl font-semibold mb-8">ZyLora</h2>
-            <h1 className="text-5xl font-bold mb-4 leading-tight">
+            <h1 className="text-3xl md:text-5xl font-bold mb-4 leading-tight">
               Shop Smarter.<br />
               Deal Better.
             </h1>
@@ -92,18 +92,18 @@ const Login = () => {
           </div>
         </div>
 
-        <div className="flex-1 bg-white flex flex-col items-center justify-center p-8 md:p-12">
+        <div className="flex-1 bg-white flex flex-col items-center justify-center p-6 md:p-12">
           <div className="w-full max-w-md">
-            <div className="bg-gray-100 p-1 rounded-lg flex mb-12">
+            <div className="bg-gray-100 p-1 rounded-lg flex mb-8 md:mb-12">
               <button 
                 onClick={() => setUserType('buyer')}
-                className={`flex-1 py-2 text-sm font-medium rounded-md transition-all ${userType === 'buyer' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                className={`flex-1 py-2 text-xs sm:text-sm font-medium rounded-md transition-all ${userType === 'buyer' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
               >
                 Individual Buyer
               </button>
               <button 
                 onClick={() => setUserType('seller')}
-                className={`flex-1 py-2 text-sm font-medium rounded-md transition-all ${userType === 'seller' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                className={`flex-1 py-2 text-xs sm:text-sm font-medium rounded-md transition-all ${userType === 'seller' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
               >
                 Business Seller
               </button>
@@ -124,6 +124,9 @@ const Login = () => {
                     name="email"
                     {...formik.getFieldProps('email')}
                     placeholder="name@company.com" 
+                    autoCapitalize="none"
+                    autoCorrect="off"
+                    spellCheck="false"
                     className={`w-full border rounded-lg p-3 pl-10 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500/20 ${formik.touched.email && formik.errors.email ? 'border-red-500' : 'border-gray-200'}`}
                   />
                 </div>

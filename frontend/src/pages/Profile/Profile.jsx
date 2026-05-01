@@ -3,7 +3,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   User, Package, MapPin, CreditCard, Settings, 
   ChevronRight, Clock, CheckCircle, Truck, AlertCircle, 
-  MessageSquare, Bell, HelpCircle, Heart, ShieldCheck, Store, RotateCcw, ArrowLeft
+  MessageSquare, Bell, HelpCircle, Heart, ShieldCheck, Store, RotateCcw, ArrowLeft,
+  Plus, Edit2, Trash2, Shield, Search, Gavel
 } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
@@ -14,8 +15,8 @@ import Footer from '../../components/Footer';
 
 const Profile = () => {
   const navigate = useNavigate();
-  const { cartCount } = useCart();
-  const { wishlistCount } = useWishlist();
+  const { cartCount, addToCart } = useCart();
+  const { wishlistItems, wishlistCount, removeFromWishlist } = useWishlist();
   const [activeTab, setActiveTab] = useState('orders');
   const [orderFilter, setOrderFilter] = useState('All');
   const [orders, setOrders] = useState([]);
@@ -25,6 +26,14 @@ const Profile = () => {
   const [editForm, setEditForm] = useState({
     name: '',
     phone: ''
+  });
+
+  // Address State
+  const [addresses, setAddresses] = useState([]);
+  const [isAddingAddress, setIsAddingAddress] = useState(false);
+  const [editingAddressId, setEditingAddressId] = useState(null);
+  const [addressForm, setAddressForm] = useState({
+    name: '', mobile: '', address: '', pincode: '', type: 'Home'
   });
 
   const BACKEND_URL = window.location.hostname === 'localhost' 
@@ -48,6 +57,7 @@ const Profile = () => {
         const userRes = await axios.get(`${BACKEND_URL}/api/auth/me`, config);
         const userData = userRes.data.data;
         setUser(userData);
+        setAddresses(userData.addresses || []);
         setEditForm({
           name: userData.name || '',
           phone: userData.phone || '',
@@ -124,6 +134,65 @@ const Profile = () => {
       console.error('Error requesting return:', error);
       alert(error.response?.data?.message || 'Failed to submit return request');
     }
+  };
+
+  const handleAddressSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      const token = sessionStorage.getItem('token');
+      const config = { headers: { Authorization: `Bearer ${token}` } };
+      
+      let res;
+      if (editingAddressId) {
+        res = await axios.put(`${BACKEND_URL}/api/auth/addresses/${editingAddressId}`, addressForm, config);
+      } else {
+        res = await axios.post(`${BACKEND_URL}/api/auth/addresses`, addressForm, config);
+      }
+      
+      if (res.data.success) {
+        setAddresses(res.data.data);
+        setIsAddingAddress(false);
+        setEditingAddressId(null);
+        setAddressForm({ name: '', mobile: '', address: '', pincode: '', type: 'Home' });
+      }
+    } catch (error) {
+      alert(error.response?.data?.error || 'Failed to save address');
+    }
+  };
+
+  const handleDeleteAddress = async (id) => {
+    if (!window.confirm('Delete this address?')) return;
+    try {
+      const token = sessionStorage.getItem('token');
+      const config = { headers: { Authorization: `Bearer ${token}` } };
+      const res = await axios.delete(`${BACKEND_URL}/api/auth/addresses/${id}`, config);
+      if (res.data.success) {
+        setAddresses(res.data.data);
+      }
+    } catch (error) {
+      alert('Failed to delete address');
+    }
+  };
+
+  const handleSelectAddress = async (id) => {
+    try {
+      const token = sessionStorage.getItem('token');
+      const config = { headers: { Authorization: `Bearer ${token}` } };
+      const res = await axios.put(`${BACKEND_URL}/api/auth/addresses/${id}/select`, {}, config);
+      if (res.data.success) {
+        setAddresses(res.data.data);
+      }
+    } catch (error) {
+      alert('Failed to select address');
+    }
+  };
+
+  const editAddress = (addr) => {
+    setEditingAddressId(addr._id);
+    setAddressForm({
+      name: addr.name, mobile: addr.mobile, address: addr.address, pincode: addr.pincode, type: addr.type
+    });
+    setIsAddingAddress(true);
   };
 
   const getStatusIcon = (status) => {
@@ -497,29 +566,283 @@ const Profile = () => {
                 </motion.div>
               )}
 
-              {['wishlist', 'negotiations', 'notifications', 'help', 'addresses', 'payment'].includes(activeTab) && (
+              {activeTab === 'addresses' && (
                 <motion.div
-                  key="placeholders"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  className="bg-white rounded-2xl border border-gray-100 p-12 text-center shadow-sm"
+                  key="addresses"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  className="space-y-6"
                 >
-                  <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4">
-                    {activeTab === 'wishlist' ? <Heart size={32} className="text-gray-300" /> :
-                     activeTab === 'negotiations' ? <MessageSquare size={32} className="text-gray-300" /> :
-                     activeTab === 'notifications' ? <Bell size={32} className="text-gray-300" /> :
-                     activeTab === 'help' ? <HelpCircle size={32} className="text-gray-300" /> :
-                     activeTab === 'addresses' ? <MapPin size={32} className="text-gray-300" /> : 
-                     <CreditCard size={32} className="text-gray-300" />}
+                  <div className="flex items-center justify-between">
+                    <h2 className="text-2xl font-serif font-black text-gray-900">Saved Addresses</h2>
+                    {!isAddingAddress && (
+                      <button 
+                        onClick={() => {
+                          setIsAddingAddress(true);
+                          setEditingAddressId(null);
+                          setAddressForm({ name: '', mobile: '', address: '', pincode: '', type: 'Home' });
+                        }}
+                        className="bg-black text-white px-4 py-2 rounded-lg font-bold text-xs uppercase tracking-widest hover:bg-gray-800 transition-all flex items-center gap-2"
+                      >
+                        <Plus size={16} /> Add New Address
+                      </button>
+                    )}
                   </div>
-                  <h3 className="text-lg font-bold text-gray-900 mb-2">{activeTab.charAt(0).toUpperCase() + activeTab.slice(1)} Section</h3>
-                  <p className="text-sm text-gray-500 mb-6">This section is currently under development.</p>
-                  <button 
-                    onClick={() => setActiveTab('orders')}
-                    className="text-black font-bold text-xs uppercase tracking-widest flex items-center justify-center gap-2 mx-auto hover:gap-3 transition-all"
-                  >
-                    <ArrowLeft size={14} /> Back to My Orders
-                  </button>
+
+                  {isAddingAddress ? (
+                    <div className="bg-white rounded-2xl border border-gray-100 p-8 shadow-sm">
+                      <h3 className="text-lg font-bold mb-6">{editingAddressId ? 'Edit Address' : 'Add New Address'}</h3>
+                      <form onSubmit={handleAddressSubmit} className="space-y-6">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                          <div className="space-y-2">
+                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1">Name</label>
+                            <input required type="text" value={addressForm.name} onChange={e => setAddressForm({...addressForm, name: e.target.value})} className="w-full bg-gray-50 border border-gray-100 rounded-xl py-3 px-4 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all" />
+                          </div>
+                          <div className="space-y-2">
+                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1">Mobile</label>
+                            <input required type="text" value={addressForm.mobile} onChange={e => setAddressForm({...addressForm, mobile: e.target.value})} className="w-full bg-gray-50 border border-gray-100 rounded-xl py-3 px-4 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all" />
+                          </div>
+                          <div className="space-y-2">
+                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1">Pincode</label>
+                            <input required type="text" value={addressForm.pincode} onChange={e => setAddressForm({...addressForm, pincode: e.target.value})} className="w-full bg-gray-50 border border-gray-100 rounded-xl py-3 px-4 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all" />
+                          </div>
+                          <div className="space-y-2">
+                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1">Address Type</label>
+                            <select value={addressForm.type} onChange={e => setAddressForm({...addressForm, type: e.target.value})} className="w-full bg-gray-50 border border-gray-100 rounded-xl py-3 px-4 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all">
+                              <option value="Home">Home</option>
+                              <option value="Work">Work</option>
+                              <option value="Other">Other</option>
+                            </select>
+                          </div>
+                        </div>
+                        <div className="space-y-2">
+                          <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1">Full Address</label>
+                          <textarea required value={addressForm.address} onChange={e => setAddressForm({...addressForm, address: e.target.value})} className="w-full bg-gray-50 border border-gray-100 rounded-xl py-3 px-4 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all min-h-[80px]" />
+                        </div>
+                        <div className="flex gap-4 pt-4">
+                          <button type="submit" className="bg-black text-white px-8 py-3 rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-gray-800 transition-all">Save Address</button>
+                          <button type="button" onClick={() => setIsAddingAddress(false)} className="bg-gray-100 text-gray-900 px-8 py-3 rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-gray-200 transition-all">Cancel</button>
+                        </div>
+                      </form>
+                    </div>
+                  ) : addresses.length === 0 ? (
+                    <div className="bg-white rounded-2xl border border-gray-100 p-12 text-center shadow-sm">
+                      <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <MapPin size={32} className="text-gray-300" />
+                      </div>
+                      <h3 className="text-lg font-bold text-gray-900 mb-2">No Addresses Found</h3>
+                      <p className="text-sm text-gray-500 mb-6">You haven't saved any delivery addresses yet.</p>
+                      <button onClick={() => setIsAddingAddress(true)} className="bg-black text-white px-8 py-3 rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-gray-800 transition-all">Add Address</button>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {addresses.map((addr) => (
+                        <div key={addr._id} className={`bg-white rounded-2xl border-2 p-6 transition-all relative ${addr.selected ? 'border-amber-500 shadow-md' : 'border-gray-100 hover:border-gray-300 shadow-sm'}`}>
+                          {addr.selected && (
+                            <div className="absolute -top-3 -right-3 bg-amber-500 text-white p-1.5 rounded-full shadow-md">
+                              <CheckCircle size={16} />
+                            </div>
+                          )}
+                          <div className="flex justify-between items-start mb-4">
+                            <div>
+                              <span className="bg-gray-100 text-gray-600 text-[10px] font-black uppercase tracking-widest px-2.5 py-1 rounded-md">{addr.type}</span>
+                              <h4 className="text-lg font-bold text-gray-900 mt-2">{addr.name}</h4>
+                            </div>
+                            <div className="flex gap-2">
+                              <button onClick={() => editAddress(addr)} className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"><Edit2 size={16} /></button>
+                              <button onClick={() => handleDeleteAddress(addr._id)} className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"><Trash2 size={16} /></button>
+                            </div>
+                          </div>
+                          <p className="text-sm text-gray-500 mb-2 leading-relaxed">{addr.address}</p>
+                          <p className="text-sm font-bold text-gray-900 mb-6">{addr.pincode} • {addr.mobile}</p>
+                          {!addr.selected && (
+                            <button onClick={() => handleSelectAddress(addr._id)} className="w-full py-2.5 border border-gray-200 rounded-lg text-xs font-bold text-gray-600 hover:border-black hover:text-black transition-all">Set as Default</button>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </motion.div>
+              )}
+
+              {activeTab === 'wishlist' && (
+                <motion.div
+                  key="wishlist"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  className="space-y-6"
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <h2 className="text-2xl font-serif font-black text-gray-900">My Wishlist</h2>
+                    <Link to="/" className="text-sm font-bold text-amber-600 hover:text-amber-700">Continue Shopping &rarr;</Link>
+                  </div>
+                  
+                  {wishlistItems.length === 0 ? (
+                    <div className="bg-white rounded-2xl border border-gray-100 p-12 text-center shadow-sm">
+                      <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <Heart size={32} className="text-gray-300" />
+                      </div>
+                      <h3 className="text-lg font-bold text-gray-900 mb-2">Wishlist is Empty</h3>
+                      <p className="text-sm text-gray-500 mb-6">Save items you love here.</p>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                      {wishlistItems.map((item) => (
+                        <div key={item._id || item.id} className="group bg-white rounded-2xl border border-gray-100 overflow-hidden hover:shadow-xl hover:shadow-gray-200/50 transition-all duration-300">
+                          <div className="relative aspect-square bg-gray-50 p-6 flex items-center justify-center overflow-hidden">
+                            <img src={item.image || item.images?.[0]} alt={item.name} className="max-w-full max-h-full object-contain group-hover:scale-110 transition-transform duration-500" />
+                            <button onClick={() => removeFromWishlist(item._id || item.id)} className="absolute top-4 right-4 p-2 bg-white/80 backdrop-blur-md rounded-full text-red-500 shadow-sm hover:bg-red-500 hover:text-white transition-all duration-300">
+                              <Heart size={16} fill="currentColor" />
+                            </button>
+                          </div>
+                          <div className="p-5">
+                            <h3 className="font-bold text-gray-900 text-sm line-clamp-1 mb-2">{item.name}</h3>
+                            <div className="flex items-center justify-between">
+                              <span className="text-lg font-bold text-gray-900">&#8377;{item.price?.toLocaleString()}</span>
+                              <button onClick={() => addToCart(item, 1)} className="text-xs bg-black text-white px-3 py-1.5 rounded-lg font-bold hover:bg-gray-800">Add to Cart</button>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </motion.div>
+              )}
+
+              {activeTab === 'payment' && (
+                <motion.div
+                  key="payment"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  className="space-y-6"
+                >
+                  <h2 className="text-2xl font-serif font-black text-gray-900">Payment Methods</h2>
+                  <div className="bg-white rounded-2xl border border-gray-100 p-8 shadow-sm max-w-2xl">
+                    <div className="flex items-start gap-6">
+                      <div className="w-16 h-16 bg-teal-50 rounded-2xl flex items-center justify-center flex-shrink-0">
+                        <Shield className="text-teal-500" size={32} />
+                      </div>
+                      <div>
+                        <h3 className="text-lg font-bold text-gray-900 mb-2">Secure Checkout Enabled</h3>
+                        <p className="text-sm text-gray-500 leading-relaxed mb-6">
+                          ZyLora partners with Razorpay to provide military-grade secure payments. To protect your financial data, we do not store your credit card or UPI details on our servers. You will be prompted to enter payment details securely at checkout.
+                        </p>
+                        <div className="flex gap-4 flex-wrap">
+                          <div className="bg-gray-50 border border-gray-200 px-4 py-2 rounded-lg text-xs font-bold text-gray-600 flex items-center gap-2">
+                            <CreditCard size={14} /> Credit/Debit Cards
+                          </div>
+                          <div className="bg-gray-50 border border-gray-200 px-4 py-2 rounded-lg text-xs font-bold text-gray-600 flex items-center gap-2">
+                            UPI & Netbanking
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+
+              {activeTab === 'notifications' && (
+                <motion.div
+                  key="notifications"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  className="space-y-6"
+                >
+                  <div className="flex items-center justify-between">
+                    <h2 className="text-2xl font-serif font-black text-gray-900">Notifications</h2>
+                    <button className="text-xs font-bold text-blue-600 hover:text-blue-700">Mark all as read</button>
+                  </div>
+                  <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden shadow-sm">
+                    {[
+                      { title: "Welcome to ZyLora!", desc: "Thanks for joining our premium marketplace.", time: "Just now", icon: Package, color: "text-amber-500", bg: "bg-amber-50" },
+                      { title: "Security Alert", desc: "A new login was detected from your device.", time: "2 hours ago", icon: Shield, color: "text-blue-500", bg: "bg-blue-50" },
+                      { title: "Agri Auctions Live", desc: "New premium lots have been added to the auction.", time: "1 day ago", icon: Gavel, color: "text-teal-500", bg: "bg-teal-50" }
+                    ].map((notif, i) => (
+                      <div key={i} className="flex gap-4 p-6 border-b border-gray-50 hover:bg-gray-50 transition-colors cursor-pointer">
+                        <div className={`w-10 h-10 ${notif.bg} rounded-full flex items-center justify-center flex-shrink-0`}>
+                          <notif.icon className={notif.color} size={18} />
+                        </div>
+                        <div className="flex-1">
+                          <div className="flex justify-between items-start">
+                            <h4 className="font-bold text-gray-900 text-sm">{notif.title}</h4>
+                            <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">{notif.time}</span>
+                          </div>
+                          <p className="text-sm text-gray-500 mt-1">{notif.desc}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </motion.div>
+              )}
+
+              {activeTab === 'negotiations' && (
+                <motion.div
+                  key="negotiations"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  className="space-y-6"
+                >
+                  <h2 className="text-2xl font-serif font-black text-gray-900">My Negotiations</h2>
+                  <div className="bg-white rounded-2xl border border-gray-100 p-12 text-center shadow-sm">
+                    <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <MessageSquare size={32} className="text-gray-300" />
+                    </div>
+                    <h3 className="text-lg font-bold text-gray-900 mb-2">No Active Negotiations</h3>
+                    <p className="text-sm text-gray-500 mb-6 max-w-md mx-auto">You haven't started any price negotiations with sellers yet. Look for the "Negotiate" button on eligible products!</p>
+                    <Link to="/" className="bg-black text-white px-8 py-3 rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-gray-800 transition-all inline-block">
+                      Browse Products
+                    </Link>
+                  </div>
+                </motion.div>
+              )}
+
+              {activeTab === 'help' && (
+                <motion.div
+                  key="help"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  className="space-y-6"
+                >
+                  <h2 className="text-2xl font-serif font-black text-gray-900">Help & Support</h2>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="bg-white rounded-2xl border border-gray-100 p-8 shadow-sm">
+                      <div className="w-12 h-12 bg-blue-50 rounded-xl flex items-center justify-center mb-6">
+                        <MessageSquare className="text-blue-500" size={24} />
+                      </div>
+                      <h3 className="font-bold text-gray-900 mb-2">Chat with Support</h3>
+                      <p className="text-sm text-gray-500 mb-6">Our team is available 24/7 to help you with orders, returns, and any other questions.</p>
+                      <button className="w-full border-2 border-gray-200 text-gray-900 font-bold py-3 rounded-xl hover:border-black hover:text-black transition-colors text-sm">
+                        Start Conversation
+                      </button>
+                    </div>
+                    <div className="bg-white rounded-2xl border border-gray-100 p-8 shadow-sm">
+                      <div className="w-12 h-12 bg-amber-50 rounded-xl flex items-center justify-center mb-6">
+                        <AlertCircle className="text-amber-500" size={24} />
+                      </div>
+                      <h3 className="font-bold text-gray-900 mb-2">FAQs</h3>
+                      <ul className="space-y-3 text-sm text-gray-600 mb-6">
+                        <li className="hover:text-amber-600 cursor-pointer transition-colors flex justify-between items-center group">
+                          <span>How do I track my order?</span>
+                          <ChevronRight size={14} className="opacity-0 group-hover:opacity-100 transition-opacity text-amber-500" />
+                        </li>
+                        <li className="hover:text-amber-600 cursor-pointer transition-colors flex justify-between items-center group">
+                          <span>What is the return policy?</span>
+                          <ChevronRight size={14} className="opacity-0 group-hover:opacity-100 transition-opacity text-amber-500" />
+                        </li>
+                        <li className="hover:text-amber-600 cursor-pointer transition-colors flex justify-between items-center group">
+                          <span>How do auctions work?</span>
+                          <ChevronRight size={14} className="opacity-0 group-hover:opacity-100 transition-opacity text-amber-500" />
+                        </li>
+                      </ul>
+                      <button className="text-sm font-bold text-blue-600 hover:text-blue-700">View all FAQs &rarr;</button>
+                    </div>
+                  </div>
                 </motion.div>
               )}
             </AnimatePresence>

@@ -6,7 +6,10 @@ const jwt = require('jsonwebtoken');
 // @access  Public
 exports.signup = async (req, res) => {
   try {
-    const { name, email, password, role, phone, storeName, gstNumber, businessAddress } = req.body;
+    let { name, email, password, role, phone, storeName, gstNumber, businessAddress } = req.body;
+
+    // Clean inputs
+    email = email ? email.toLowerCase().trim() : email;
 
     // Create user
     const user = await User.create({
@@ -34,7 +37,11 @@ exports.signup = async (req, res) => {
 // @access  Public
 exports.login = async (req, res) => {
   try {
-    const { email, password, role } = req.body;
+    let { email, password, role } = req.body;
+
+    // Clean inputs
+    email = email ? email.toLowerCase().trim() : email;
+    password = password ? password.trim() : password;
 
     // Validate email & password
     if (!email || !password) {
