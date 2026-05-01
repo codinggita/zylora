@@ -4,7 +4,7 @@ import {
   LayoutDashboard, Package, ShoppingCart, MessageSquare,
   Gavel, Wallet, RotateCcw, Settings, Plus,
   ArrowUpRight, TrendingUp, CheckCircle2,
-  X, Edit, Trash2, Bell, AlertTriangle
+  X, Edit, Trash2, Bell, AlertTriangle, ChevronDown
 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
@@ -20,9 +20,10 @@ const SellerDashboard = ({ initialTab = 'Dashboard' }) => {
   const { t, i18n } = useTranslation();
   const [activeTab, setActiveTab] = useState(initialTab);
 
-  const toggleLanguage = () => {
-    const nextLang = i18n.language === 'en' ? 'hi' : 'en';
-    i18n.changeLanguage(nextLang);
+  const [showLangDropdown, setShowLangDropdown] = useState(false);
+  const changeLanguage = (lang) => {
+    i18n.changeLanguage(lang);
+    setShowLangDropdown(false);
   };
 
   useEffect(() => {
@@ -54,6 +55,27 @@ const SellerDashboard = ({ initialTab = 'Dashboard' }) => {
   const [incomingBuzz, setIncomingBuzz] = useState(null);
   const audioCtxRef = useRef(null);
   const socket = useRef(null);
+  const titleFlashIntervalRef = useRef(null);
+  const buzzerTimeoutRef = useRef(null);
+  const oscillatorsRef = useRef([]);
+  const originalTitleRef = useRef('Seller Dashboard | ZyLora');
+
+  const handleDismissBuzzer = useCallback(() => {
+    setIncomingBuzz(null);
+    if (titleFlashIntervalRef.current) {
+      clearInterval(titleFlashIntervalRef.current);
+      titleFlashIntervalRef.current = null;
+    }
+    if (buzzerTimeoutRef.current) {
+      clearTimeout(buzzerTimeoutRef.current);
+      buzzerTimeoutRef.current = null;
+    }
+    oscillatorsRef.current.forEach(osc => {
+      try { osc.stop(); } catch(e) {}
+    });
+    oscillatorsRef.current = [];
+    document.title = originalTitleRef.current;
+  }, []);
 
   // Pre-initialize AudioContext on first user interaction
   useEffect(() => {
@@ -141,10 +163,13 @@ const SellerDashboard = ({ initialTab = 'Dashboard' }) => {
             gain.connect(ctx.destination);
             osc.start(startTime);
             osc.stop(startTime + duration);
+            oscillatorsRef.current.push(osc);
           };
 
           const now = ctx.currentTime;
-          for (let burst = 0; burst < 3; burst++) {
+          // Clear any old oscillators just in case
+          oscillatorsRef.current = [];
+          for (let burst = 0; burst < 21; burst++) {
             const offset = burst * 0.7;
             for (let i = 0; i < 4; i++) {
               playTone(880, now + offset + i * 0.12, 0.1);
@@ -156,18 +181,20 @@ const SellerDashboard = ({ initialTab = 'Dashboard' }) => {
       playBuzzerSound();
 
       // Flash tab title
-      const originalTitle = document.title;
+      if (titleFlashIntervalRef.current) clearInterval(titleFlashIntervalRef.current);
+      if (buzzerTimeoutRef.current) clearTimeout(buzzerTimeoutRef.current);
+
       let flashCount = 0;
-      const titleFlash = setInterval(() => {
-        document.title = flashCount % 2 === 0 ? '🚨 URGENT BUZZ!' : originalTitle;
+      titleFlashIntervalRef.current = setInterval(() => {
+        document.title = flashCount % 2 === 0 ? '🚨 URGENT BUZZ!' : originalTitleRef.current;
         flashCount++;
-        if (flashCount > 12) {
-          clearInterval(titleFlash);
-          document.title = originalTitle;
+        if (flashCount > 25) {
+          clearInterval(titleFlashIntervalRef.current);
+          document.title = originalTitleRef.current;
         }
       }, 600);
 
-      setTimeout(() => setIncomingBuzz(null), 8000);
+      buzzerTimeoutRef.current = setTimeout(() => handleDismissBuzzer(), 15000);
     });
 
     return () => {
@@ -414,7 +441,7 @@ const SellerDashboard = ({ initialTab = 'Dashboard' }) => {
             exit={{ opacity: 0 }}
             className="fixed inset-0 z-[9999] flex items-center justify-center"
             style={{ backgroundColor: 'rgba(220, 38, 38, 0.15)', backdropFilter: 'blur(8px)' }}
-            onClick={() => setIncomingBuzz(null)}
+            onClick={handleDismissBuzzer}
           >
             <motion.div
               initial={{ scale: 0.5, opacity: 0 }}
@@ -467,7 +494,7 @@ const SellerDashboard = ({ initialTab = 'Dashboard' }) => {
 
                 <button
                   onClick={() => {
-                    setIncomingBuzz(null);
+                    handleDismissBuzzer();
                     // Optionally scroll to or highlight the specific negotiation
                     setActiveTab('Dashboard'); 
                   }}
@@ -541,15 +568,45 @@ const SellerDashboard = ({ initialTab = 'Dashboard' }) => {
               </p>
             </div>
             <div className="flex items-center gap-4">
-              <button
-                onClick={toggleLanguage}
-                className="flex items-center gap-2 px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs font-bold text-gray-600 hover:bg-gray-100 transition-colors"
-              >
-                <span className="w-5 h-5 flex items-center justify-center bg-white rounded shadow-sm">
-                  {i18n.language === 'en' ? 'EN' : 'HI'}
-                </span>
-                {i18n.language === 'en' ? 'हिन्दी' : 'English'}
-              </button>
+              <div className="relative">
+                <button
+                  onClick={() => setShowLangDropdown(!showLangDropdown)}
+                  className="flex items-center gap-2 px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs font-bold text-gray-600 hover:bg-gray-100 transition-colors"
+                >
+                  <span className="w-5 h-5 flex items-center justify-center bg-white rounded shadow-sm text-[10px]">
+                    {i18n.language === 'en' ? 'EN' : 'HI'}
+                  </span>
+                  {i18n.language === 'en' ? 'English' : 'हिन्दी'}
+                  <ChevronDown size={14} className={`transition-transform ${showLangDropdown ? 'rotate-180' : ''}`} />
+                </button>
+
+                <AnimatePresence>
+                  {showLangDropdown && (
+                    <>
+                      <div className="fixed inset-0 z-40" onClick={() => setShowLangDropdown(false)}></div>
+                      <motion.div
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: 10 }}
+                        className="absolute right-0 mt-2 w-32 bg-white rounded-xl shadow-xl border border-gray-100 py-2 z-50"
+                      >
+                        <button
+                          onClick={() => changeLanguage('en')}
+                          className={`w-full text-left px-4 py-2 text-xs font-bold hover:bg-gray-50 transition-colors ${i18n.language === 'en' ? 'text-black' : 'text-gray-500'}`}
+                        >
+                          English
+                        </button>
+                        <button
+                          onClick={() => changeLanguage('hi')}
+                          className={`w-full text-left px-4 py-2 text-xs font-bold hover:bg-gray-50 transition-colors ${i18n.language === 'hi' ? 'text-black' : 'text-gray-500'}`}
+                        >
+                          हिन्दी
+                        </button>
+                      </motion.div>
+                    </>
+                  )}
+                </AnimatePresence>
+              </div>
               {activeTab === 'Dashboard' && (
                 <button
                   onClick={() => setShowAddModal(true)}

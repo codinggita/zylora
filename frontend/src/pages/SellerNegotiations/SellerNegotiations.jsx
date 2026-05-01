@@ -6,9 +6,11 @@ import {
 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import { useTranslation } from 'react-i18next';
 import Header from '../../components/Header';
 
 const SellerNegotiations = () => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [acceptedNegotiations, setAcceptedNegotiations] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -50,13 +52,13 @@ const SellerNegotiations = () => {
         <aside className="w-64 bg-white border-r border-gray-200 hidden lg:flex flex-col py-6 px-4">
           <nav className="space-y-1 flex-1">
             {[
-              { name: 'Dashboard', icon: LayoutDashboard, path: '/seller-dashboard' },
-              { name: 'My Products', icon: Package, path: '/seller-dashboard' },
-              { name: 'Orders', icon: ShoppingCart, path: '/seller-orders' },
-              { name: 'Negotiations', icon: MessageSquare, path: '/seller-negotiations' },
-              { name: 'Auction Manager', icon: Gavel, path: '/seller-auctions' },
-              { name: 'Earnings', icon: Wallet, path: '/seller-earnings' },
-              { name: 'Returns', icon: RotateCcw, path: '/seller-orders?filter=Returns' }
+              { name: t('dashboard'), icon: LayoutDashboard, path: '/seller-dashboard' },
+              { name: t('my_products'), icon: Package, path: '/seller-dashboard' },
+              { name: t('orders'), icon: ShoppingCart, path: '/seller-orders' },
+              { name: t('negotiations'), icon: MessageSquare, path: '/seller-negotiations' },
+              { name: t('auction_manager'), icon: Gavel, path: '/seller-auctions' },
+              { name: t('earnings'), icon: Wallet, path: '/seller-earnings' },
+              { name: t('returns'), icon: RotateCcw, path: '/seller-orders?filter=Returns' }
             ].map((item) => {
               const isActive = item.path === window.location.pathname + window.location.search;
               
