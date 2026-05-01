@@ -12,8 +12,10 @@ import { io } from 'socket.io-client';
 import { useTranslation } from 'react-i18next';
 import Header from '../../components/Header';
 import EarningsAnalytics from '../../components/EarningsAnalytics';
+import useDocumentTitle from '../../hooks/useDocumentTitle';
 
 const SellerDashboard = ({ initialTab = 'Dashboard' }) => {
+  useDocumentTitle('Seller Dashboard');
   const navigate = useNavigate();
   const { t, i18n } = useTranslation();
   const [activeTab, setActiveTab] = useState(initialTab);
@@ -1213,4 +1215,3 @@ const SellerDashboard = ({ initialTab = 'Dashboard' }) => {
 };
 
 export default SellerDashboard;
-
