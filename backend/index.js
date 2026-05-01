@@ -320,9 +320,24 @@ startNegotiationTimeoutHandler(io);
 app.use(express.json());
 
 // Enable CORS
-// Enable CORS
 app.use(cors({
-  origin: ["http://localhost:5173", "http://localhost:5174", "http://localhost:3000", "http://127.0.0.1:5173", "http://127.0.0.1:3000", "https://zylora-ecommerce.vercel.app", "https://zylora-e-commerce.onrender.com"],
+  origin: (origin, callback) => {
+    const allowedOrigins = [
+      'http://localhost:5173',
+      'http://localhost:5174',
+      'http://localhost:3000',
+      'http://127.0.0.1:5173',
+      'http://127.0.0.1:3000',
+      'https://zylora-ecommerce.vercel.app',
+      'https://zylora-e-commerce.onrender.com',
+    ];
+    // Allow requests with no origin (mobile apps, curl, etc.)
+    if (!origin) return callback(null, true);
+    // Allow any Vercel preview deployment
+    if (origin.endsWith('.vercel.app')) return callback(null, true);
+    if (allowedOrigins.includes(origin)) return callback(null, true);
+    return callback(new Error(`CORS not allowed for origin: ${origin}`));
+  },
   credentials: true
 }));
 

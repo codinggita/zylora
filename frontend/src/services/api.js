@@ -2,10 +2,17 @@ import axios from 'axios';
 import store from '../store';
 import { logout } from '../features/auth/authSlice';
 
-const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://127.0.0.1:5001';
+const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+let backendUrlStr = import.meta.env.VITE_API_URL || import.meta.env.VITE_BACKEND_URL;
+
+if (!backendUrlStr) {
+  backendUrlStr = isLocalhost ? 'http://127.0.0.1:5001/api' : 'https://zylora-e-commerce.onrender.com/api';
+} else if (!backendUrlStr.endsWith('/api')) {
+  backendUrlStr = `${backendUrlStr}/api`;
+}
 
 const api = axios.create({
-  baseURL: `${BACKEND_URL}/api`,
+  baseURL: backendUrlStr,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -14,7 +21,7 @@ const api = axios.create({
 // Request Interceptor: Attach token automatically
 api.interceptors.request.use(
   (config) => {
-    const token = sessionStorage.getItem('token');
+    const token = localStorage.getItem('token') || sessionStorage.getItem('token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }

@@ -1,9 +1,9 @@
 import { createSlice } from '@reduxjs/toolkit';
 
 const initialState = {
-  user: JSON.parse(sessionStorage.getItem('user')) || null,
-  token: sessionStorage.getItem('token') || null,
-  isAuthenticated: !!sessionStorage.getItem('token'),
+  user: JSON.parse(localStorage.getItem('user')) || null,
+  token: localStorage.getItem('token') || null,
+  isAuthenticated: !!localStorage.getItem('token'),
 };
 
 const authSlice = createSlice({
@@ -15,6 +15,9 @@ const authSlice = createSlice({
       state.user = user;
       state.token = token;
       state.isAuthenticated = true;
+      localStorage.setItem('user', JSON.stringify(user));
+      localStorage.setItem('token', token);
+      // Keep sessionStorage in sync for pages that still read it directly
       sessionStorage.setItem('user', JSON.stringify(user));
       sessionStorage.setItem('token', token);
     },
@@ -22,9 +25,10 @@ const authSlice = createSlice({
       state.user = null;
       state.token = null;
       state.isAuthenticated = false;
+      localStorage.removeItem('user');
+      localStorage.removeItem('token');
       sessionStorage.removeItem('user');
       sessionStorage.removeItem('token');
-      localStorage.removeItem('user'); // Clear persistent too if exists
     },
   },
 });

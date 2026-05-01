@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
+import { BACKEND_URL } from '../utils/backendUrl';
 
 const CartContext = createContext();
 
@@ -9,9 +10,6 @@ export const CartProvider = ({ children }) => {
   const [cartItems, setCartItems] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  const BACKEND_URL = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') 
-    ? 'http://127.0.0.1:5001' 
-    : 'https://zylora-e-commerce.onrender.com';
 
   const fetchCart = useCallback(async () => {
     try {
@@ -58,7 +56,7 @@ export const CartProvider = ({ children }) => {
     } finally {
       setLoading(false);
     }
-  }, [BACKEND_URL]);
+  }, []);
 
   useEffect(() => {
     fetchCart();

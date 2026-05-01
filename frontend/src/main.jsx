@@ -8,6 +8,17 @@ import './index.css'
 import App from './App.jsx'
 import './i18n';
 
+// Sync localStorage auth data → sessionStorage so all pages that
+// read sessionStorage directly still work after a page refresh or new tab.
+const lsToken = localStorage.getItem('token');
+const lsUser  = localStorage.getItem('user');
+if (lsToken && !sessionStorage.getItem('token')) {
+  sessionStorage.setItem('token', lsToken);
+}
+if (lsUser && !sessionStorage.getItem('user')) {
+  sessionStorage.setItem('user', lsUser);
+}
+
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <Provider store={store}>

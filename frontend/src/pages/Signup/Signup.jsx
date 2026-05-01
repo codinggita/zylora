@@ -1,12 +1,15 @@
 import React, { useState } from 'react';
 import { CheckCircle2, Mail, Lock, User, ArrowRight } from 'lucide-react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import axios from 'axios';
+import api from '../../services/api';
+import { useDispatch } from 'react-redux';
+import { setCredentials } from '../../features/auth/authSlice';
 import { motion } from 'framer-motion';
 import { useCart } from '../../context/CartContext';
 import { useWishlist } from '../../context/WishlistContext';
 
 const Signup = () => {
+  const dispatch = useDispatch();
   const { fetchCart } = useCart();
   const { fetchWishlist } = useWishlist();
   const [userType, setUserType] = useState('buyer');
@@ -40,15 +43,13 @@ const Signup = () => {
     setLoading(true);
 
     try {
-      const apiUrl = import.meta.env.VITE_API_URL || 
-        ((window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') || window.location.hostname === '127.0.0.1' 
-          ? 'http://127.0.0.1:5001/api' 
-          : 'https://zylora-e-commerce.onrender.com/api');
-      const res = await axios.post(`${apiUrl}/auth/signup`, formData);
+      const res = await api.post('/auth/signup', formData);
       
       if (res.data.success) {
-        sessionStorage.setItem('token', res.data.token);
-        sessionStorage.setItem('user', JSON.stringify(res.data.user));
+        dispatch(setCredentials({
+          user: res.data.user,
+          token: res.data.token
+        }));
         
         // Redirect to intended destination or default based on role
         const from = location.state?.from?.pathname || (res.data.user.role === 'seller' ? '/seller-dashboard' : '/');
