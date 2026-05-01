@@ -3,12 +3,15 @@ import {
   Search, Menu, X, ShoppingCart, Heart, User, LogOut, LayoutDashboard, Home, Gavel, MessageSquare, Wallet, Globe
 } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
+import { useDispatch } from 'react-redux';
 import { useCart } from '../context/CartContext';
 import { useWishlist } from '../context/WishlistContext';
 import { useTranslation } from 'react-i18next';
+import { setLanguage } from '../features/ui/uiSlice';
 
 const Header = ({ placeholder, isDashboard = false }) => {
   const { t, i18n } = useTranslation();
+  const dispatch = useDispatch();
   const navigate = useNavigate();
   const { cartCount, fetchCart } = useCart();
   const { wishlistCount, fetchWishlist } = useWishlist();
@@ -33,6 +36,7 @@ const Header = ({ placeholder, isDashboard = false }) => {
   const toggleLanguage = () => {
     const newLang = i18n.language === 'en' ? 'hi' : 'en';
     i18n.changeLanguage(newLang);
+    dispatch(setLanguage(newLang));
   };
 
   // Read role from sessionStorage
@@ -85,6 +89,9 @@ const Header = ({ placeholder, isDashboard = false }) => {
             </div>
 
             <div className="flex items-center gap-4">
+              <button onClick={toggleLanguage} className="p-2 hover:bg-white/5 rounded-lg transition-all group" title={i18n.language === 'en' ? 'हिन्दी में बदलें' : 'Switch to English'}>
+                <Globe size={20} className="text-amber-500 group-hover:scale-110 transition-transform" />
+              </button>
               <button onClick={handleLogout} className="p-2 hover:bg-white/5 rounded-lg transition-all group" title="Logout">
                 <LogOut size={20} className="text-amber-500 group-hover:scale-110 transition-transform" />
               </button>
@@ -257,6 +264,15 @@ const Header = ({ placeholder, isDashboard = false }) => {
                   )}
                 </button>
               )}
+
+              {/* Language Toggle - Desktop */}
+              <button 
+                onClick={toggleLanguage}
+                className="hidden md:block p-2 hover:bg-white/5 rounded-full transition-all group"
+                title={i18n.language === 'en' ? 'हिन्दी में बदलें' : 'Switch to English'}
+              >
+                <Globe size={22} className="text-amber-500 group-hover:scale-110 transition-transform" />
+              </button>
 
               {/* Mobile Menu Toggle */}
               <button 
