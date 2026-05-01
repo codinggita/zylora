@@ -265,16 +265,7 @@ const Header = ({ placeholder, isDashboard = false }) => {
                 </button>
               )}
 
-              {/* Language Toggle - Desktop */}
-              <button 
-                onClick={toggleLanguage}
-                className="hidden md:block p-2 hover:bg-white/5 rounded-full transition-all group"
-                title={i18n.language === 'en' ? 'हिन्दी में बदलें' : 'Switch to English'}
-              >
-                <Globe size={22} className="text-amber-500 group-hover:scale-110 transition-transform" />
-              </button>
-
-              {/* Mobile Menu Toggle */}
+              {/* Mobile Menu Toggle */}}
               <button 
                 onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
                 className="lg:hidden p-2 hover:bg-white/5 rounded-full transition-all"
@@ -319,13 +310,6 @@ const Header = ({ placeholder, isDashboard = false }) => {
           </nav>
           
           <div className="pt-6 border-t border-gray-800 flex flex-col gap-4">
-            <button 
-              onClick={toggleLanguage}
-              className="flex items-center gap-3 p-3 hover:bg-white/5 rounded-xl transition-all text-amber-500 font-bold"
-            >
-              <Globe size={20} />
-              <span>{i18n.language === 'en' ? 'हिन्दी में बदलें' : 'Switch to English'}</span>
-            </button>
             {user && (
               <button 
                 onClick={handleLogout}
