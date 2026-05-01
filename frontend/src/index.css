@@ -6,7 +6,9 @@
   }
   
   .glass-card {
-    @apply bg-white/10 backdrop-blur-2xl border border-white/10;
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(40px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
   }
   
   .text-glow-amber {
