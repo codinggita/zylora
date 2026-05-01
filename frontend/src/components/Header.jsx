@@ -265,7 +265,7 @@ const Header = ({ placeholder, isDashboard = false }) => {
                 </button>
               )}
 
-              {/* Mobile Menu Toggle */}}
+              {/* Mobile Menu Toggle */}
               <button 
                 onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
                 className="lg:hidden p-2 hover:bg-white/5 rounded-full transition-all"
