@@ -9,7 +9,7 @@
 
 | Resource | Status | Link |
 |---|---|---|
-| 🌐 **Frontend Live** | Deployed (Vercel) | [zylora-tau.vercel.app](https://zylora-tau.vercel.app/) |
+| 🌐 **Frontend Live** | Deployed (Vercel) | [zylora-ecommerce.vercel.app](https://zylora-ecommerce.vercel.app/) |
 | ⚙️ **Backend API** | Deployed (Render) | [zylora-e-commerce.onrender.com](https://zylora-e-commerce.onrender.com/) |
 | 🎨 **Figma Design** | Original Assets | [View on Figma](https://www.figma.com/design/vt3eDlpqhdudT35CdsZjPg/Portfolio?node-id=0-1&t=DzB5ULzEV5Gu0Iph-1) |
 | 🖼️ **Figma Prototype** | Interaction Map | [Open Prototype](https://www.figma.com/design/vt3eDlpqhdudT35CdsZjPg/Portfolio?node-id=0-1&t=DzB5ULzEV5Gu0Iph-1) |
