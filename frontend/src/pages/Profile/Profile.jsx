@@ -20,6 +20,7 @@ const Profile = () => {
   const [activeTab, setActiveTab] = useState('orders');
   const [orderFilter, setOrderFilter] = useState('All');
   const [orders, setOrders] = useState([]);
+  const [negotiations, setNegotiations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState(null);
   const [updating, setUpdating] = useState(false);
@@ -69,6 +70,13 @@ const Profile = () => {
         // Fetch orders
         const response = await axios.get(`${BACKEND_URL}/api/orders/myorders`, config);
         setOrders(response.data.data);
+
+        // Fetch negotiations
+        const negotiationsRes = await axios.get(`${BACKEND_URL}/api/negotiation/buyer/my-negotiations`, config);
+        if (negotiationsRes.data.success) {
+          setNegotiations(negotiationsRes.data.data);
+        }
+
         setLoading(false);
       } catch (error) {
         console.error('Error fetching profile data:', error);
@@ -800,17 +808,99 @@ const Profile = () => {
                   exit={{ opacity: 0, y: -10 }}
                   className="space-y-6"
                 >
-                  <h2 className="text-2xl font-serif font-black text-gray-900">My Negotiations</h2>
-                  <div className="bg-white rounded-2xl border border-gray-100 p-12 text-center shadow-sm">
-                    <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4">
-                      <MessageSquare size={32} className="text-gray-300" />
-                    </div>
-                    <h3 className="text-lg font-bold text-gray-900 mb-2">No Active Negotiations</h3>
-                    <p className="text-sm text-gray-500 mb-6 max-w-md mx-auto">You haven't started any price negotiations with sellers yet. Look for the "Negotiate" button on eligible products!</p>
-                    <Link to="/" className="bg-black text-white px-8 py-3 rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-gray-800 transition-all inline-block">
-                      Browse Products
-                    </Link>
+                  <div className="flex items-center justify-between">
+                    <h2 className="text-2xl font-serif font-black text-gray-900">My Negotiations</h2>
+                    <span className="bg-blue-50 text-blue-700 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border border-blue-100">
+                      {negotiations.length} Active
+                    </span>
                   </div>
+
+                  {loading ? (
+                    <div className="flex flex-col items-center justify-center py-20 text-gray-400">
+                      <div className="w-8 h-8 border-4 border-gray-200 border-t-black rounded-full animate-spin mb-4"></div>
+                      <p className="text-xs font-bold uppercase tracking-widest">Fetching negotiations...</p>
+                    </div>
+                  ) : negotiations.length === 0 ? (
+                    <div className="bg-white rounded-2xl border border-gray-100 p-12 text-center shadow-sm">
+                      <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <MessageSquare size={32} className="text-gray-300" />
+                      </div>
+                      <h3 className="text-lg font-bold text-gray-900 mb-2">No Active Negotiations</h3>
+                      <p className="text-sm text-gray-500 mb-6 max-w-md mx-auto">You haven't started any price negotiations with sellers yet. Look for the "Negotiate" button on eligible products!</p>
+                      <Link to="/" className="bg-black text-white px-8 py-3 rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-gray-800 transition-all inline-block">
+                        Browse Products
+                      </Link>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {negotiations.map((neg) => (
+                        <div key={neg._id} className="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm hover:shadow-md transition-all group">
+                          <div className="flex flex-col md:flex-row gap-6">
+                            <div className="w-24 h-24 bg-gray-50 rounded-xl flex-shrink-0 overflow-hidden border border-gray-100 p-2 flex items-center justify-center">
+                              <img src={neg.product.image} alt={neg.product.name} className="max-w-full max-h-full object-contain" />
+                            </div>
+                            
+                            <div className="flex-1 flex flex-col">
+                              <div className="flex justify-between items-start mb-2">
+                                <div>
+                                  <h4 className="font-bold text-gray-900 text-sm md:text-base mb-1 line-clamp-1">{neg.product.name}</h4>
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Seller:</span>
+                                    <span className="text-[11px] font-bold text-blue-600">{neg.seller.storeName}</span>
+                                  </div>
+                                </div>
+                                <div className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border ${
+                                  neg.status === 'ACCEPTED' ? 'bg-green-50 text-green-700 border-green-100' :
+                                  neg.status === 'DECLINED' ? 'bg-red-50 text-red-700 border-red-100' :
+                                  'bg-amber-50 text-amber-700 border-amber-100'
+                                }`}>
+                                  {neg.status}
+                                </div>
+                              </div>
+
+                              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-auto pt-4 border-t border-gray-50">
+                                <div>
+                                  <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1">List Price</p>
+                                  <p className="text-xs font-bold text-gray-500 line-through">&#8377;{neg.product.price.toLocaleString()}</p>
+                                </div>
+                                <div>
+                                  <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1">Your Offer</p>
+                                  <p className="text-xs font-bold text-gray-900">&#8377;{neg.lastOfferPrice?.toLocaleString()}</p>
+                                </div>
+                                {neg.status === 'ACCEPTED' && (
+                                  <div>
+                                    <p className="text-[9px] font-black text-green-600 uppercase tracking-widest mb-1">Final Deal</p>
+                                    <p className="text-xs font-black text-green-700">&#8377;{neg.agreedPrice?.toLocaleString()}</p>
+                                  </div>
+                                )}
+                                <div>
+                                  <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1">Last Update</p>
+                                  <p className="text-xs font-bold text-gray-900">{new Date(neg.updatedAt).toLocaleDateString()}</p>
+                                </div>
+                              </div>
+
+                              <div className="flex gap-3 mt-6">
+                                <button 
+                                  onClick={() => navigate(`/negotiate/${neg.product.id}?buyerId=${user._id}`)}
+                                  className="flex-1 bg-black text-white py-2.5 rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-gray-800 transition-all flex items-center justify-center gap-2"
+                                >
+                                  <MessageSquare size={14} /> Open Chat
+                                </button>
+                                {neg.status === 'ACCEPTED' && (
+                                  <button 
+                                    onClick={() => navigate(`/cart`)}
+                                    className="flex-1 bg-green-600 text-white py-2.5 rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-green-700 transition-all flex items-center justify-center gap-2"
+                                  >
+                                    <ShoppingCart size={14} /> Buy Now
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </motion.div>
               )}
 

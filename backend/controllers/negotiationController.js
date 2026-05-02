@@ -55,6 +55,54 @@ exports.getChatHistory = async (req, res) => {
   }
 };
 
+// @desc    Get buyer negotiations
+// @route   GET /api/negotiation/buyer/my-negotiations
+// @access  Private/Buyer
+exports.getBuyerNegotiations = async (req, res) => {
+  try {
+    const negotiations = await Negotiation.find({
+      buyer: req.user._id
+    })
+      .populate('seller', 'name storeName email phone')
+      .populate('productId', 'name description images price')
+      .sort('-updatedAt');
+
+    const data = negotiations
+      .filter((item) => item.productId && item.seller)
+      .map((item) => ({
+        _id: item._id,
+        status: item.status,
+        agreedPrice: item.agreedPrice,
+        lastOfferPrice: item.lastOfferPrice,
+        lastMessage: item.lastMessage,
+        lastMessageAt: item.lastMessageAt,
+        quantity: item.quantity,
+        updatedAt: item.updatedAt,
+        seller: {
+          id: item.seller._id,
+          name: item.seller.name,
+          storeName: item.seller.storeName || item.seller.name,
+          email: item.seller.email || '',
+          phone: item.seller.phone || ''
+        },
+        product: {
+          id: item.productId._id,
+          name: item.productId.name,
+          image: item.productId.images?.[0] || 'https://via.placeholder.com/150',
+          price: item.productId.price
+        }
+      }));
+
+    res.status(200).json({
+      success: true,
+      count: data.length,
+      data
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+};
+
 // @desc    Get seller negotiation summary across seller products
 // @route   GET /api/negotiation/seller/summary
 // @access  Private/Seller
