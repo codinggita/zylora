@@ -58,6 +58,8 @@ const Negotiation = () => {
   const peerConnection = useRef(null);
   const localStream = useRef(null);
   const remoteAudioRef = useRef(null);
+  const iceCandidatesQueue = useRef([]);
+  const isRemoteDescriptionSet = useRef(false);
 
   // Pre-initialize AudioContext on first user interaction (required by browsers)
   useEffect(() => {
@@ -210,29 +212,43 @@ const Negotiation = () => {
   }, [id, navigate]);
 
   const setupPeerConnection = useCallback((room) => {
+    iceCandidatesQueue.current = [];
+    isRemoteDescriptionSet.current = false;
+
     peerConnection.current = new RTCPeerConnection({
       iceServers: [
         { urls: 'stun:stun.l.google.com:19302' },
         { urls: 'stun:stun1.l.google.com:19302' },
-        { urls: 'stun:stun2.l.google.com:19302' }
+        { urls: 'stun:stun2.l.google.com:19302' },
+        { urls: 'stun:stun3.l.google.com:19302' },
+        { urls: 'stun:stun4.l.google.com:19302' }
       ],
       iceCandidatePoolSize: 10,
     });
 
     peerConnection.current.onicecandidate = (event) => {
-      if (event.candidate) {
+      if (event.candidate && socket.current) {
         socket.current.emit('ice_candidate', { room, candidate: event.candidate });
       }
     };
 
     peerConnection.current.ontrack = (event) => {
       console.log('Remote track received:', event.streams[0]);
-      setRemoteStream(event.streams[0]);
-      
-      // Auto-play fix for mobile/chrome
-      if (remoteAudioRef.current) {
-        remoteAudioRef.current.srcObject = event.streams[0];
-        remoteAudioRef.current.play().catch(e => console.error('Auto-play blocked:', e));
+      if (event.streams && event.streams[0]) {
+        setRemoteStream(event.streams[0]);
+        if (remoteAudioRef.current) {
+          remoteAudioRef.current.srcObject = event.streams[0];
+          remoteAudioRef.current.play().catch(e => console.error('Audio playback failed:', e));
+        }
+      }
+    };
+
+    peerConnection.current.oniceconnectionstatechange = () => {
+      console.log('ICE Connection State:', peerConnection.current.iceConnectionState);
+      if (peerConnection.current.iceConnectionState === 'disconnected' || 
+          peerConnection.current.iceConnectionState === 'failed' || 
+          peerConnection.current.iceConnectionState === 'closed') {
+        handleEndCall(false);
       }
     };
 
@@ -336,6 +352,14 @@ const Negotiation = () => {
       setIncomingCall(null);
 
       await peerConnection.current.setRemoteDescription(new RTCSessionDescription(incomingCall.signalData));
+      isRemoteDescriptionSet.current = true;
+
+      // Process queued ICE candidates
+      while (iceCandidatesQueue.current.length > 0) {
+        const candidate = iceCandidatesQueue.current.shift();
+        await peerConnection.current.addIceCandidate(new RTCIceCandidate(candidate));
+      }
+
       const answer = await peerConnection.current.createAnswer();
       const modifiedAnswer = {
         ...answer,
@@ -363,6 +387,9 @@ const Negotiation = () => {
       peerConnection.current.close();
       peerConnection.current = null;
     }
+    
+    isRemoteDescriptionSet.current = false;
+    iceCandidatesQueue.current = [];
     
     if (emit && socket.current) {
       const searchParams = new URLSearchParams(window.location.search);
@@ -455,16 +482,31 @@ const Negotiation = () => {
 
     socket.current.on('call_accepted', async (signalData) => {
       if (peerConnection.current) {
-        await peerConnection.current.setRemoteDescription(new RTCSessionDescription(signalData));
-        setCallActive(true);
-        setIsCalling(false);
+        try {
+          await peerConnection.current.setRemoteDescription(new RTCSessionDescription(signalData));
+          isRemoteDescriptionSet.current = true;
+          setCallActive(true);
+          setIsCalling(false);
+
+          // Process queued ICE candidates
+          while (iceCandidatesQueue.current.length > 0) {
+            const candidate = iceCandidatesQueue.current.shift();
+            await peerConnection.current.addIceCandidate(new RTCIceCandidate(candidate));
+          }
+        } catch (e) {
+          console.error('Error setting remote description or adding queued candidates', e);
+        }
       }
     });
 
     socket.current.on('ice_candidate', async (candidate) => {
       if (peerConnection.current) {
         try {
-          await peerConnection.current.addIceCandidate(new RTCIceCandidate(candidate));
+          if (isRemoteDescriptionSet.current) {
+            await peerConnection.current.addIceCandidate(new RTCIceCandidate(candidate));
+          } else {
+            iceCandidatesQueue.current.push(candidate);
+          }
         } catch (e) {
           console.error('Error adding ice candidate', e);
         }

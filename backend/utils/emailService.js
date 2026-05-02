@@ -2,30 +2,26 @@ const nodemailer = require('nodemailer');
 
 // Create a transporter using Gmail (you can use any email service)
 const transporter = nodemailer.createTransport({
-  host: 'smtp.gmail.com',
-  port: 465,
-  secure: true, // Use SSL/TLS
-  pool: true, // Use connection pool for efficiency
+  service: 'gmail', // Use service: 'gmail' for simpler config
   auth: {
-    user: process.env.EMAIL_USER || 'your-email@gmail.com',
-    pass: process.env.EMAIL_PASSWORD || 'your-app-password'
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASSWORD
   },
   tls: {
-    // do not fail on invalid certs
     rejectUnauthorized: false
-  },
-  connectionTimeout: 10000, // 10 seconds timeout
-  greetingTimeout: 10000,
-  socketTimeout: 20000 // 20 seconds timeout for the socket
+  }
 });
 
 // Verify connection configuration
 transporter.verify(function (error, success) {
   if (error) {
-    console.error('SMTP Connection Error:', error);
-    if (!process.env.EMAIL_USER || !process.env.EMAIL_PASSWORD) {
-      console.error('CRITICAL: EMAIL_USER or EMAIL_PASSWORD environment variables are missing!');
-    }
+    console.error('SMTP Connection Error Details:', {
+      error: error.message,
+      code: error.code,
+      command: error.command,
+      user: process.env.EMAIL_USER ? 'Present' : 'Missing',
+      pass: process.env.EMAIL_PASSWORD ? 'Present' : 'Missing'
+    });
   } else {
     console.log('SMTP Server is ready to take our messages');
   }
