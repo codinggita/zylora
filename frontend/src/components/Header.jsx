@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  Search, Menu, X, ShoppingCart, Heart, User, LogOut, LayoutDashboard, Home, Gavel, MessageSquare, Wallet, Globe
+  Search, Menu, X, ShoppingCart, Heart, User, LogOut, LayoutDashboard, Home, Gavel, MessageSquare, Wallet, Globe, Package, RotateCcw
 } from 'lucide-react';
 import { useNavigate, Link, useSearchParams } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useDispatch } from 'react-redux';
 import { useCart } from '../context/CartContext';
 import { useWishlist } from '../context/WishlistContext';
