@@ -13,106 +13,108 @@
 | ⚙️ **Backend API** | Deployed (Render) | [zylora-e-commerce.onrender.com](https://zylora-e-commerce.onrender.com/) |
 | 🎨 **Figma Design** | Original Assets | [View on Figma](https://www.figma.com/design/vt3eDlpqhdudT35CdsZjPg/Portfolio?node-id=0-1&t=DzB5ULzEV5Gu0Iph-1) |
 | 🖼️ **Figma Prototype** | Interaction Map | [Open Prototype](https://www.figma.com/design/vt3eDlpqhdudT35CdsZjPg/Portfolio?node-id=0-1&t=DzB5ULzEV5Gu0Iph-1) |
+| 📮 **Postman Docs** | API Reference | [View Documentation](https://documenter.getpostman.com/view/your-link-here) |
+| 🎥 **YouTube Demo** | Video Walkthrough | [Watch Presentation](https://youtube.com/your-link-here) |
 
 ---
 
-## ✨ Core Pillars of ZyLora
+## 📖 Project Overview
+
+### **Problem Statement**
+Traditional e-commerce platforms often feel impersonal and rigid. Prices are static, leaving no room for the natural bargaining process that is central to many cultures, especially in agricultural and high-value trade. Furthermore, farmers and small-scale sellers often lack real-time tools to reach the right buyers at the right price.
+
+### **Solution**
+ZyLora bridges the gap between digital convenience and human interaction. By integrating **Real-Time Negotiations** and **Live Auctions**, we provide a dynamic marketplace where value is determined through interaction. Combined with **AI-driven insights** and **Secure Voice Calling**, ZyLora empowers both buyers and sellers to trade with absolute confidence and transparency.
+
+---
+
+## ✨ Core Features
 
 ### 💬 1. Real-Time Price Negotiation (Socket.io)
-Unlike traditional "static price" platforms, ZyLora allows buyers to initiate live negotiations with sellers. 
 - **Private One-on-One Chat**: Isolated communication channels between specific buyers and sellers.
 - **Offer Management**: Send, accept, or counter offers instantly with automated status tracking.
 - **Smart Cart Integration**: Once a deal is agreed upon, the price is automatically updated in the buyer's cart.
 
-### � 2. Integrated Voice Calls (WebRTC)
-Experience seamless, secure communication during negotiations.
-- **Privacy First Handshake**: Callers must request permission, and recipients must grant it before a connection is established.
-- **End-to-End Encrypted**: High-quality peer-to-peer audio sessions powered by WebRTC.
-- **Dynamic UI**: Pulsing call overlays and real-time status notifications.
+### 📞 2. Integrated Voice Calls (WebRTC)
+- **Privacy First Handshake**: Consent-based calling ensures zero unsolicited calls.
+- **Crystal Clear Audio**: Optimized Opus codec for high-fidelity communication across mobile and desktop.
+- **Real-Time Signaling**: Custom signaling server built on Socket.io for instant connection.
 
 ### 🚜 3. Agri-Auction System
-A dedicated marketplace for farm-fresh produce and heavy machinery.
-- **Live Bidding**: High-performance real-time bidding system.
-- **Auction Timers**: Automated auction endings with professional winner selection.
-- **Winner Notifications**: Automated HTML emails sent to winners for secure address submission.
+- **Live Bidding**: High-performance real-time bidding system for fresh produce and machinery.
+- **Automated Management**: node-cron powered handlers for auction completions and winner selections.
+- **Notifications**: Automated HTML emails for winners with secure address submission links.
 
-### 🤖 4. AI-Powered Seller Insights (Gemini AI)
-Empowering sellers with state-of-the-art analytics.
-- **Earnings Analytics**: AI-driven breakdown of sales performance and trends.
-- **Business Intelligence**: Smart suggestions for product pricing and stock management.
+### 🤖 4. AI-Powered Seller Hub (Gemini AI)
+- **Earnings Analytics**: Advanced data visualization and AI-driven performance trends.
+- **Business Intelligence**: Smart inventory suggestions based on historical negotiation data.
 
-### 💳 5. Secure Payments & Tracking
-- **Razorpay Integration**: Seamless and secure payment gateway for the Indian market.
-- **Live Order Tracking**: Real-time status updates from "Processing" to "Delivered".
+### 💳 5. Secure Commerce
+- **Razorpay Integration**: Seamless payment processing for the Indian market.
+- **SEO Optimized**: Fully implemented Meta tags, Open Graph, and JSON-LD for maximum visibility.
 
 ---
 
-## 🛠️ Technical Architecture
+## 🛠️ Tech Stack
 
 ### **Frontend**
-- **Framework**: React 19 (Vite)
-- **Styling**: Tailwind CSS 4.0
-- **Animations**: Framer Motion
-- **State Management**: Redux Toolkit & React Context API
-- **Real-time**: Socket.io-client & WebRTC
-- **Internationalization**: i18next (English & हिन्दी support)
+- **Core**: React 19 (Vite), Redux Toolkit, React Context API.
+- **UI/UX**: Tailwind CSS 4.0, Framer Motion, Lucide React.
+- **Comm**: Socket.io-client, WebRTC (Peer-to-Peer).
+- **I18n**: i18next (English & हिन्दी support).
 
 ### **Backend**
-- **Runtime**: Node.js & Express 5.0
-- **Database**: MongoDB (Mongoose ODM)
-- **Real-time**: Socket.io Signaling
-- **Scheduling**: node-cron (Auction automation)
-- **Mailing**: Nodemailer (SMTP with diagnostic verification)
+- **Runtime**: Node.js & Express 5.0.
+- **Database**: MongoDB (Mongoose ODM).
+- **Automation**: Node-cron, Nodemailer (SMTP).
+- **Security**: JWT Authentication, Bcryptjs.
 
 ---
 
-## 📂 Project Roadmap
+## 📂 Project Structure
 
-- [x] **Phase 1: UI Foundation** — 15+ Premium Responsive Pages.
-- [x] **Phase 2: Authentication** — Secure Buyer & Seller Roles.
-- [x] **Phase 3: Real-time Core** — Negotiation Chat & Auction Bidding.
-- [x] **Phase 4: Commerce Logic** — Cart, Multi-seller Orders, & Razorpay.
-- [x] **Phase 5: Voice Communication** — WebRTC Permission-based Audio.
-- [x] **Phase 6: Seller Hub** — Advanced Dashboard with Gemini AI Analytics.
+```bash
+zylora/
+├── frontend/                # Vite + React Application
+│   ├── src/
+│   │   ├── components/      # Reusable UI components
+│   │   ├── pages/           # Page-level components
+│   │   ├── store/           # Redux Toolkit slices
+│   │   ├── context/         # Context API (Cart/Wishlist)
+│   │   └── services/        # API and Socket configurations
+│   └── public/              # Static assets and SEO images
+└── backend/                 # Node.js + Express API
+    ├── models/              # Mongoose Schemas (User, Product, etc.)
+    ├── controllers/         # Business Logic
+    ├── routes/              # API Endpoints
+    ├── middleware/          # Auth and Validation
+    └── utils/               # Email, Cron, and Helper functions
+```
 
 ---
 
-## 🚀 Getting Started
+## 📸 Project Screenshots
 
-### Prerequisites
-- Node.js (v18+)
-- MongoDB Atlas Account
-- Razorpay API Keys
-- Google Gemini API Key
-- SMTP Server (e.g., Gmail App Password)
+*(Add your high-quality project images here)*
 
-### Installation
+---
 
-1. **Clone the repository**
+## 🚀 Installation
+
+1. **Clone & Install**
    ```bash
    git clone https://github.com/your-username/zylora.git
-   cd zylora
-   ```
-
-2. **Setup Backend**
-   ```bash
-   cd backend
    npm install
-   # Create a .env file and add MONGO_URI, JWT_SECRET, RAZORPAY keys, EMAIL_USER, etc.
-   npm run dev
    ```
 
-3. **Setup Frontend**
+2. **Configure Environment**
+   - Setup `.env` files in both `frontend` and `backend` directories as per the provided templates.
+
+3. **Run Locally**
    ```bash
-   cd ../frontend
-   npm install
-   # Create a .env file and add VITE_BACKEND_URL, VITE_RAZORPAY_KEY_ID
-   npm run dev
+   # Backend
+   cd backend && npm run dev
+   
+   # Frontend
+   cd frontend && npm run dev
    ```
-
----
-
-## � Security & Privacy
-- **Strict Data Isolation**: Negotiation chats are filtered by `buyerId` to ensure total privacy.
-- **Role-Based Access**: Specialized dashboards for Buyers and Sellers.
-- **Consent-Based Calling**: Zero unsolicited calls through the secure WebRTC permission flow.
