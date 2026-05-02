@@ -19,13 +19,29 @@ const transporter = nodemailer.createTransport({
   socketTimeout: 20000 // 20 seconds timeout for the socket
 });
 
+// Verify connection configuration
+transporter.verify(function (error, success) {
+  if (error) {
+    console.error('SMTP Connection Error:', error);
+    if (!process.env.EMAIL_USER || !process.env.EMAIL_PASSWORD) {
+      console.error('CRITICAL: EMAIL_USER or EMAIL_PASSWORD environment variables are missing!');
+    }
+  } else {
+    console.log('SMTP Server is ready to take our messages');
+  }
+});
+
 // Function to send winner notification email
 const sendWinnerNotificationEmail = async (winnerEmail, winnerName, auctionId, productName, bidAmount) => {
   try {
+    if (!winnerEmail) {
+      console.error('Cannot send email: Winner email is missing');
+      return { success: false, error: 'Winner email is missing' };
+    }
     const addressSubmissionLink = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/auction/${auctionId}/submit-address`;
     
     const mailOptions = {
-      from: process.env.EMAIL_USER || 'noreply@zylora.com',
+      from: `"ZyLora E-Commerce" <${process.env.EMAIL_USER || 'noreply@zylora.com'}>`,
       to: winnerEmail,
       subject: `🎉 Congratulations! You Won the Auction for ${productName}`,
       html: `
@@ -85,10 +101,11 @@ const sendWinnerNotificationEmail = async (winnerEmail, winnerName, auctionId, p
 // Function to send address reminder email
 const sendAddressReminderEmail = async (winnerEmail, winnerName, auctionId, productName) => {
   try {
+    if (!winnerEmail) return { success: false, error: 'Email missing' };
     const addressSubmissionLink = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/auction/${auctionId}/submit-address`;
     
     const mailOptions = {
-      from: process.env.EMAIL_USER || 'noreply@zylora.com',
+      from: `"ZyLora E-Commerce" <${process.env.EMAIL_USER || 'noreply@zylora.com'}>`,
       to: winnerEmail,
       subject: `⏰ Reminder: Complete Your Auction Purchase for ${productName}`,
       html: `
@@ -130,8 +147,9 @@ const sendAddressReminderEmail = async (winnerEmail, winnerName, auctionId, prod
 // Function to send order confirmation email
 const sendOrderConfirmationEmail = async (winnerEmail, winnerName, auction, address) => {
   try {
+    if (!winnerEmail) return { success: false, error: 'Email missing' };
     const mailOptions = {
-      from: process.env.EMAIL_USER || 'noreply@zylora.com',
+      from: `"ZyLora E-Commerce" <${process.env.EMAIL_USER || 'noreply@zylora.com'}>`,
       to: winnerEmail,
       subject: `✅ Order Confirmed - Auction Purchase`,
       html: `
@@ -185,8 +203,9 @@ const sendOrderConfirmationEmail = async (winnerEmail, winnerName, auction, addr
 // Function to send general order confirmation email
 const sendGeneralOrderConfirmationEmail = async (userEmail, userName, order, address) => {
   try {
+    if (!userEmail) return { success: false, error: 'Email missing' };
     const mailOptions = {
-      from: process.env.EMAIL_USER || 'noreply@zylora.com',
+      from: `"ZyLora E-Commerce" <${process.env.EMAIL_USER || 'noreply@zylora.com'}>`,
       to: userEmail,
       subject: `✅ Order Confirmed - ZyLora Purchase`,
       html: `

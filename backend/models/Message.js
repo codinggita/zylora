@@ -6,6 +6,11 @@ const messageSchema = new mongoose.Schema({
     ref: 'Product',
     required: true
   },
+  buyerId: {
+    type: mongoose.Schema.ObjectId,
+    ref: 'User',
+    required: true
+  },
   sender: {
     type: mongoose.Schema.ObjectId,
     ref: 'User',

@@ -1,6 +1,7 @@
 const Message = require('../models/Message');
 const Product = require('../models/Product');
 const Negotiation = require('../models/Negotiation');
+const User = require('../models/User');
 
 // @desc    Get chat history for a product
 // @route   GET /api/negotiation/:productId
@@ -22,22 +23,22 @@ exports.getChatHistory = async (req, res) => {
       negotiation = await Negotiation.findOne({
         productId,
         buyer: queryBuyerId
-      });
+      }).populate('buyer', 'name').populate('seller', 'name');
     } else if (req.user.role === 'seller') {
       // Fallback if seller opens without buyerId (get most recent)
       negotiation = await Negotiation.findOne({
         productId,
         seller: req.user._id
-      }).sort('-updatedAt');
+      }).sort('-updatedAt').populate('buyer', 'name').populate('seller', 'name');
       if (negotiation) {
         queryBuyerId = negotiation.buyer;
       }
     }
 
     let messageQuery = { productId };
-    // To ensure we only get messages between this specific buyer and seller
+    // To ensure we only get messages for this specific negotiation
     if (queryBuyerId) {
-      messageQuery.sender = { $in: [queryBuyerId, product.seller] };
+      messageQuery.buyerId = queryBuyerId;
     }
 
     const messages = await Message.find(messageQuery)
@@ -101,29 +102,50 @@ exports.getSellerNegotiationSummary = async (req, res) => {
     const conversationMap = new Map();
 
     messages.forEach((message) => {
-      const senderId = message.sender?._id?.toString?.() || message.sender?.toString?.();
-      const productId = message.productId.toString();
-      const conversationKey = `${productId}:${senderId}`;
+      let buyerId = message.buyerId?.toString();
+      
+      // Fallback for legacy messages: if sender is a buyer, use their ID
+      if (!buyerId && message.sender?.role === 'buyer') {
+        buyerId = message.sender._id?.toString() || message.sender.toString();
+      }
 
-      if (message.sender?.role === 'seller' || conversationMap.has(conversationKey)) {
+      const productId = message.productId.toString();
+      
+      if (!buyerId || !productId) return;
+
+      const conversationKey = `${productId}:${buyerId}`;
+
+      if (conversationMap.has(conversationKey)) {
         return;
       }
 
+      // If it's a seller message, we still want to show the conversation but we need the buyer's name
+      // The buyerId is now always present in the message
+      
       conversationMap.set(conversationKey, {
         id: conversationKey,
-        buyerName: message.sender?.name || 'Buyer',
-        buyerInitial: (message.sender?.name || 'B').slice(0, 2).toUpperCase(),
-        product: productMap.get(productId),
+        buyerId: buyerId,
+        productId: productId,
         lastMessage: message.text,
         offerPrice: message.offerPrice || null,
         quantity: message.quantity || 1,
         messageType: message.type,
-        createdAt: message.createdAt
+        createdAt: message.createdAt,
+        senderRole: message.sender?.role
       });
     });
 
-    const conversations = Array.from(conversationMap.values())
-      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    // We need to get buyer names for these conversations
+     const buyerIds = Array.from(new Set(Array.from(conversationMap.values()).map(c => c.buyerId)));
+     const buyers = await User.find({ _id: { $in: buyerIds } }).select('name');
+     const buyerMap = new Map(buyers.map(b => [b._id.toString(), b.name]));
+
+    const conversations = Array.from(conversationMap.values()).map(conv => ({
+      ...conv,
+      buyerName: buyerMap.get(conv.buyerId) || 'Buyer',
+      buyerInitial: (buyerMap.get(conv.buyerId) || 'B').slice(0, 2).toUpperCase(),
+      product: productMap.get(conv.productId)
+    })).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
     // Get real negotiation records for these conversations
     const negotiationRecords = await Negotiation.find({
@@ -135,15 +157,41 @@ exports.getSellerNegotiationSummary = async (req, res) => {
       negotiationRecords.map(nr => [`${nr.productId}:${nr.buyer}`, nr])
     );
 
-    const enrichedConversations = conversations.map(conv => {
-      const record = recordMap.get(conv.id);
+    // Filter conversations to only include those that have a recordMap entry or create one
+    // But for the summary, if a record doesn't exist, we should probably auto-create it 
+    // or at least allow it to be handled.
+    // Let's make sure that if a record doesn't exist, we still provide enough info.
+
+    const enrichedConversations = await Promise.all(conversations.map(async (conv) => {
+      let record = recordMap.get(conv.id);
+      
+      // If no negotiation record exists but we have messages, auto-create it to avoid "legacy" errors
+      if (!record && conv.productId && conv.buyerId) {
+        try {
+          record = await Negotiation.findOneAndUpdate(
+            { productId: conv.productId, buyer: conv.buyerId, seller: req.user._id },
+            { 
+              $setOnInsert: { 
+                status: 'PENDING',
+                lastMessage: conv.lastMessage,
+                lastMessageAt: conv.createdAt,
+                quantity: conv.quantity
+              } 
+            },
+            { upsert: true, new: true, setDefaultsOnInsert: true }
+          );
+        } catch (err) {
+          console.error('Error auto-creating negotiation record:', err);
+        }
+      }
+
       return {
         ...conv,
         negotiationId: record?._id || null,
         status: record?.status || 'PENDING',
         quantity: record?.quantity || conv.quantity || 1
       };
-    });
+    }));
 
     // Only show PENDING requests on the dashboard summary to keep it actionable
     const visibleConversations = enrichedConversations.filter(conv => conv.status === 'PENDING');
@@ -181,8 +229,6 @@ exports.updateNegotiationStatus = async (req, res) => {
     let negotiation = await Negotiation.findById(id);
     
     if (!negotiation) {
-      // If no negotiation record exists yet (just messages), we might need to create one
-      // But for simplicity, we'll assume the first message created it (or we create it now)
       return res.status(404).json({ success: false, error: 'Negotiation record not found' });
     }
 
@@ -193,6 +239,24 @@ exports.updateNegotiationStatus = async (req, res) => {
 
     negotiation.status = status;
     await negotiation.save();
+
+    // Emit socket event for real-time update
+    const io = req.app.get('io');
+    if (io) {
+      const payload = {
+        productId: negotiation.productId.toString(),
+        buyerId: negotiation.buyer.toString(),
+        status: status,
+        sender: 'seller',
+        senderRole: 'seller',
+        price: negotiation.agreedPrice || negotiation.lastOfferPrice,
+        quantity: negotiation.quantity
+      };
+      
+      // Emit to both specific and general rooms
+      io.to(`${negotiation.productId}_${negotiation.buyer}`).emit('deal_update', payload);
+      io.to(negotiation.productId.toString()).emit('deal_update', payload);
+    }
 
     res.status(200).json({
       success: true,

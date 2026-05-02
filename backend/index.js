@@ -53,8 +53,22 @@ io.on('connection', (socket) => {
         return;
       }
 
+      let targetBuyerId = data.senderRole === 'buyer' ? data.senderId : data.buyerId;
+
+      // If buyerId is missing (e.g. seller responding from a different view), try to find it
+      if (!targetBuyerId && data.senderRole === 'seller') {
+        const latestNeg = await Negotiation.findOne({ productId: data.productId, seller: data.senderId }).sort('-lastMessageAt');
+        if (latestNeg) targetBuyerId = latestNeg.buyer;
+      }
+
+      if (!targetBuyerId) {
+        console.log('Missing targetBuyerId for message:', data);
+        return;
+      }
+
       const newMessage = await Message.create({
         productId: data.productId,
+        buyerId: targetBuyerId,
         sender: data.senderId,
         text: data.text,
         type: data.type || 'text',
@@ -65,14 +79,11 @@ io.on('connection', (socket) => {
       const product = await Product.findById(data.productId).select('seller');
 
       if (product) {
-        const targetBuyerId = data.senderRole === 'buyer' ? data.senderId : data.buyerId;
-
-        if (targetBuyerId) {
-          const existingNegotiation = await Negotiation.findOne({
-            productId: data.productId,
-            buyer: targetBuyerId,
-            seller: product.seller
-          });
+        const existingNegotiation = await Negotiation.findOne({
+          productId: data.productId,
+          buyer: targetBuyerId,
+          seller: product.seller
+        });
 
           let newStatus = existingNegotiation ? existingNegotiation.status : 'PENDING';
           const isDeclined = existingNegotiation && existingNegotiation.status === 'DECLINED';
@@ -118,12 +129,9 @@ io.on('connection', (socket) => {
               setDefaultsOnInsert: true
             }
           );
-        }
       }
 
       console.log('Message saved and emitting:', data);
-      
-      const targetBuyerId = data.senderRole === 'buyer' ? data.senderId : data.buyerId;
       
       // Emit to specific room
       if (targetBuyerId) {
@@ -132,6 +140,7 @@ io.on('connection', (socket) => {
           id: newMessage._id,
           text: data.text,
           sender: data.senderId,
+          buyerId: targetBuyerId,
           type: data.type || 'text',
           offerPrice: data.offerPrice,
           time: newMessage.createdAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
@@ -304,6 +313,47 @@ io.on('connection', (socket) => {
       console.log(`User ${socket.id} left auction room: auction_${auctionId}`);
     }
   });
+
+  // --- Voice Call Signaling ---
+    socket.on('request_call_permission', (data) => {
+      console.log(`Call permission requested from ${data.from} to room ${data.room}`);
+      // data: { from, name, room, type: 'voice' | 'video' }
+      socket.to(data.room).emit('incoming_call_request', data);
+    });
+
+    socket.on('respond_call_permission', (data) => {
+      console.log(`Call permission response from ${data.from} in room ${data.room}: ${data.allowed}`);
+      // data: { room, allowed, type }
+      socket.to(data.room).emit('call_permission_response', data);
+    });
+
+    socket.on('call_user', (data) => {
+    console.log(`Voice call initiated from ${data.from} to room ${data.room}`);
+    // data: { from, name, room, signalData }
+    socket.to(data.room).emit('incoming_call', {
+      from: data.from,
+      name: data.name,
+      signalData: data.signalData
+    });
+  });
+
+  socket.on('answer_call', (data) => {
+    console.log(`Call answered by ${data.from} in room ${data.room}`);
+    // data: { room, signalData }
+    socket.to(data.room).emit('call_accepted', data.signalData);
+  });
+
+  socket.on('ice_candidate', (data) => {
+    // data: { room, candidate }
+    socket.to(data.room).emit('ice_candidate', data.candidate);
+  });
+
+  socket.on('end_call', (data) => {
+    console.log(`Call ended in room ${data.room}`);
+    // data: { room }
+    socket.to(data.room).emit('call_ended');
+  });
+  // ----------------------------
 
   socket.on('disconnect', () => {
     console.log('User disconnected:', socket.id);
