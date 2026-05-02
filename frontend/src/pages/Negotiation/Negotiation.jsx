@@ -4,7 +4,7 @@ import {
   ArrowLeft, Send, Phone, Video, Check, 
   Paperclip, ShieldCheck, Edit2, CheckCircle,
   Info, ShoppingCart, Tag, Bell, AlertTriangle, X,
-  Minus, Plus
+  Minus, Plus, PhoneOff
 } from 'lucide-react';
 import { useNavigate, Link, useParams } from 'react-router-dom';
 import { products } from '../../data/products';
@@ -31,6 +31,10 @@ const Negotiation = () => {
   const [quantity, setQuantity] = useState(1);
   const [dealStatus, setDealStatus] = useState('PENDING'); // null until fetched, then PENDING, ACCEPTED, etc.
   const [agreedPrice, setAgreedPrice] = useState(0);
+  const [counterParty, setCounterParty] = useState({ name: '', initial: '' });
+  const [activeChatTab, setActiveChatTab] = useState('Chat');
+  const [callPermission, setCallPermission] = useState('NONE'); // NONE, REQUESTING, GRANTED, DENIED
+  const [incomingCallRequest, setIncomingCallRequest] = useState(null);
   const chatEndRef = useRef(null);
   const socket = useRef(null);
   const [userRole, setUserRole] = useState('buyer');
@@ -45,6 +49,15 @@ const Negotiation = () => {
   const [buzzerCooldownTime, setBuzzerCooldownTime] = useState(0);
   const [incomingBuzz, setIncomingBuzz] = useState(null);
   const audioCtxRef = useRef(null);
+
+  // Voice Call States
+  const [callActive, setCallActive] = useState(false);
+  const [incomingCall, setIncomingCall] = useState(null);
+  const [isCalling, setIsCalling] = useState(false);
+  const [remoteStream, setRemoteStream] = useState(null);
+  const peerConnection = useRef(null);
+  const localStream = useRef(null);
+  const remoteAudioRef = useRef(null);
 
   // Pre-initialize AudioContext on first user interaction (required by browsers)
   useEffect(() => {
@@ -140,6 +153,20 @@ const Negotiation = () => {
               setDealStatus(chatRes.data.negotiation.status);
               setAgreedPrice(chatRes.data.negotiation.agreedPrice || currentProduct.price);
               setQuantity(chatRes.data.negotiation.quantity || 1);
+
+              // Set counterparty info
+              if (userRole === 'seller' && chatRes.data.negotiation.buyer) {
+                setCounterParty({
+                  name: chatRes.data.negotiation.buyer.name,
+                  initial: chatRes.data.negotiation.buyer.name.slice(0, 2).toUpperCase()
+                });
+              } else if (userRole === 'buyer' && chatRes.data.negotiation.seller) {
+                setCounterParty({
+                  name: chatRes.data.negotiation.seller.name,
+                  initial: chatRes.data.negotiation.seller.name.slice(0, 2).toUpperCase()
+                });
+              }
+
               if (chatRes.data.negotiation.status === 'DECLINED') {
                 setLastDeclinedAt(chatRes.data.negotiation.updatedAt || chatRes.data.negotiation.lastMessageAt);
               }
@@ -182,6 +209,135 @@ const Negotiation = () => {
     fetchProductAndChat();
   }, [id, navigate]);
 
+  const setupPeerConnection = useCallback((room) => {
+    peerConnection.current = new RTCPeerConnection({
+      iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
+    });
+
+    peerConnection.current.onicecandidate = (event) => {
+      if (event.candidate) {
+        socket.current.emit('ice_candidate', { room, candidate: event.candidate });
+      }
+    };
+
+    peerConnection.current.ontrack = (event) => {
+      setRemoteStream(event.streams[0]);
+    };
+
+    if (localStream.current) {
+      localStream.current.getTracks().forEach(track => {
+        peerConnection.current.addTrack(track, localStream.current);
+      });
+    }
+  }, []);
+
+  const handleRequestCallPermission = (type = 'voice') => {
+    if (!socket.current) return;
+    setCallPermission('REQUESTING');
+    
+    const searchParams = new URLSearchParams(window.location.search);
+    const targetBuyerId = searchParams.get('buyerId') || (userRole === 'buyer' ? currentUserId : null);
+    const room = targetBuyerId ? `${id}_${targetBuyerId}` : id;
+
+    socket.current.emit('request_call_permission', {
+      from: currentUserId,
+      name: user?.name || 'User',
+      room,
+      type
+    });
+  };
+
+  const handleRespondCallPermission = (allowed) => {
+    if (!socket.current || !incomingCallRequest) return;
+    
+    socket.current.emit('respond_call_permission', {
+      from: currentUserId,
+      room: incomingCallRequest.room,
+      allowed,
+      type: incomingCallRequest.type
+    });
+    
+    setIncomingCallRequest(null);
+  };
+
+  const handleStartCall = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      localStream.current = stream;
+      
+      const searchParams = new URLSearchParams(window.location.search);
+      const targetBuyerId = searchParams.get('buyerId') || (userRole === 'buyer' ? currentUserId : null);
+      const room = targetBuyerId ? `${id}_${targetBuyerId}` : id;
+
+      setupPeerConnection(room);
+      setIsCalling(true);
+
+      const offer = await peerConnection.current.createOffer();
+      await peerConnection.current.setLocalDescription(offer);
+
+      socket.current.emit('call_user', {
+        from: currentUserId,
+        name: user?.name || 'User',
+        room,
+        signalData: offer
+      });
+    } catch (err) {
+      console.error('Error starting call:', err);
+      alert('Could not access microphone');
+    }
+  };
+
+  const handleAcceptCall = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      localStream.current = stream;
+
+      const searchParams = new URLSearchParams(window.location.search);
+      const targetBuyerId = searchParams.get('buyerId') || (userRole === 'buyer' ? currentUserId : null);
+      const room = targetBuyerId ? `${id}_${targetBuyerId}` : id;
+
+      setupPeerConnection(room);
+      setCallActive(true);
+      setIncomingCall(null);
+
+      await peerConnection.current.setRemoteDescription(new RTCSessionDescription(incomingCall.signalData));
+      const answer = await peerConnection.current.createAnswer();
+      await peerConnection.current.setLocalDescription(answer);
+
+      socket.current.emit('answer_call', {
+        from: currentUserId,
+        room,
+        signalData: answer
+      });
+    } catch (err) {
+      console.error('Error accepting call:', err);
+      alert('Could not access microphone');
+    }
+  };
+
+  const handleEndCall = useCallback((emit = true) => {
+    if (localStream.current) {
+      localStream.current.getTracks().forEach(track => track.stop());
+      localStream.current = null;
+    }
+    if (peerConnection.current) {
+      peerConnection.current.close();
+      peerConnection.current = null;
+    }
+    
+    if (emit && socket.current) {
+      const searchParams = new URLSearchParams(window.location.search);
+      const targetBuyerId = searchParams.get('buyerId') || (userRole === 'buyer' ? currentUserId : null);
+      const room = targetBuyerId ? `${id}_${targetBuyerId}` : id;
+      socket.current.emit('end_call', { room });
+    }
+
+    setCallActive(false);
+    setIsCalling(false);
+    setIncomingCall(null);
+    setRemoteStream(null);
+  }, [id, currentUserId, userRole]);
+
   // Socket initialization and listeners
   useEffect(() => {
     const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 
@@ -208,7 +364,28 @@ const Negotiation = () => {
       });
     });
 
+    socket.current.on('incoming_call_request', (data) => {
+      setIncomingCallRequest(data);
+    });
+
+    socket.current.on('call_permission_response', (data) => {
+      if (data.allowed) {
+        setCallPermission('GRANTED');
+      } else {
+        setCallPermission('DENIED');
+        setTimeout(() => setCallPermission('NONE'), 3000);
+      }
+    });
+
     socket.current.on('receive_message', (message) => {
+      const searchParams = new URLSearchParams(window.location.search);
+      const targetBuyerId = searchParams.get('buyerId') || (userRoleRef.current === 'buyer' ? currentUserId : null);
+
+      // Strictly one-on-one: filter out messages from other buyer negotiations
+      if (message.buyerId && targetBuyerId && message.buyerId.toString() !== targetBuyerId.toString()) {
+        return;
+      }
+
       const user = JSON.parse(sessionStorage.getItem('user') || '{}');
       const currentId = user?._id || user?.id;
       const isMe = message.sender === currentId;
@@ -231,6 +408,32 @@ const Negotiation = () => {
     socket.current.on('price_update', (data) => {
       if (data.agreedPrice !== undefined) setAgreedPrice(data.agreedPrice);
       if (data.quantity !== undefined) setQuantity(data.quantity);
+    });
+
+    socket.current.on('incoming_call', (data) => {
+      setIncomingCall(data);
+    });
+
+    socket.current.on('call_accepted', async (signalData) => {
+      if (peerConnection.current) {
+        await peerConnection.current.setRemoteDescription(new RTCSessionDescription(signalData));
+        setCallActive(true);
+        setIsCalling(false);
+      }
+    });
+
+    socket.current.on('ice_candidate', async (candidate) => {
+      if (peerConnection.current) {
+        try {
+          await peerConnection.current.addIceCandidate(new RTCIceCandidate(candidate));
+        } catch (e) {
+          console.error('Error adding ice candidate', e);
+        }
+      }
+    });
+
+    socket.current.on('call_ended', () => {
+      handleEndCall(false);
     });
 
     socket.current.on('deal_update', (data) => {
@@ -323,7 +526,7 @@ const Negotiation = () => {
     const msg = {
       id: Date.now(),
       sender: 'you',
-      text: newMessage,
+      text: textToSubmit,
       time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       status: 'sent'
     };
@@ -548,7 +751,7 @@ const Negotiation = () => {
                 <span className="text-xs text-gray-500">
                   {userRole === 'seller' ? 'Buyer: ' : 'Seller: '}
                   <span className="font-bold text-gray-900">
-                    {userRole === 'seller' ? 'Direct Buyer' : (product.seller?.name || 'TechZone')}
+                    {counterParty.name || (userRole === 'seller' ? 'Buyer' : (product.seller?.name || 'Seller'))}
                   </span>
                 </span>
                 <span className="bg-orange-50 text-orange-600 text-[8px] font-black px-1.5 py-0.5 rounded uppercase tracking-tighter">
@@ -620,12 +823,34 @@ const Negotiation = () => {
           <div className="lg:col-span-8 bg-white rounded-2xl border border-gray-100 shadow-sm flex flex-col h-[600px]">
             {/* Tabs */}
             <div className="flex border-b border-gray-100 px-6">
-              <button type="button" className="py-4 px-4 border-b-2 border-gray-900 text-xs font-black uppercase tracking-widest flex items-center gap-2">
+              <button 
+                type="button" 
+                onClick={() => setActiveChatTab('Chat')}
+                className={`py-4 px-4 border-b-2 text-xs font-black uppercase tracking-widest flex items-center gap-2 ${activeChatTab === 'Chat' ? 'border-gray-900 text-gray-900' : 'border-transparent text-gray-400'}`}
+              >
                 <Send size={14} className="rotate-45 -mt-1" /> Chat
               </button>
-              <button type="button" className="py-4 px-4 border-b-2 border-transparent text-gray-400 hover:text-gray-600 text-xs font-black uppercase tracking-widest flex items-center gap-2">
-                <Phone size={14} /> Voice
-              </button>
+              
+              {callPermission === 'GRANTED' ? (
+                <button 
+                  type="button" 
+                  onClick={handleStartCall}
+                  className="py-4 px-4 border-b-2 border-green-500 text-green-600 text-xs font-black uppercase tracking-widest flex items-center gap-2 animate-bounce"
+                >
+                  <Phone size={14} /> Call Now
+                </button>
+              ) : (
+                <button 
+                  type="button" 
+                  onClick={() => handleRequestCallPermission('voice')}
+                  disabled={callPermission === 'REQUESTING'}
+                  className={`py-4 px-4 border-b-2 border-transparent text-gray-400 hover:text-gray-600 text-xs font-black uppercase tracking-widest flex items-center gap-2 ${callPermission === 'REQUESTING' ? 'opacity-50 cursor-wait' : ''}`}
+                >
+                  <Phone size={14} /> 
+                  {callPermission === 'REQUESTING' ? 'Requesting...' : callPermission === 'DENIED' ? 'Call Denied' : 'Voice Call'}
+                </button>
+              )}
+
               <button type="button" className="py-4 px-4 border-b-2 border-transparent text-gray-400 hover:text-gray-600 text-xs font-black uppercase tracking-widest flex items-center gap-2">
                 <Video size={14} /> Video
               </button>
@@ -1017,12 +1242,12 @@ const Negotiation = () => {
             }`}>
               <div className="flex items-center gap-4 mb-4">
                 <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center font-black text-gray-900 text-lg uppercase">
-                  {userRole === 'seller' ? 'DB' : 'TZ'}
+                  {counterParty.initial || (userRole === 'seller' ? 'B' : 'S')}
                 </div>
                 <div>
                   <div className="flex items-center gap-2">
                     <h4 className="font-bold text-sm">
-                      {userRole === 'seller' ? 'Direct Buyer (Verified)' : 'TechZone Verified'}
+                      {counterParty.name || (userRole === 'seller' ? 'Buyer' : 'Seller')} (Verified)
                     </h4>
                     <div className="flex text-amber-500">
                       {[1,2,3,4,5].map(s => <Check key={s} size={10} fill="currentColor" />)}
@@ -1040,6 +1265,122 @@ const Negotiation = () => {
           </div>
         </div>
       </main>
+
+      {/* Voice Call UI Components */}
+      <AnimatePresence>
+        {incomingCallRequest && (
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.9, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.9, y: 20 }}
+            className="fixed bottom-24 right-8 z-[100] bg-white border border-blue-100 shadow-2xl rounded-2xl p-6 w-80"
+          >
+            <div className="flex flex-col items-center text-center">
+              <div className="w-12 h-12 bg-blue-50 rounded-full flex items-center justify-center text-blue-600 mb-3">
+                <Bell size={24} className="animate-tada" />
+              </div>
+              <h3 className="text-sm font-bold text-gray-900">Call Request</h3>
+              <p className="text-xs text-gray-500 mb-6">{incomingCallRequest.name} wants to start a voice call with you.</p>
+              <div className="flex gap-3 w-full">
+                <button 
+                  onClick={() => handleRespondCallPermission(true)}
+                  className="flex-1 bg-blue-600 text-white py-2.5 rounded-xl text-xs font-bold hover:bg-blue-700 transition-colors"
+                >
+                  Allow
+                </button>
+                <button 
+                  onClick={() => handleRespondCallPermission(false)}
+                  className="flex-1 bg-gray-100 text-gray-600 py-2.5 rounded-xl text-xs font-bold hover:bg-gray-200 transition-colors"
+                >
+                  Deny
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+
+        {incomingCall && (
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.9, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.9, y: 20 }}
+            className="fixed bottom-8 right-8 z-[100] bg-white border border-gray-100 shadow-2xl rounded-2xl p-6 w-80"
+          >
+            <div className="flex flex-col items-center text-center">
+              <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 mb-4 animate-pulse">
+                <Phone size={32} />
+              </div>
+              <h3 className="text-lg font-bold text-gray-900">Incoming Voice Call</h3>
+              <p className="text-sm text-gray-500 mb-6">{incomingCall.name} is calling you...</p>
+              <div className="flex gap-4 w-full">
+                <button 
+                  onClick={handleAcceptCall}
+                  className="flex-1 bg-green-600 text-white py-3 rounded-xl text-sm font-bold hover:bg-green-700 transition-colors"
+                >
+                  Accept
+                </button>
+                <button 
+                  onClick={() => handleEndCall(true)}
+                  className="flex-1 bg-red-100 text-red-600 py-3 rounded-xl text-sm font-bold hover:bg-red-200 transition-colors"
+                >
+                  Decline
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+
+        {(isCalling || callActive) && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[110] bg-gray-900/90 backdrop-blur-md flex items-center justify-center p-6"
+          >
+            <div className="max-w-md w-full bg-white/10 border border-white/20 rounded-3xl p-10 flex flex-col items-center text-center text-white">
+              <div className="relative mb-8">
+                <div className="w-24 h-24 bg-blue-500 rounded-full flex items-center justify-center shadow-2xl shadow-blue-500/50">
+                  <Phone size={40} />
+                </div>
+                {callActive && (
+                  <motion.div 
+                    animate={{ scale: [1, 1.5, 1], opacity: [0.5, 0, 0.5] }}
+                    transition={{ duration: 2, repeat: Infinity }}
+                    className="absolute inset-0 bg-blue-500 rounded-full -z-10"
+                  />
+                )}
+              </div>
+              
+              <h2 className="text-2xl font-bold mb-2">
+                {isCalling ? 'Calling Seller...' : 'Active Call'}
+              </h2>
+              <p className="text-blue-200/60 text-sm mb-12">
+                {isCalling ? 'Connecting secure line...' : 'Secure end-to-end encrypted voice session'}
+              </p>
+
+              <div className="flex gap-6">
+                <button 
+                  onClick={() => handleEndCall(true)}
+                  className="w-16 h-16 bg-red-500 hover:bg-red-600 rounded-full flex items-center justify-center transition-all transform hover:scale-110 shadow-xl shadow-red-500/30"
+                >
+                  <PhoneOff size={28} />
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Remote Audio Element */}
+      <audio 
+        ref={(el) => {
+          if (el && remoteStream) {
+            el.srcObject = remoteStream;
+            el.play().catch(e => console.error('Audio play error:', e));
+          }
+        }} 
+        autoPlay 
+      />
 
       {/* Footer (Simplified) */}
       <footer className="bg-[#0A1628] text-white mt-24 pt-16 pb-8 border-t border-gray-800">
